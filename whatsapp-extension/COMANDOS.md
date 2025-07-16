@@ -32,6 +32,9 @@ forceInitCRM()
 // Test completo de la extensión
 testWhatsAppCRMExtension()
 
+// Test específico de ETIQUETAS
+testTagsFunctionality()
+
 // Test de elementos críticos
 testCriticalElements()
 
@@ -40,6 +43,23 @@ debugWhatsAppCRM()
 
 // Estado del CRM (si está inicializado)
 window.whatsappCRM?.getDebugInfo()
+```
+
+## 🏷️ Tests Específicos de Etiquetas
+
+```javascript
+// Test completo de etiquetas
+testTagsFunctionality()
+
+// Crear etiquetas de ejemplo
+createSampleTags()
+
+// Probar abrir modal de etiquetas
+testOpenTagModal()
+
+// Verificar datos de etiquetas manualmente
+window.whatsappCRM?.tags
+localStorage.getItem('whatsapp_crm_tags')
 ```
 
 ## 🔍 Verificaciones Manuales

@@ -1478,7 +1478,7 @@ class WhatsAppCRM {
             }
 
             container.innerHTML = recentContacts.map(contact => `
-                <div class="contact-card interactive" onclick="whatsappCRM.openContactDetails('${contact.id}')">
+                <div class="contact-card interactive recent-contact-card" data-contact-id="${contact.id}">
                     <div class="contact-header">
                         <div class="contact-avatar">${this.getContactInitials(contact.name)}</div>
                         <div class="contact-info">
@@ -1501,9 +1501,33 @@ class WhatsAppCRM {
                     </div>
                 </div>
             `).join('');
+
+            // Vincular eventos para actividad reciente
+            this.bindRecentActivityEvents();
             
         } catch (error) {
             console.error('Error updating recent activity:', error);
+        }
+    }
+
+    bindRecentActivityEvents() {
+        try {
+            const recentCards = document.querySelectorAll('.recent-contact-card');
+            recentCards.forEach(card => {
+                card.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const contactId = card.dataset.contactId;
+                    if (contactId) {
+                        console.log(`📱 Abriendo detalles del contacto: ${contactId}`);
+                        this.openContactDetails(contactId);
+                    }
+                });
+            });
+
+            console.log(`🔗 Eventos actividad reciente vinculados: ${recentCards.length} tarjetas`);
+
+        } catch (error) {
+            console.error('Error binding recent activity events:', error);
         }
     }
 
@@ -1541,7 +1565,7 @@ class WhatsAppCRM {
                     <div class="kanban-summary">
                         <p>Tienes <strong>${this.tags.length}</strong> etiquetas</p>
                         <p>Contactos: <strong>${contacts.length}</strong></p>
-                        <button class="btn-primary" onclick="whatsappCRM.openKanbanFullscreen()">
+                        <button class="btn-primary kanban-fullscreen-btn">
                             Ver Kanban Completo
                         </button>
                     </div>
@@ -1552,10 +1576,29 @@ class WhatsAppCRM {
             if (elements.processCount) elements.processCount.textContent = contacts.length;
             if (elements.clientsCount) elements.clientsCount.textContent = '★';
 
+            // Vincular eventos después de renderizar
+            this.bindKanbanSidebarEvents();
+
             console.log(`📋 Kanban sidebar renderizado - ${this.tags.length} etiquetas, ${contacts.length} contactos`);
             
         } catch (error) {
             console.error('Error rendering kanban cards:', error);
+        }
+    }
+
+    bindKanbanSidebarEvents() {
+        try {
+            const fullscreenBtn = document.querySelector('.kanban-fullscreen-btn');
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('📋 Abriendo Kanban fullscreen desde sidebar...');
+                    this.openKanbanFullscreen();
+                });
+                console.log('🔗 Botón kanban fullscreen vinculado');
+            }
+        } catch (error) {
+            console.error('Error binding kanban sidebar events:', error);
         }
     }
 
@@ -1849,8 +1892,8 @@ class WhatsAppCRM {
                             <div class="contact-phone">${contact.phone}</div>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button class="btn-secondary" onclick="whatsappCRM.editContact('${contact.id}')" title="Editar">✏️</button>
-                            <button class="btn-secondary" onclick="whatsappCRM.deleteContact('${contact.id}')" title="Eliminar">🗑️</button>
+                            <button class="btn-secondary contact-edit-btn" data-contact-id="${contact.id}" title="Editar">✏️</button>
+                            <button class="btn-secondary contact-delete-btn" data-contact-id="${contact.id}" title="Eliminar">🗑️</button>
                         </div>
                     </div>
                     ${contact.tags?.length ? `
@@ -1873,9 +1916,47 @@ class WhatsAppCRM {
                     ` : ''}
                 </div>
             `).join('');
+
+            // Vincular eventos después de crear el HTML
+            this.bindContactCardEvents();
             
         } catch (error) {
             console.error('Error rendering contacts list:', error);
+        }
+    }
+
+    bindContactCardEvents() {
+        try {
+            // Botones de editar contacto
+            const editButtons = document.querySelectorAll('.contact-edit-btn');
+            editButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const contactId = btn.dataset.contactId;
+                    if (contactId) {
+                        console.log(`✏️ Editando contacto: ${contactId}`);
+                        this.editContact(contactId);
+                    }
+                });
+            });
+
+            // Botones de eliminar contacto
+            const deleteButtons = document.querySelectorAll('.contact-delete-btn');
+            deleteButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const contactId = btn.dataset.contactId;
+                    if (contactId) {
+                        console.log(`🗑️ Eliminando contacto: ${contactId}`);
+                        this.deleteContact(contactId);
+                    }
+                });
+            });
+
+            console.log(`🔗 Eventos contactos vinculados: ${editButtons.length} editar, ${deleteButtons.length} eliminar`);
+
+        } catch (error) {
+            console.error('Error binding contact card events:', error);
         }
     }
 
@@ -2134,8 +2215,8 @@ class WhatsAppCRM {
                             <div class="contact-phone">${tag.description || 'Sin descripción'}</div>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button class="btn-secondary" onclick="whatsappCRM.editTag('${tag.id}')" title="Editar">✏️</button>
-                            <button class="btn-secondary" onclick="whatsappCRM.deleteTag('${tag.id}')" title="Eliminar">🗑️</button>
+                            <button class="btn-secondary tag-edit-btn" data-tag-id="${tag.id}" title="Editar">✏️</button>
+                            <button class="btn-secondary tag-delete-btn" data-tag-id="${tag.id}" title="Eliminar">🗑️</button>
                         </div>
                     </div>
                     <div class="contact-meta">
@@ -2145,10 +2226,48 @@ class WhatsAppCRM {
                 </div>
             `).join('');
 
+            // Vincular eventos después de crear el HTML
+            this.bindTagCardEvents();
+
             console.log(`🏷️ ${this.tags.length} etiquetas renderizadas`);
             
         } catch (error) {
             console.error('Error rendering tags:', error);
+        }
+    }
+
+    bindTagCardEvents() {
+        try {
+            // Botones de editar etiqueta
+            const editButtons = document.querySelectorAll('.tag-edit-btn');
+            editButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const tagId = btn.dataset.tagId;
+                    if (tagId) {
+                        console.log(`✏️ Editando etiqueta: ${tagId}`);
+                        this.editTag(tagId);
+                    }
+                });
+            });
+
+            // Botones de eliminar etiqueta
+            const deleteButtons = document.querySelectorAll('.tag-delete-btn');
+            deleteButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const tagId = btn.dataset.tagId;
+                    if (tagId) {
+                        console.log(`🗑️ Eliminando etiqueta: ${tagId}`);
+                        this.deleteTag(tagId);
+                    }
+                });
+            });
+
+            console.log(`🔗 Eventos vinculados: ${editButtons.length} editar, ${deleteButtons.length} eliminar`);
+
+        } catch (error) {
+            console.error('Error binding tag card events:', error);
         }
     }
 
@@ -2348,10 +2467,61 @@ class WhatsAppCRM {
                 </div>
             `).join('');
 
+            // Vincular eventos después de crear el HTML
+            this.bindTemplateCardEvents();
+
             console.log(`📄 ${this.templates.length} plantillas renderizadas por categorías`);
             
         } catch (error) {
             console.error('Error rendering templates:', error);
+        }
+    }
+
+    bindTemplateCardEvents() {
+        try {
+            // Botones de usar plantilla
+            const useButtons = document.querySelectorAll('.template-use-btn');
+            useButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const templateId = btn.dataset.templateId;
+                    if (templateId) {
+                        console.log(`📤 Usando plantilla: ${templateId}`);
+                        this.useTemplate(templateId);
+                    }
+                });
+            });
+
+            // Botones de editar plantilla
+            const editButtons = document.querySelectorAll('.template-edit-btn');
+            editButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const templateId = btn.dataset.templateId;
+                    if (templateId) {
+                        console.log(`✏️ Editando plantilla: ${templateId}`);
+                        this.editTemplate(templateId);
+                    }
+                });
+            });
+
+            // Botones de eliminar plantilla
+            const deleteButtons = document.querySelectorAll('.template-delete-btn');
+            deleteButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const templateId = btn.dataset.templateId;
+                    if (templateId) {
+                        console.log(`🗑️ Eliminando plantilla: ${templateId}`);
+                        this.deleteTemplate(templateId);
+                    }
+                });
+            });
+
+            console.log(`🔗 Eventos plantillas vinculados: ${useButtons.length} usar, ${editButtons.length} editar, ${deleteButtons.length} eliminar`);
+
+        } catch (error) {
+            console.error('Error binding template card events:', error);
         }
     }
 
@@ -2366,9 +2536,9 @@ class WhatsAppCRM {
                             <div class="contact-phone">${template.category}</div>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button class="btn-secondary" onclick="whatsappCRM.useTemplate('${template.id}')" title="Usar">📤</button>
-                            <button class="btn-secondary" onclick="whatsappCRM.editTemplate('${template.id}')" title="Editar">✏️</button>
-                            <button class="btn-secondary" onclick="whatsappCRM.deleteTemplate('${template.id}')" title="Eliminar">🗑️</button>
+                            <button class="btn-secondary template-use-btn" data-template-id="${template.id}" title="Usar">📤</button>
+                            <button class="btn-secondary template-edit-btn" data-template-id="${template.id}" title="Editar">✏️</button>
+                            <button class="btn-secondary template-delete-btn" data-template-id="${template.id}" title="Eliminar">🗑️</button>
                         </div>
                     </div>
                     <div style="margin-top: 12px; padding: 12px; background: var(--surface-color); border-radius: 8px; border-left: 4px solid var(--primary-color);">
@@ -2669,27 +2839,81 @@ class WhatsAppCRM {
 
     syncWithWhatsApp() {
         try {
-            const chatElements = document.querySelectorAll('[data-testid="cell-frame-container"]');
-            let newContacts = 0;
+            console.log('🔄 Sincronizando con WhatsApp Web...');
             
-            chatElements.forEach(element => {
-                const contact = this.extractContactFromElement(element);
-                if (contact && !this.contacts.find(c => c.phone === contact.phone)) {
-                    this.contacts.push({
-                        id: this.generateId(),
-                        ...contact,
-                        status: 'lead',
-                        tags: [],
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    });
-                    newContacts++;
+            // Múltiples selectores para encontrar chats
+            const chatSelectors = [
+                '[data-testid="cell-frame-container"]',
+                '[data-testid="chat-cell"]', 
+                '.zoWT4',
+                '[role="listitem"]'
+            ];
+            
+            let chatElements = [];
+            for (const selector of chatSelectors) {
+                chatElements = document.querySelectorAll(selector);
+                if (chatElements.length > 0) {
+                    console.log(`📱 Encontrados ${chatElements.length} chats con selector: ${selector}`);
+                    break;
+                }
+            }
+            
+            if (chatElements.length === 0) {
+                console.log('⚠️ No se encontraron chats en WhatsApp Web');
+                return;
+            }
+            
+            let newContacts = 0;
+            let updatedContacts = 0;
+            
+            chatElements.forEach((element, index) => {
+                try {
+                    const contact = this.extractContactFromElement(element);
+                    if (contact) {
+                        const existingContact = this.contacts.find(c => 
+                            c.phone === contact.phone || c.name === contact.name
+                        );
+                        
+                        if (existingContact) {
+                            // Actualizar contacto existente
+                            existingContact.name = contact.name || existingContact.name;
+                            existingContact.lastChat = new Date().toISOString();
+                            existingContact.updatedAt = new Date().toISOString();
+                            updatedContacts++;
+                        } else {
+                            // Nuevo contacto
+                            this.contacts.push({
+                                id: this.generateId(),
+                                ...contact,
+                                status: 'lead',
+                                tags: [],
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString(),
+                                whatsappSync: true
+                            });
+                            newContacts++;
+                        }
+                    }
+                } catch (elementError) {
+                    console.warn(`Error procesando elemento ${index}:`, elementError);
                 }
             });
             
-            if (newContacts > 0) {
+            if (newContacts > 0 || updatedContacts > 0) {
                 this.saveContacts();
-                console.log(`📱 ${newContacts} nuevos contactos sincronizados`);
+                console.log(`📱 Sincronización completada: ${newContacts} nuevos, ${updatedContacts} actualizados`);
+                
+                // Actualizar UI
+                this.loadContactsList();
+                this.loadKanban();
+                this.updateDashboard();
+                
+                // Notificar
+                if (newContacts > 0) {
+                    this.showNotification(`${newContacts} nuevos contactos sincronizados`, 'success');
+                }
+            } else {
+                console.log('📱 Sin cambios en la sincronización');
             }
             
         } catch (error) {
@@ -2699,26 +2923,155 @@ class WhatsAppCRM {
 
     extractContactFromElement(element) {
         try {
-            const nameElement = element.querySelector('[data-testid="cell-frame-title"]');
-            const name = nameElement?.textContent?.trim();
+            // Múltiples selectores para obtener el nombre
+            const nameSelectors = [
+                '[data-testid="cell-frame-title"]',
+                '[title]',
+                '.ggj6brxn',
+                'span[title]',
+                '._ao3e',
+                '.zoWT4 span'
+            ];
             
-            if (!name) return null;
+            let nameElement = null;
+            let name = null;
             
-            // Intentar extraer número de teléfono del nombre o atributos
-            let phone = name;
-            if (name.includes('+')) {
-                phone = name.match(/\+[\d\s-()]+/)?.[0] || name;
+            for (const selector of nameSelectors) {
+                nameElement = element.querySelector(selector);
+                if (nameElement) {
+                    name = nameElement.textContent?.trim() || nameElement.title?.trim();
+                    if (name && name.length > 0) {
+                        break;
+                    }
+                }
             }
             
+            if (!name || name.length === 0) {
+                return null;
+            }
+            
+            // Limpiar nombre y extraer teléfono
+            let cleanName = name;
+            let phone = null;
+            
+            // Si el nombre contiene un número de teléfono
+            const phoneMatch = name.match(/\+[\d\s\-()]+/);
+            if (phoneMatch) {
+                phone = phoneMatch[0].replace(/[\s\-()]/g, '');
+                cleanName = name.replace(phoneMatch[0], '').trim();
+            }
+            
+            // Si no hay nombre limpio, usar el teléfono como nombre
+            if (!cleanName || cleanName.length === 0) {
+                cleanName = phone || name;
+            }
+            
+            // Si no hay teléfono detectado, usar el nombre como teléfono (puede ser un número)
+            if (!phone) {
+                // Verificar si el nombre parece un número de teléfono
+                if (/^[\+\d\s\-()]+$/.test(name)) {
+                    phone = name.replace(/[\s\-()]/g, '');
+                } else {
+                    phone = name; // Usar como identificador único
+                }
+            }
+            
+            // Intentar extraer información adicional del elemento
+            const lastMessageTime = this.extractLastMessageTime(element);
+            const hasUnread = this.hasUnreadMessages(element);
+            
             return {
-                name: name.replace(/\+[\d\s-()]+/, '').trim() || name,
+                name: cleanName,
                 phone: phone,
-                lastChat: new Date().toISOString()
+                lastChat: lastMessageTime || new Date().toISOString(),
+                hasUnread: hasUnread,
+                whatsappElement: true
             };
             
         } catch (error) {
             console.error('Error extracting contact:', error);
             return null;
+        }
+    }
+
+    extractLastMessageTime(element) {
+        try {
+            // Selectores para encontrar la hora del último mensaje
+            const timeSelectors = [
+                '[data-testid="cell-frame-secondary"]',
+                '.zoWT4 span:last-child',
+                '._ao3e:last-child',
+                '.ggj6brxn:last-child'
+            ];
+            
+            for (const selector of timeSelectors) {
+                const timeElement = element.querySelector(selector);
+                if (timeElement) {
+                    const timeText = timeElement.textContent?.trim();
+                    if (timeText && /\d/.test(timeText)) {
+                        // Intentar convertir a fecha/hora
+                        return this.parseWhatsAppTime(timeText);
+                    }
+                }
+            }
+            
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    parseWhatsAppTime(timeText) {
+        try {
+            const now = new Date();
+            
+            // Patrones comunes de WhatsApp
+            if (timeText.includes(':')) {
+                // Formato HH:MM (hoy)
+                const [hours, minutes] = timeText.split(':').map(Number);
+                const date = new Date();
+                date.setHours(hours, minutes, 0, 0);
+                return date.toISOString();
+            } else if (timeText.toLowerCase().includes('ayer')) {
+                // Ayer
+                const date = new Date();
+                date.setDate(date.getDate() - 1);
+                return date.toISOString();
+            } else if (timeText.includes('/')) {
+                // Formato DD/MM/YYYY
+                const parts = timeText.split('/');
+                if (parts.length === 3) {
+                    const date = new Date(parts[2], parts[1] - 1, parts[0]);
+                    return date.toISOString();
+                }
+            }
+            
+            return new Date().toISOString();
+        } catch (error) {
+            return new Date().toISOString();
+        }
+    }
+
+    hasUnreadMessages(element) {
+        try {
+            // Indicadores de mensajes no leídos
+            const unreadSelectors = [
+                '[data-testid="unread-count"]',
+                '.OUeyt',
+                '._ao3e[data-testid="unread-count"]',
+                '.zoWT4 [style*="background"]'
+            ];
+            
+            for (const selector of unreadSelectors) {
+                const unreadElement = element.querySelector(selector);
+                if (unreadElement && unreadElement.textContent?.trim()) {
+                    return true;
+                }
+            }
+            
+            return false;
+        } catch (error) {
+            return false;
         }
     }
 
@@ -2731,6 +3084,9 @@ class WhatsAppCRM {
                 if (currentChat) {
                     chatNameElement.textContent = currentChat.name;
                     chatNameElement.style.color = 'var(--text-primary)';
+                    
+                    // Actualizar información del contacto actual
+                    this.updateCurrentContactInfo(currentChat);
                 } else {
                     chatNameElement.textContent = 'Selecciona un chat';
                     chatNameElement.style.color = 'var(--text-secondary)';
@@ -2742,17 +3098,248 @@ class WhatsAppCRM {
         }
     }
 
+    updateCurrentContactInfo(currentChat) {
+        try {
+            // Buscar si este contacto existe en nuestro CRM
+            let contact = this.contacts.find(c => 
+                c.name === currentChat.name || 
+                c.phone === currentChat.phone ||
+                c.phone === currentChat.name
+            );
+            
+            // Si no existe, crear uno nuevo automáticamente
+            if (!contact && currentChat.name) {
+                contact = {
+                    id: this.generateId(),
+                    name: currentChat.name,
+                    phone: currentChat.phone || currentChat.name,
+                    status: 'lead',
+                    tags: [],
+                    notes: '',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    lastChat: new Date().toISOString(),
+                    currentlyOpen: true
+                };
+                
+                this.contacts.push(contact);
+                this.saveContacts();
+                console.log(`➕ Nuevo contacto creado automáticamente: ${contact.name}`);
+            } else if (contact) {
+                // Actualizar último chat
+                contact.lastChat = new Date().toISOString();
+                contact.currentlyOpen = true;
+                this.saveContacts();
+            }
+            
+            // Actualizar UI con información del contacto
+            this.renderCurrentContactTags(contact);
+            
+        } catch (error) {
+            console.error('Error updating current contact info:', error);
+        }
+    }
+
+    renderCurrentContactTags(contact) {
+        try {
+            const chatInfoElement = document.getElementById('currentChatInfo');
+            if (!chatInfoElement) return;
+            
+            if (!contact) {
+                chatInfoElement.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="contact-avatar" style="width: 32px; height: 32px; font-size: 14px;">👤</div>
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">Chat Actual</div>
+                            <div class="chat-name" id="currentChatName">Selecciona un chat</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            chatInfoElement.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                    <div class="contact-avatar" style="width: 32px; height: 32px; font-size: 14px; background: ${this.getContactColor(contact.phone)}">${this.getContactInitials(contact.name)}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--text-primary);">${this.escapeHtml(contact.name)}</div>
+                        <div class="chat-name" style="font-size: 12px; color: var(--text-secondary);">${contact.phone}</div>
+                    </div>
+                    <button class="btn-primary btn-sm" onclick="window.whatsappCRM?.openContactModal('${contact.id}')">✏️</button>
+                </div>
+                
+                ${contact.tags?.length > 0 ? `
+                    <div style="margin-bottom: 12px;">
+                        <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Etiquetas actuales:</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                            ${contact.tags.map(tagId => {
+                                const tag = this.tags.find(t => t.id === tagId);
+                                return tag ? `
+                                    <span style="background: ${tag.color}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">
+                                        ${tag.name}
+                                    </span>
+                                ` : '';
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div>
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Asignar etiqueta rápida:</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        ${this.tags.map(tag => `
+                            <button class="quick-tag-btn" 
+                                    data-contact-id="${contact.id}" 
+                                    data-tag-id="${tag.id}"
+                                    style="background: ${tag.color}; color: white; border: none; padding: 4px 8px; border-radius: 12px; font-size: 11px; cursor: pointer; opacity: ${contact.tags?.includes(tag.id) ? '0.5' : '1'};">
+                                ${contact.tags?.includes(tag.id) ? '✓ ' : ''}${tag.name}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            // Vincular eventos de etiquetas rápidas
+            this.bindQuickTagEvents();
+            
+        } catch (error) {
+            console.error('Error rendering current contact tags:', error);
+        }
+    }
+
+    bindQuickTagEvents() {
+        try {
+            const quickTagButtons = document.querySelectorAll('.quick-tag-btn');
+            quickTagButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const contactId = btn.dataset.contactId;
+                    const tagId = btn.dataset.tagId;
+                    
+                    if (contactId && tagId) {
+                        this.toggleContactTag(contactId, tagId);
+                    }
+                });
+            });
+            
+            console.log(`🔗 ${quickTagButtons.length} botones de etiqueta rápida vinculados`);
+        } catch (error) {
+            console.error('Error binding quick tag events:', error);
+        }
+    }
+
+    toggleContactTag(contactId, tagId) {
+        try {
+            const contact = this.contacts.find(c => c.id === contactId);
+            const tag = this.tags.find(t => t.id === tagId);
+            
+            if (!contact || !tag) {
+                console.error('Contacto o etiqueta no encontrados');
+                return;
+            }
+            
+            // Inicializar tags si no existe
+            if (!contact.tags) {
+                contact.tags = [];
+            }
+            
+            // Toggle etiqueta
+            if (contact.tags.includes(tagId)) {
+                // Remover etiqueta
+                contact.tags = contact.tags.filter(t => t !== tagId);
+                console.log(`🏷️ Etiqueta "${tag.name}" removida de ${contact.name}`);
+                this.showNotification(`Etiqueta "${tag.name}" removida`, 'info');
+            } else {
+                // Agregar etiqueta
+                contact.tags.push(tagId);
+                console.log(`🏷️ Etiqueta "${tag.name}" asignada a ${contact.name}`);
+                this.showNotification(`Etiqueta "${tag.name}" asignada`, 'success');
+            }
+            
+            // Actualizar datos
+            contact.updatedAt = new Date().toISOString();
+            this.saveContacts();
+            
+            // Actualizar UI
+            this.renderCurrentContactTags(contact);
+            this.loadContactsList();
+            this.loadKanban();
+            
+        } catch (error) {
+            console.error('Error toggling contact tag:', error);
+            this.showNotification('Error al asignar etiqueta', 'error');
+        }
+    }
+
     getCurrentChatInfo() {
         try {
-            const headerElement = document.querySelector('[data-testid="conversation-header"]');
-            if (!headerElement) return null;
+            // Múltiples selectores para el header del chat
+            const headerSelectors = [
+                '[data-testid="conversation-header"]',
+                '[data-testid="chat-header"]',
+                'header[data-testid]',
+                '._amid',
+                '.zoWT4'
+            ];
             
-            const nameElement = headerElement.querySelector('span[title]');
-            const name = nameElement?.textContent?.trim();
+            let headerElement = null;
+            for (const selector of headerSelectors) {
+                headerElement = document.querySelector(selector);
+                if (headerElement) break;
+            }
             
-            if (!name) return null;
+            if (!headerElement) {
+                console.log('⚠️ Header del chat no encontrado');
+                return null;
+            }
             
-            return { name };
+            // Múltiples selectores para el nombre del contacto
+            const nameSelectors = [
+                '[data-testid="conversation-info-header-chat-title"]',
+                'span[title]',
+                '[title]',
+                '._ao3e',
+                '.ggj6brxn',
+                'span:first-child'
+            ];
+            
+            let name = null;
+            let phone = null;
+            
+            for (const selector of nameSelectors) {
+                const nameElement = headerElement.querySelector(selector);
+                if (nameElement) {
+                    const elementText = nameElement.textContent?.trim() || nameElement.title?.trim();
+                    if (elementText && elementText.length > 0) {
+                        name = elementText;
+                        break;
+                    }
+                }
+            }
+            
+            if (!name) {
+                console.log('⚠️ Nombre del chat no encontrado');
+                return null;
+            }
+            
+            // Intentar extraer teléfono si está disponible
+            const phoneMatch = name.match(/\+[\d\s\-()]+/);
+            if (phoneMatch) {
+                phone = phoneMatch[0].replace(/[\s\-()]/g, '');
+            }
+            
+            // Si el nombre completo parece un teléfono
+            if (/^[\+\d\s\-()]+$/.test(name)) {
+                phone = name.replace(/[\s\-()]/g, '');
+            }
+            
+            console.log(`📱 Chat actual detectado: ${name}${phone ? ` (${phone})` : ''}`);
+            
+            return { 
+                name: name,
+                phone: phone || name,
+                timestamp: new Date().toISOString()
+            };
             
         } catch (error) {
             console.error('Error getting current chat info:', error);
@@ -3258,6 +3845,134 @@ console.log('🔧 Funciones disponibles:', {
     testCriticalElements: typeof testCriticalElements !== 'undefined'
 });
 
+// TEST RÁPIDO DE ETIQUETAS - Integrado directamente
+window.quickTestTags = function() {
+    console.log('🏷️ === TEST RÁPIDO DE ETIQUETAS (CSP FIXED) ===');
+    
+    // 1. Verificar elementos HTML
+    const elements = {
+        addTagBtn: !!document.getElementById('addTagBtn'),
+        tagsContainer: !!document.getElementById('tagsContainer'),
+        tagModal: !!document.getElementById('tagModal'),
+        tagNameField: !!document.getElementById('tagName'),
+        tagColorField: !!document.getElementById('tagColor'),
+        saveTagBtn: !!document.getElementById('saveTagBtn')
+    };
+    
+    console.log('📋 Elementos HTML:');
+    Object.entries(elements).forEach(([name, exists]) => {
+        console.log(`${exists ? '✅' : '❌'} ${name}`);
+    });
+    
+    // 2. Verificar JavaScript
+    const js = {
+        whatsappCRM: !!window.whatsappCRM,
+        hasTags: !!(window.whatsappCRM?.tags),
+        openTagModal: typeof window.whatsappCRM?.openTagModal === 'function',
+        saveTag: typeof window.whatsappCRM?.saveTag === 'function',
+        renderTags: typeof window.whatsappCRM?.renderTags === 'function'
+    };
+    
+    console.log('📜 JavaScript:');
+    Object.entries(js).forEach(([name, exists]) => {
+        console.log(`${exists ? '✅' : '❌'} ${name}`);
+    });
+    
+    // 3. Verificar CSP (sin onclick)
+    const csp = {
+        noOnclickInDOM: document.querySelectorAll('[onclick]').length === 0,
+        hasEventButtons: document.querySelectorAll('.tag-edit-btn, .tag-delete-btn').length > 0
+    };
+    
+    console.log('🔒 CSP Status:');
+    Object.entries(csp).forEach(([test, passed]) => {
+        console.log(`${passed ? '✅' : '❌'} ${test}`);
+    });
+    
+    // 4. Mostrar etiquetas actuales
+    if (window.whatsappCRM?.tags) {
+        console.log(`💾 Etiquetas actuales: ${window.whatsappCRM.tags.length}`);
+        if (window.whatsappCRM.tags.length > 0) {
+            window.whatsappCRM.tags.forEach((tag, i) => {
+                console.log(`   ${i+1}. ${tag.name} (${tag.color})`);
+            });
+        } else {
+            console.log('   📝 Usa createTestTags() para crear ejemplos');
+        }
+    }
+    
+    // 5. Estado general
+    const allOk = Object.values(elements).every(v => v) && Object.values(js).every(v => v) && Object.values(csp).every(v => v);
+    console.log(`\n🎯 ESTADO FINAL: ${allOk ? '✅ FUNCIONANDO CORRECTAMENTE' : '❌ HAY PROBLEMAS'}`);
+    
+    if (allOk) {
+        console.log('💡 ¡Las etiquetas están listas! Usa el botón "➕ Nueva Etiqueta" o createTestTags()');
+    }
+    
+    return allOk;
+};
+
+// CREAR ETIQUETAS DE EJEMPLO
+window.createTestTags = function() {
+    console.log('🏷️ === CREANDO ETIQUETAS DE EJEMPLO ===');
+    
+    if (!window.whatsappCRM) {
+        console.log('❌ whatsappCRM no disponible. Ejecuta forceInitCRM() primero');
+        return false;
+    }
+    
+    const currentTags = window.whatsappCRM.tags || [];
+    console.log(`📊 Etiquetas existentes: ${currentTags.length}`);
+    
+    const sampleTags = [
+        { 
+            id: `tag_${Date.now()}_1`, 
+            name: 'Cliente VIP', 
+            color: '#FFD700', 
+            description: 'Cliente de alto valor',
+            createdAt: new Date().toISOString()
+        },
+        { 
+            id: `tag_${Date.now()}_2`, 
+            name: 'Prospecto', 
+            color: '#3B82F6', 
+            description: 'Potencial cliente',
+            createdAt: new Date().toISOString()
+        },
+        { 
+            id: `tag_${Date.now()}_3`, 
+            name: 'Urgente', 
+            color: '#EF4444', 
+            description: 'Requiere atención inmediata',
+            createdAt: new Date().toISOString()
+        }
+    ];
+    
+    // Evitar duplicados
+    const existingNames = currentTags.map(tag => tag.name.toLowerCase());
+    const newTags = sampleTags.filter(tag => !existingNames.includes(tag.name.toLowerCase()));
+    
+    if (newTags.length === 0) {
+        console.log('⚠️ Las etiquetas de ejemplo ya existen');
+        return true;
+    }
+    
+    // Agregar nuevas etiquetas
+    window.whatsappCRM.tags = [...currentTags, ...newTags];
+    window.whatsappCRM.saveTags();
+    window.whatsappCRM.loadTags();
+    
+    console.log(`✅ ${newTags.length} etiquetas nuevas creadas:`);
+    newTags.forEach((tag, i) => {
+        console.log(`   ${i+1}. ${tag.name} (${tag.color})`);
+    });
+    
+    console.log(`📊 Total etiquetas ahora: ${window.whatsappCRM.tags.length}`);
+    console.log('💡 Ve a la sección "🏷️ Etiquetas" para verlas');
+    
+    return true;
+};
+
 // Verificar inmediatamente si el DOM tiene el container del sidebar
 setTimeout(() => {
     const sidebarContainer = document.getElementById('whatsapp-crm-sidebar');
@@ -3265,4 +3980,203 @@ setTimeout(() => {
     if (!sidebarContainer) {
         console.log('⚠️ AVISO: Container del sidebar no encontrado aún, esperando a content.js...');
     }
-}, 100); 
+}, 100);
+
+// PROBAR ABRIR MODAL DE ETIQUETAS
+window.testTagModal = function() {
+    console.log('🧪 Probando modal de etiquetas...');
+    
+    if (!window.whatsappCRM) {
+        console.log('❌ whatsappCRM no disponible');
+        return false;
+    }
+    
+    try {
+        window.whatsappCRM.openTagModal();
+        
+        setTimeout(() => {
+            const modal = document.getElementById('tagModal');
+            const isVisible = modal && modal.classList.contains('active');
+            console.log(`${isVisible ? '✅' : '❌'} Modal ${isVisible ? 'abierto' : 'no visible'}`);
+        }, 100);
+        
+        return true;
+    } catch (error) {
+        console.log('❌ Error:', error.message);
+        return false;
+    }
+};
+
+// SINCRONIZACIÓN MANUAL CON WHATSAPP
+window.syncWithWhatsAppNow = function() {
+    console.log('🔄 === SINCRONIZACIÓN MANUAL CON WHATSAPP ===');
+    
+    if (!window.whatsappCRM) {
+        console.log('❌ whatsappCRM no disponible');
+        return false;
+    }
+    
+    console.log('📱 Iniciando sincronización...');
+    window.whatsappCRM.syncWithWhatsApp();
+    
+    setTimeout(() => {
+        const contactCount = window.whatsappCRM.contacts.length;
+        console.log(`✅ Sincronización completada. Total contactos: ${contactCount}`);
+        
+        // Mostrar contactos sincronizados
+        const syncedContacts = window.whatsappCRM.contacts.filter(c => c.whatsappSync);
+        if (syncedContacts.length > 0) {
+            console.log(`📱 Contactos sincronizados de WhatsApp (${syncedContacts.length}):`);
+            syncedContacts.forEach((contact, i) => {
+                console.log(`   ${i+1}. ${contact.name} - ${contact.phone} ${contact.hasUnread ? '🔴' : ''}`);
+            });
+        }
+    }, 1000);
+    
+    return true;
+};
+
+// DETECTAR CHAT ACTUAL
+window.detectCurrentChat = function() {
+    console.log('👁️ === DETECTANDO CHAT ACTUAL ===');
+    
+    if (!window.whatsappCRM) {
+        console.log('❌ whatsappCRM no disponible');
+        return null;
+    }
+    
+    const currentChat = window.whatsappCRM.getCurrentChatInfo();
+    
+    if (currentChat) {
+        console.log(`✅ Chat actual: ${currentChat.name}`);
+        console.log(`📞 Teléfono: ${currentChat.phone}`);
+        
+        // Buscar en nuestros contactos
+        const contact = window.whatsappCRM.contacts.find(c => 
+            c.name === currentChat.name || 
+            c.phone === currentChat.phone ||
+            c.phone === currentChat.name
+        );
+        
+        if (contact) {
+            console.log(`📋 Contacto en CRM: ${contact.name}`);
+            console.log(`🏷️ Etiquetas: ${contact.tags?.length || 0}`);
+            if (contact.tags?.length > 0) {
+                contact.tags.forEach(tagId => {
+                    const tag = window.whatsappCRM.tags.find(t => t.id === tagId);
+                    if (tag) {
+                        console.log(`   - ${tag.name} (${tag.color})`);
+                    }
+                });
+            }
+        } else {
+            console.log('⚠️ Contacto no está en el CRM aún');
+            console.log('💡 Se creará automáticamente al actualizar');
+        }
+        
+        return currentChat;
+    } else {
+        console.log('❌ No hay chat activo o no se pudo detectar');
+        return null;
+    }
+};
+
+// ASIGNAR ETIQUETA AL CHAT ACTUAL
+window.tagCurrentChat = function(tagName) {
+    console.log(`🏷️ === ASIGNANDO ETIQUETA "${tagName}" AL CHAT ACTUAL ===`);
+    
+    if (!window.whatsappCRM) {
+        console.log('❌ whatsappCRM no disponible');
+        return false;
+    }
+    
+    // Detectar chat actual
+    const currentChat = window.whatsappCRM.getCurrentChatInfo();
+    if (!currentChat) {
+        console.log('❌ No hay chat actual');
+        return false;
+    }
+    
+    // Buscar etiqueta
+    const tag = window.whatsappCRM.tags.find(t => 
+        t.name.toLowerCase() === tagName.toLowerCase()
+    );
+    
+    if (!tag) {
+        console.log(`❌ Etiqueta "${tagName}" no encontrada`);
+        console.log('🏷️ Etiquetas disponibles:');
+        window.whatsappCRM.tags.forEach(t => {
+            console.log(`   - ${t.name}`);
+        });
+        return false;
+    }
+    
+    // Actualizar contacto actual
+    window.whatsappCRM.updateCurrentContactInfo(currentChat);
+    
+    // Buscar contacto
+    setTimeout(() => {
+        const contact = window.whatsappCRM.contacts.find(c => 
+            c.name === currentChat.name || 
+            c.phone === currentChat.phone ||
+            c.phone === currentChat.name
+        );
+        
+        if (contact) {
+            window.whatsappCRM.toggleContactTag(contact.id, tag.id);
+            console.log(`✅ Etiqueta "${tag.name}" asignada a ${contact.name}`);
+        } else {
+            console.log('❌ Error: Contacto no encontrado');
+        }
+    }, 500);
+    
+    return true;
+};
+
+// LISTAR CONTACTOS CON ETIQUETAS
+window.listContactsWithTags = function() {
+    console.log('📋 === CONTACTOS CON ETIQUETAS ===');
+    
+    if (!window.whatsappCRM) {
+        console.log('❌ whatsappCRM no disponible');
+        return;
+    }
+    
+    const contactsWithTags = window.whatsappCRM.contacts.filter(c => c.tags && c.tags.length > 0);
+    
+    if (contactsWithTags.length === 0) {
+        console.log('⚠️ No hay contactos con etiquetas asignadas');
+        return;
+    }
+    
+    console.log(`📊 ${contactsWithTags.length} contactos con etiquetas:`);
+    
+    contactsWithTags.forEach((contact, i) => {
+        const tagNames = contact.tags.map(tagId => {
+            const tag = window.whatsappCRM.tags.find(t => t.id === tagId);
+            return tag ? tag.name : 'Etiqueta eliminada';
+        });
+        
+        console.log(`${i+1}. ${contact.name} (${contact.phone})`);
+        console.log(`   🏷️ ${tagNames.join(', ')}`);
+    });
+};
+
+console.log('🧪 === FUNCIONES DISPONIBLES ===');
+console.log('');
+console.log('🏷️ ETIQUETAS:');
+console.log('   quickTestTags() - Test rápido de etiquetas');
+console.log('   createTestTags() - Crear etiquetas de ejemplo');
+console.log('   testTagModal() - Probar modal de etiquetas');
+console.log('');
+console.log('📱 SINCRONIZACIÓN:');
+console.log('   syncWithWhatsAppNow() - Sincronizar contactos');
+console.log('   detectCurrentChat() - Ver chat actual');
+console.log('   tagCurrentChat("NombreEtiqueta") - Etiquetar chat actual');
+console.log('   listContactsWithTags() - Ver contactos etiquetados');
+console.log('');
+console.log('💡 EJEMPLO DE USO:');
+console.log('   1. createTestTags()');
+console.log('   2. syncWithWhatsAppNow()');
+console.log('   3. detectCurrentChat()');
+console.log('   4. tagCurrentChat("Cliente VIP")'); 

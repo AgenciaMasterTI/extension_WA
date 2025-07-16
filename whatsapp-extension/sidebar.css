@@ -1705,7 +1705,7 @@ body.kanban-fullscreen-mode {
   margin-bottom: var(--spacing-lg) !important;
   line-height: 1.5 !important;
   display: -webkit-box !important;
-  -webkit-line-clamp: 2 !important;
+  line-clamp: 2 !important;
   -webkit-box-orient: vertical !important;
   overflow: hidden !important;
 }
