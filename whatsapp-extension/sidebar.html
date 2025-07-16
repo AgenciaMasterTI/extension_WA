@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp CRM Sidebar</title>
+</head>
+<body>
+    <div class="wa-crm-sidebar-container">
+        <!-- Header Profesional -->
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">💬</div>
+                <span class="logo-text">CRM Pro</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Contraer/Expandir">
+                <span class="toggle-icon">⟨</span>
+            </button>
+        </div>
+
+        <!-- Sección de Filtros -->
+        <div class="filters-section" id="filtersSection">
+            <div class="filters-row">
+                <input type="text" 
+                       class="filter-input" 
+                       id="searchInput" 
+                       placeholder="🔍 Buscar contactos...">
+            </div>
+            <div class="filter-tags" id="filterTags">
+                <button class="filter-tag active" data-filter="all">Todos</button>
+                <button class="filter-tag" data-filter="leads">Leads</button>
+                <button class="filter-tag" data-filter="clients">Clientes</button>
+                <button class="filter-tag" data-filter="hot">Hot</button>
+            </div>
+        </div>
+
+        <!-- Navegación Principal -->
+        <nav class="sidebar-nav">
+            <div class="nav-item active" data-section="dashboard" title="Dashboard">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Dashboard</span>
+            </div>
+            
+            <div class="nav-item" data-section="kanban" title="Vista Kanban">
+                <span class="nav-icon">📋</span>
+                <span class="nav-text">Kanban</span>
+            </div>
+            
+            <div class="nav-item" data-section="contacts" title="Contactos">
+                <span class="nav-icon">👥</span>
+                <span class="nav-text">Contactos</span>
+            </div>
+            
+            <div class="nav-item" data-section="tags" title="Etiquetas">
+                <span class="nav-icon">🏷️</span>
+                <span class="nav-text">Etiquetas</span>
+            </div>
+            
+            <div class="nav-item" data-section="templates" title="Plantillas">
+                <span class="nav-icon">📄</span>
+                <span class="nav-text">Plantillas</span>
+            </div>
+            
+            <div class="nav-item" data-section="analytics" title="Analíticas">
+                <span class="nav-icon">📈</span>
+                <span class="nav-text">Analíticas</span>
+            </div>
+            
+            <div class="nav-item" data-section="automations" title="Automatizaciones">
+                <span class="nav-icon">🔄</span>
+                <span class="nav-text">Automaciones</span>
+            </div>
+            
+            <div class="nav-item" data-section="settings" title="Configuración">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-text">Configuración</span>
+            </div>
+        </nav>
+
+        <!-- Contenido Principal -->
+        <div class="sidebar-content">
+            <!-- Dashboard Section -->
+            <div class="content-section active" id="dashboard">
+                <div class="section-header">
+                    <h3>Dashboard</h3>
+                    <button class="btn-primary" id="refreshDashboard">🔄 Actualizar</button>
+                </div>
+                <div class="section-body">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-number" id="totalContacts">0</span>
+                            <span class="stat-label">Contactos</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number" id="totalTags">0</span>
+                            <span class="stat-label">Etiquetas</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number" id="totalTemplates">0</span>
+                            <span class="stat-label">Plantillas</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number" id="todayChats">0</span>
+                            <span class="stat-label">Chats Hoy</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Actividad Reciente -->
+                    <div class="recent-activity">
+                        <h4 style="margin-bottom: 16px; color: var(--text-primary); font-size: 18px;">Actividad Reciente</h4>
+                        <div id="recentActivityList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📱</div>
+                                <div class="empty-state-text">No hay actividad reciente</div>
+                                <div class="empty-state-subtext">Los chats aparecerán aquí cuando interactúes con WhatsApp</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista Kanban -->
+            <div class="content-section" id="kanban">
+                <div class="kanban-header-main">
+                    <h2>CRM Kanban</h2>
+                    <div class="kanban-actions">
+                        <button class="kanban-expand-btn" id="expandKanbanBtn">⛶ Pantalla Completa</button>
+                        <button class="btn-primary btn-sm" id="addContactBtn">➕ Nuevo</button>
+                        <button class="btn-secondary btn-sm" id="refreshKanban">🔄</button>
+                    </div>
+                </div>
+                
+                <div class="kanban-wrapper">
+                    <div class="kanban-container" id="kanbanContainer">
+                        <!-- Columna Todos os contatos -->
+                        <div class="kanban-column" data-status="all">
+                            <div class="kanban-header" style="background: #2563eb;">
+                                <span class="kanban-title">Todos os contatos</span>
+                                <span class="kanban-count" id="allCount">0</span>
+                                <span class="kanban-subtitle">itens</span>
+                            </div>
+                            <div class="kanban-cards" id="allCards">
+                                <!-- Cards se generan dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Columna Webinar -->
+                        <div class="kanban-column" data-status="webinar">
+                            <div class="kanban-header" style="background: #7c3aed;">
+                                <span class="kanban-title">Webinar 15/7</span>
+                                <span class="kanban-count" id="webinarCount">0</span>
+                                <span class="kanban-subtitle">itens</span>
+                            </div>
+                            <div class="kanban-cards" id="webinarCards">
+                                <!-- Cards se generan dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Columna Ventas -->
+                        <div class="kanban-column" data-status="sales">
+                            <div class="kanban-header" style="background: #059669;">
+                                <span class="kanban-title">ventas</span>
+                                <span class="kanban-count" id="salesCount">0</span>
+                                <span class="kanban-subtitle">itens</span>
+                            </div>
+                            <div class="kanban-cards" id="salesCards">
+                                <!-- Cards se generan dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Columna No Califica -->
+                        <div class="kanban-column" data-status="no-qualify">
+                            <div class="kanban-header" style="background: #dc2626;">
+                                <span class="kanban-title">No Califica</span>
+                                <span class="kanban-count" id="noQualifyCount">0</span>
+                                <span class="kanban-subtitle">itens</span>
+                            </div>
+                            <div class="kanban-cards" id="noQualifyCards">
+                                <!-- Cards se generan dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Columna Seguimiento 1 -->
+                        <div class="kanban-column" data-status="follow-1">
+                            <div class="kanban-header" style="background: #ea580c;">
+                                <span class="kanban-title">Seguimiento 1</span>
+                                <span class="kanban-count" id="follow1Count">0</span>
+                                <span class="kanban-subtitle">itens</span>
+                            </div>
+                            <div class="kanban-cards" id="follow1Cards">
+                                <!-- Cards se generan dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Columna Seguimiento 3 -->
+                        <div class="kanban-column" data-status="follow-3">
+                            <div class="kanban-header" style="background: #0891b2;">
+                                <span class="kanban-title">Seguimiento 3</span>
+                                <span class="kanban-count" id="follow3Count">0</span>
+                                <span class="kanban-subtitle">itens</span>
+                            </div>
+                            <div class="kanban-cards" id="follow3Cards">
+                                <!-- Cards se generan dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Columna Seguimiento Final -->
+                        <div class="kanban-column" data-status="follow-final">
+                            <div class="kanban-header" style="background: #9333ea;">
+                                <span class="kanban-title">Seguimi</span>
+                                <span class="kanban-count" id="followFinalCount">0</span>
+                                <span class="kanban-subtitle">itens</span>
+                            </div>
+                            <div class="kanban-cards" id="followFinalCards">
+                                <!-- Cards se generan dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contactos Section -->
+            <div class="content-section" id="contacts">
+                <div class="section-header">
+                    <h3>Gestión de Contactos</h3>
+                    <button class="btn-primary" id="importContactsBtn">📥 Importar</button>
+                </div>
+                <div class="section-body">
+                    <div id="contactsList">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">👥</div>
+                            <div class="empty-state-text">No hay contactos registrados</div>
+                            <div class="empty-state-subtext">Los contactos aparecerán automáticamente cuando chatees en WhatsApp</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tags Section Mejorado -->
+            <div class="content-section" id="tags">
+                <div class="section-header">
+                    <h3>Gestión de Etiquetas</h3>
+                    <button class="btn-primary" id="addTagBtn">➕ Nueva Etiqueta</button>
+                </div>
+                <div class="section-body">
+                    <div class="current-chat-info" id="currentChatInfo">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="contact-avatar" style="width: 32px; height: 32px; font-size: 14px;">👤</div>
+                            <div>
+                                <div style="font-weight: 600; color: var(--text-primary);">Chat Actual</div>
+                                <div class="chat-name" id="currentChatName">Selecciona un chat</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tags-container" id="tagsContainer">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🏷️</div>
+                            <div class="empty-state-text">No hay etiquetas creadas</div>
+                            <div class="empty-state-subtext">Crea etiquetas para organizar tus contactos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Templates Section Mejorado -->
+            <div class="content-section" id="templates">
+                <div class="section-header">
+                    <h3>Plantillas de Mensajes</h3>
+                    <button class="btn-primary" id="addTemplateBtn">➕ Nueva Plantilla</button>
+                </div>
+                <div class="section-body">
+                    <div class="templates-container" id="templatesContainer">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📄</div>
+                            <div class="empty-state-text">No hay plantillas creadas</div>
+                            <div class="empty-state-subtext">Crea plantillas para responder más rápido</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div class="content-section" id="analytics">
+                <div class="section-header">
+                    <h3>Analíticas y Reportes</h3>
+                    <button class="btn-secondary" id="exportReportBtn">📊 Exportar</button>
+                </div>
+                <div class="section-body">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-number" id="weeklyChats">0</span>
+                            <span class="stat-label">Chats esta semana</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number" id="avgResponseTime">0</span>
+                            <span class="stat-label">Tiempo respuesta</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number" id="conversionRate">0%</span>
+                            <span class="stat-label">Tasa conversión</span>
+                        </div>
+                    </div>
+                    <div class="coming-soon">
+                        <div>📈 Gráficos y métricas avanzadas</div>
+                        <div style="margin-top: 8px; font-size: 12px;">Próximamente disponible</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Automations Section -->
+            <div class="content-section" id="automations">
+                <div class="section-header">
+                    <h3>Automatizaciones</h3>
+                    <button class="btn-primary" id="createAutomationBtn">⚡ Nueva Automatización</button>
+                </div>
+                <div class="section-body">
+                    <div class="coming-soon">
+                        <div>🤖 Respuestas automáticas y flujos de trabajo</div>
+                        <div style="margin-top: 8px; font-size: 12px;">Próximamente disponible</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section Mejorado -->
+            <div class="content-section" id="settings">
+                <div class="section-header">
+                    <h3>Configuración</h3>
+                    <button class="btn-secondary" id="resetSettingsBtn">🔄 Restaurar</button>
+                </div>
+                <div class="section-body">
+                    <div class="setting-group">
+                        <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Apariencia</h4>
+                        <div class="setting-item">
+                            <label>
+                                <span>Tema</span>
+                                <select id="themeSelect" style="margin-left: auto; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-background); color: var(--text-primary);">
+                                    <option value="light">Claro</option>
+                                    <option value="dark">Oscuro</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <span>Idioma</span>
+                                <select id="languageSelect" style="margin-left: auto; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-background); color: var(--text-primary);">
+                                    <option value="es">Español</option>
+                                    <option value="en">English</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-group" style="margin-top: 24px;">
+                        <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Funcionalidades</h4>
+                        <div class="setting-item">
+                            <label style="display: flex; align-items: center; justify-content: space-between;">
+                                <span>Sincronización automática</span>
+                                <input type="checkbox" id="autoSyncChk" style="margin-left: auto;">
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label style="display: flex; align-items: center; justify-content: space-between;">
+                                <span>Notificaciones</span>
+                                <input type="checkbox" id="notificationsChk" style="margin-left: auto;">
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label style="display: flex; align-items: center; justify-content: space-between;">
+                                <span>Modo compacto</span>
+                                <input type="checkbox" id="compactModeChk" style="margin-left: auto;">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-group" style="margin-top: 24px;">
+                        <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Datos</h4>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <button class="btn-secondary" id="syncBtn">🔄 Sincronizar</button>
+                            <button class="btn-secondary" id="exportBtn">📤 Exportar</button>
+                            <button class="btn-secondary" id="importBtn">📥 Importar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Etiquetas -->
+    <div class="modal" id="tagModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tagModalTitle">Nueva Etiqueta</h3>
+                <button class="modal-close" id="closeTagModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="tagName" placeholder="Nombre de la etiqueta" maxlength="50">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <label style="font-weight: 600; color: var(--text-primary);">Color:</label>
+                    <input type="color" id="tagColor" value="#00a884" style="width: 60px; height: 40px; border: none; border-radius: 8px; cursor: pointer;">
+                </div>
+                <textarea id="tagDescription" placeholder="Descripción (opcional)" rows="3"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelTagBtn">Cancelar</button>
+                <button class="btn-primary" id="saveTagBtn">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Plantillas -->
+    <div class="modal" id="templateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="templateModalTitle">Nueva Plantilla</h3>
+                <button class="modal-close" id="closeTemplateModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="templateName" placeholder="Nombre de la plantilla" maxlength="50">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <label style="font-weight: 600; color: var(--text-primary);">Categoría:</label>
+                    <select id="templateCategory" style="flex: 1; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-background); color: var(--text-primary);">
+                        <option value="general">General</option>
+                        <option value="ventas">Ventas</option>
+                        <option value="soporte">Soporte</option>
+                        <option value="marketing">Marketing</option>
+                    </select>
+                </div>
+                <textarea id="templateContent" placeholder="Contenido del mensaje. Usa {{variables}} para texto dinámico." rows="5"></textarea>
+                <div style="background: var(--surface-color); padding: 12px; border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Variables disponibles:</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+                        {{nombre}} - Nombre del contacto<br>
+                        {{fecha}} - Fecha actual<br>
+                        {{hora}} - Hora actual<br>
+                        {{dia_semana}} - Día de la semana
+                    </div>
+                </div>
+                <div id="templatePreview" style="background: var(--surface-color); padding: 12px; border-radius: 8px; min-height: 60px; border: 1px solid var(--border-color);">
+                    Vista previa del mensaje...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelTemplateBtn">Cancelar</button>
+                <button class="btn-primary" id="saveTemplateBtn">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Contactos -->
+    <div class="modal" id="contactModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="contactModalTitle">Nuevo Contacto</h3>
+                <button class="modal-close" id="closeContactModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="contactName" placeholder="Nombre del contacto">
+                <input type="tel" id="contactPhone" placeholder="Número de teléfono">
+                <select id="contactStatus" style="padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-background); color: var(--text-primary);">
+                    <option value="lead">Lead</option>
+                    <option value="process">En Proceso</option>
+                    <option value="client">Cliente</option>
+                </select>
+                <textarea id="contactNotes" placeholder="Notas adicionales" rows="3"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelContactBtn">Cancelar</button>
+                <button class="btn-primary" id="saveContactBtn">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Fullscreen -->
+    <div class="kanban-fullscreen" id="kanbanFullscreen">
+        <div class="kanban-fullscreen-header">
+            <div class="kanban-fullscreen-title">
+                <button class="kanban-back-btn" id="backToSidebar">← Volver</button>
+                <span style="font-size: 20px;">📋</span>
+                <h1>CRM Kanban</h1>
+            </div>
+            <div class="kanban-fullscreen-actions">
+                <button class="btn-secondary btn-sm" id="addTagBtnFullscreen">🏷️ Nueva Etiqueta</button>
+                <button class="btn-primary btn-sm" id="addContactBtnFullscreen">➕ Nuevo Contacto</button>
+                <button class="btn-secondary btn-sm" id="refreshKanbanFullscreen">🔄 Actualizar</button>
+                <button class="kanban-close-btn" id="closeKanbanFullscreen" title="Cerrar">✕</button>
+            </div>
+        </div>
+        
+        <div class="kanban-fullscreen-content">
+            <div class="kanban-fullscreen-container" id="kanbanFullscreenContainer">
+                <!-- Las columnas se generan dinámicamente -->
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
