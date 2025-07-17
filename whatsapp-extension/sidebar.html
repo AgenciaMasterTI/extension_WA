@@ -18,19 +18,25 @@
             </button>
         </div>
 
-        <!-- Sección de Filtros -->
-        <div class="filters-section" id="filtersSection">
-            <div class="filters-row">
+        <!-- Sección de Pestañas Dinámicas tipo WhatsApp -->
+        <div class="tabs-section" id="tabsSection">
+            <div class="search-row">
                 <input type="text" 
-                       class="filter-input" 
+                       class="search-input" 
                        id="searchInput" 
                        placeholder="🔍 Buscar contactos...">
             </div>
-            <div class="filter-tags" id="filterTags">
-                <button class="filter-tag active" data-filter="all">Todos</button>
-                <button class="filter-tag" data-filter="leads">Leads</button>
-                <button class="filter-tag" data-filter="clients">Clientes</button>
-                <button class="filter-tag" data-filter="hot">Hot</button>
+            <div class="tabs-container" id="tabsContainer">
+                <div class="tabs-scroll" id="tabsScroll">
+                    <!-- Las pestañas se generan dinámicamente -->
+                    <button class="tab-item active" data-filter="all">
+                        <span class="tab-text">Todos</span>
+                        <span class="tab-count">0</span>
+                    </button>
+                </div>
+                <button class="tab-add-btn" id="addTabBtn" title="Nueva etiqueta">
+                    <span>+</span>
+                </button>
             </div>
         </div>
 
@@ -132,88 +138,10 @@
                 
                 <div class="kanban-wrapper">
                     <div class="kanban-container" id="kanbanContainer">
-                        <!-- Columna Todos os contatos -->
-                        <div class="kanban-column" data-status="all">
-                            <div class="kanban-header" style="background: #2563eb;">
-                                <span class="kanban-title">Todos os contatos</span>
-                                <span class="kanban-count" id="allCount">0</span>
-                                <span class="kanban-subtitle">itens</span>
-                            </div>
-                            <div class="kanban-cards" id="allCards">
-                                <!-- Cards se generan dinámicamente -->
-                            </div>
-                        </div>
-
-                        <!-- Columna Webinar -->
-                        <div class="kanban-column" data-status="webinar">
-                            <div class="kanban-header" style="background: #7c3aed;">
-                                <span class="kanban-title">Webinar 15/7</span>
-                                <span class="kanban-count" id="webinarCount">0</span>
-                                <span class="kanban-subtitle">itens</span>
-                            </div>
-                            <div class="kanban-cards" id="webinarCards">
-                                <!-- Cards se generan dinámicamente -->
-                            </div>
-                        </div>
-
-                        <!-- Columna Ventas -->
-                        <div class="kanban-column" data-status="sales">
-                            <div class="kanban-header" style="background: #059669;">
-                                <span class="kanban-title">ventas</span>
-                                <span class="kanban-count" id="salesCount">0</span>
-                                <span class="kanban-subtitle">itens</span>
-                            </div>
-                            <div class="kanban-cards" id="salesCards">
-                                <!-- Cards se generan dinámicamente -->
-                            </div>
-                        </div>
-
-                        <!-- Columna No Califica -->
-                        <div class="kanban-column" data-status="no-qualify">
-                            <div class="kanban-header" style="background: #dc2626;">
-                                <span class="kanban-title">No Califica</span>
-                                <span class="kanban-count" id="noQualifyCount">0</span>
-                                <span class="kanban-subtitle">itens</span>
-                            </div>
-                            <div class="kanban-cards" id="noQualifyCards">
-                                <!-- Cards se generan dinámicamente -->
-                            </div>
-                        </div>
-
-                        <!-- Columna Seguimiento 1 -->
-                        <div class="kanban-column" data-status="follow-1">
-                            <div class="kanban-header" style="background: #ea580c;">
-                                <span class="kanban-title">Seguimiento 1</span>
-                                <span class="kanban-count" id="follow1Count">0</span>
-                                <span class="kanban-subtitle">itens</span>
-                            </div>
-                            <div class="kanban-cards" id="follow1Cards">
-                                <!-- Cards se generan dinámicamente -->
-                            </div>
-                        </div>
-
-                        <!-- Columna Seguimiento 3 -->
-                        <div class="kanban-column" data-status="follow-3">
-                            <div class="kanban-header" style="background: #0891b2;">
-                                <span class="kanban-title">Seguimiento 3</span>
-                                <span class="kanban-count" id="follow3Count">0</span>
-                                <span class="kanban-subtitle">itens</span>
-                            </div>
-                            <div class="kanban-cards" id="follow3Cards">
-                                <!-- Cards se generan dinámicamente -->
-                            </div>
-                        </div>
-
-                        <!-- Columna Seguimiento Final -->
-                        <div class="kanban-column" data-status="follow-final">
-                            <div class="kanban-header" style="background: #9333ea;">
-                                <span class="kanban-title">Seguimi</span>
-                                <span class="kanban-count" id="followFinalCount">0</span>
-                                <span class="kanban-subtitle">itens</span>
-                            </div>
-                            <div class="kanban-cards" id="followFinalCards">
-                                <!-- Cards se generan dinámicamente -->
-                            </div>
+                        <!-- Las columnas se generan dinámicamente basándose en las etiquetas -->
+                        <div class="kanban-loading" style="text-align: center; padding: 40px; color: #8b949e;">
+                            <div style="font-size: 24px; margin-bottom: 16px;">📋</div>
+                            <div>Cargando kanban...</div>
                         </div>
                     </div>
                 </div>
@@ -457,10 +385,9 @@
             <div class="modal-body">
                 <input type="text" id="contactName" placeholder="Nombre del contacto">
                 <input type="tel" id="contactPhone" placeholder="Número de teléfono">
-                <select id="contactStatus" style="padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-background); color: var(--text-primary);">
-                    <option value="lead">Lead</option>
-                    <option value="process">En Proceso</option>
-                    <option value="client">Cliente</option>
+                <select id="contactTag" style="padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-background); color: var(--text-primary);">
+                    <option value="">Sin etiqueta</option>
+                    <!-- Las etiquetas se cargan dinámicamente -->
                 </select>
                 <textarea id="contactNotes" placeholder="Notas adicionales" rows="3"></textarea>
             </div>

@@ -1,5 +1,3 @@
-// WhatsApp CRM Extension - Sidebar Professional Functionality (Modo Oscuro)
-// Versión Mejorada con Debugging Completo
 
 class WhatsAppCRM {
     constructor() {
@@ -55,6 +53,7 @@ class WhatsAppCRM {
             
             // Crear datos de ejemplo si no existen
             this.createSampleDataIfEmpty();
+        this.migrateOldStatusToTags();
             
             // Cargar configuraciones
             this.loadSettings();
@@ -164,45 +163,137 @@ class WhatsAppCRM {
             this.saveTemplates();
         }
 
-        // Crear contactos de ejemplo si no existen
+        // Crear contactos de ejemplo si no existen (como en las imágenes del kanban)
         if (this.contacts.length === 0) {
-            console.log('👥 Creando contactos de ejemplo...');
+            console.log('👥 Creando contactos de ejemplo basados en las imágenes...');
+            
+            // Crear algunos contactos sin etiquetas para "Todos os contatos"
             this.contacts = [
+                // Contactos como en las imágenes
                 {
                     id: this.generateId(),
-                    name: 'Juan Pérez',
+                    name: 'Amor',
                     phone: '+57 300 1234567',
                     status: 'lead',
-                    tags: [this.tags[1]?.id], // Prospecto
-                    notes: 'Interesado en nuestros servicios de desarrollo web',
+                    tags: [],
+                    notes: 'Contacto activo',
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
-                    lastChat: new Date().toISOString()
+                    lastChat: new Date(Date.now() - 30 * 60000).toISOString() // 30 min ago
                 },
                 {
                     id: this.generateId(),
-                    name: 'María González',
+                    name: 'ArcaTec',
                     phone: '+57 310 9876543',
                     status: 'client',
-                    tags: [this.tags[0]?.id], // Cliente VIP
-                    notes: 'Cliente desde 2023, muy satisfecha con el servicio',
+                    tags: [],
+                    notes: 'https://meet.google.com/rck-jyks-yfh',
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
-                    lastChat: new Date().toISOString()
+                    lastChat: new Date(Date.now() - 45 * 60000).toISOString() // 45 min ago
                 },
                 {
                     id: this.generateId(),
-                    name: 'Carlos Rodríguez',
+                    name: 'Mamá',
                     phone: '+57 320 5555555',
-                    status: 'process',
-                    tags: [this.tags[2]?.id], // Urgente
-                    notes: 'En proceso de negociación, enviar propuesta',
+                    status: 'client',
+                    tags: [],
+                    notes: 'Dímelo',
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
-                    lastChat: new Date().toISOString()
+                    lastChat: new Date(Date.now() - 60 * 60000).toISOString() // 1 hour ago
+                },
+                {
+                    id: this.generateId(),
+                    name: 'IA 🤖 - De Boyaca ...',
+                    phone: '+57 315 7777777',
+                    status: 'lead',
+                    tags: [],
+                    notes: 'supabase key : Ga7khs6Uji',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    lastChat: new Date(Date.now() - 2 * 3600000).toISOString() // 2 hours ago
+                },
+                // Contacto para la etiqueta "test"
+                {
+                    id: this.generateId(),
+                    name: 'Contacto Test',
+                    phone: '+57 311 1111111',
+                    status: 'process',
+                    tags: [this.tags[1]?.id], // Asignar a etiqueta "Prospecto" que se renombrará a "test"
+                    notes: 'Contacto de prueba para kanban',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    lastChat: new Date(Date.now() - 15 * 60000).toISOString() // 15 min ago
                 }
             ];
+            
+            // Renombrar la etiqueta "Prospecto" a "test" para coincidir con las imágenes
+            if (this.tags[1]) {
+                this.tags[1].name = 'test';
+                this.tags[1].color = '#7c3aed'; // Color morado como en la imagen
+                this.saveTags();
+            }
+            
             this.saveContacts();
+        }
+    }
+
+    // Migrar contactos con status antiguo a etiquetas
+    migrateOldStatusToTags() {
+        try {
+            console.log('🔄 Iniciando migración de status a etiquetas...');
+            
+            let migrated = 0;
+            
+            // Crear etiquetas para los status antiguos si no existen
+            const statusToTagMap = {
+                'lead': { name: 'Lead', color: '#f59e0b' },
+                'process': { name: 'En Proceso', color: '#3b82f6' },
+                'client': { name: 'Cliente', color: '#10b981' }
+            };
+            
+            // Crear etiquetas de status si no existen
+            for (const [statusKey, tagInfo] of Object.entries(statusToTagMap)) {
+                let tag = this.tags.find(t => t.name === tagInfo.name);
+                if (!tag) {
+                    tag = {
+                        id: this.generateId(),
+                        name: tagInfo.name,
+                        color: tagInfo.color,
+                        description: `Migrado automáticamente desde status "${statusKey}"`,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    this.tags.push(tag);
+                    console.log(`✅ Etiqueta creada: ${tag.name}`);
+                }
+                statusToTagMap[statusKey].id = tag.id;
+            }
+            
+            // Migrar contactos
+            this.contacts.forEach(contact => {
+                // Si el contacto tiene status pero no etiquetas (o etiquetas vacías)
+                if (contact.status && (!contact.tags || contact.tags.length === 0)) {
+                    const statusInfo = statusToTagMap[contact.status];
+                    if (statusInfo && statusInfo.id) {
+                        contact.tags = [statusInfo.id];
+                        migrated++;
+                        console.log(`🏷️ ${contact.name}: ${contact.status} → ${statusInfo.name}`);
+                    }
+                }
+            });
+            
+            if (migrated > 0) {
+                this.saveTags();
+                this.saveContacts();
+                console.log(`✅ Migración completada: ${migrated} contactos migrados`);
+            } else {
+                console.log('ℹ️ No hay contactos para migrar');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error en migración de status a etiquetas:', error);
         }
     }
 
@@ -281,8 +372,8 @@ class WhatsAppCRM {
             // Navegación
             this.bindNavigationEvents();
             
-            // Filtros
-            this.bindFilterEvents();
+            // Pestañas dinámicas (reemplaza filtros)
+            this.bindTabEvents();
             
             // Tags
             this.bindTagEvents();
@@ -327,18 +418,9 @@ class WhatsAppCRM {
             item.addEventListener('click', () => {
                 const section = item.dataset.section;
                 if (section) {
-                    // Si es kanban, abrir directamente fullscreen
+                    // Si es kanban, abrir directamente en pantalla completa
                     if (section === 'kanban') {
-                        console.log('📋 CLICK EN KANBAN DETECTADO - Iniciando fullscreen...');
-                        console.log('🔍 Estado antes de abrir:', {
-                            element: item,
-                            section: section,
-                            timestamp: new Date().toISOString()
-                        });
-                        
-                        // Test simple - mostrar alert para confirmar que el evento funciona
-                        alert('Kanban clickeado! Abriendo fullscreen...');
-                        
+                        console.log('📋 KANBAN CLICKED - Abriendo directamente en pantalla completa...');
                         this.openKanbanFullscreen();
                         return;
                     }
@@ -356,31 +438,170 @@ class WhatsAppCRM {
         console.log('🎯 Kanban nav item encontrado:', kanbanNavItem);
     }
 
-    bindFilterEvents() {
-        // Búsqueda
+    bindTabEvents() {
+        // Generar pestañas dinámicas al inicializar
+        this.generateDynamicTabs();
+        
+        // Vincular eventos de búsqueda
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
-                this.searchQuery = e.target.value.toLowerCase();
-                console.log(`🔍 Buscando: "${this.searchQuery}"`);
-                this.applyFilters();
+                this.searchQuery = e.target.value.trim();
+                console.log(`🔍 Búsqueda: ${this.searchQuery}`);
+                this.applyCurrentFilter();
             });
             this.debugStats.eventsbound++;
         }
 
-        // Filtros por etiqueta
-        const filterTags = document.querySelectorAll('.filter-tag');
-        filterTags.forEach(tag => {
-            tag.addEventListener('click', () => {
-                document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
-                tag.classList.add('active');
-                this.currentFilter = tag.dataset.filter;
-                console.log(`🏷️ Filtro activo: ${this.currentFilter}`);
-                this.applyFilters();
+        // Botón para agregar nueva etiqueta
+        const addTabBtn = document.getElementById('addTabBtn');
+        if (addTabBtn) {
+            addTabBtn.addEventListener('click', () => {
+                console.log('➕ Abriendo modal de nueva etiqueta desde pestañas...');
+                this.openTagModal();
             });
             this.debugStats.eventsbound++;
+        }
+
+        console.log(`✓ Dynamic tabs system initialized`);
+    }
+
+    // Generar pestañas dinámicas basadas en etiquetas
+    generateDynamicTabs() {
+        try {
+            const tabsContainer = document.getElementById('tabsScroll');
+            if (!tabsContainer) {
+                console.warn('⚠️ Contenedor de pestañas no encontrado');
+                return;
+            }
+
+            // Contar contactos por categoría
+            const counts = this.getContactCounts();
+            
+            // Limpiar pestañas existentes
+            tabsContainer.innerHTML = '';
+
+            // Pestaña "Todos"
+            const allTab = this.createTabElement('all', 'Todos', counts.all, true);
+            tabsContainer.appendChild(allTab);
+
+            // Pestañas por etiquetas
+            this.tags.forEach(tag => {
+                const count = counts.tags[tag.id] || 0;
+                const tabElement = this.createTabElement(`tag_${tag.id}`, tag.name, count, false, tag.color);
+                tabsContainer.appendChild(tabElement);
+            });
+
+            // Pestaña "Sin etiqueta" si hay contactos sin etiquetar
+            if (counts.untagged > 0) {
+                const untaggedTab = this.createTabElement('untagged', 'Sin etiqueta', counts.untagged, false, '#6b7280');
+                tabsContainer.appendChild(untaggedTab);
+            }
+
+            console.log(`📋 ${this.tags.length + 2} pestañas dinámicas generadas`);
+            
+        } catch (error) {
+            console.error('Error generating dynamic tabs:', error);
+        }
+    }
+
+    // Crear elemento de pestaña individual
+    createTabElement(id, text, count, isActive = false, color = null) {
+        const tabElement = document.createElement('button');
+        tabElement.className = `tab-item ${isActive ? 'active' : ''}`;
+        tabElement.dataset.filter = id;
+        
+        // Aplicar color si está disponible
+        if (color && !isActive) {
+            tabElement.style.borderColor = color;
+            tabElement.style.color = color;
+        }
+        
+        tabElement.innerHTML = `
+            <span class="tab-text">${this.escapeHtml(text)}</span>
+            <span class="tab-count">${count}</span>
+        `;
+        
+        // Vincular evento click
+        tabElement.addEventListener('click', () => {
+            this.switchTab(id);
         });
-        console.log(`✓ Filter events bound (search + ${filterTags.length} tags)`);
+        
+        return tabElement;
+    }
+
+    // Cambiar pestaña activa
+    switchTab(filterId) {
+        try {
+            // Actualizar clases active
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            const activeTab = document.querySelector(`[data-filter="${filterId}"]`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
+
+            // Actualizar filtro actual
+            this.currentFilter = filterId;
+            console.log(`📋 Pestaña cambiada a: ${filterId}`);
+            
+            // Aplicar filtro
+            this.applyCurrentFilter();
+            
+        } catch (error) {
+            console.error('Error switching tab:', error);
+        }
+    }
+
+    // Contar contactos por categorías
+    getContactCounts() {
+        const counts = {
+            all: this.contacts.length,
+            tags: {},
+            untagged: 0
+        };
+
+        // Contar por etiquetas
+        this.tags.forEach(tag => {
+            counts.tags[tag.id] = this.contacts.filter(contact => 
+                contact.tags && contact.tags.includes(tag.id)
+            ).length;
+        });
+
+        // Contar sin etiqueta
+        counts.untagged = this.contacts.filter(contact => 
+            !contact.tags || contact.tags.length === 0
+        ).length;
+
+        return counts;
+    }
+
+    // Actualizar conteos de pestañas
+    updateTabCounts() {
+        try {
+            const counts = this.getContactCounts();
+            
+            // Actualizar pestaña "Todos"
+            const allTab = document.querySelector('[data-filter="all"] .tab-count');
+            if (allTab) allTab.textContent = counts.all;
+
+            // Actualizar pestañas de etiquetas
+            this.tags.forEach(tag => {
+                const tagTab = document.querySelector(`[data-filter="tag_${tag.id}"] .tab-count`);
+                if (tagTab) tagTab.textContent = counts.tags[tag.id] || 0;
+            });
+
+            // Actualizar pestaña "Sin etiqueta"
+            const untaggedTab = document.querySelector('[data-filter="untagged"] .tab-count');
+            if (untaggedTab) untaggedTab.textContent = counts.untagged;
+
+            console.log('📊 Conteos de pestañas actualizados');
+            
+        } catch (error) {
+            console.error('Error updating tab counts:', error);
+        }
     }
 
     bindDashboardEvents() {
@@ -788,9 +1009,7 @@ class WhatsAppCRM {
 
     openKanbanFullscreen() {
         try {
-            console.log('🚀 === INICIANDO KANBAN FULLSCREEN ===');
-            
-            // MÉTODO DIRECTO Y SIMPLE
+            console.log('🚀 === INICIANDO KANBAN FULLSCREEN COMPLETO ===');
             
             // 1. Ocultar WhatsApp y CRM
             console.log('1️⃣ Ocultando interfaces...');
@@ -807,13 +1026,13 @@ class WhatsAppCRM {
                 console.log('✅ CRM Sidebar ocultado');
             }
             
-            // 2. Crear overlay fullscreen simple
-            console.log('2️⃣ Creando overlay fullscreen...');
-            let overlay = document.getElementById('kanban-overlay-simple');
+            // 2. Crear/mostrar overlay fullscreen con kanban completo
+            console.log('2️⃣ Creando kanban fullscreen completo...');
+            let overlay = document.getElementById('kanban-overlay-full');
             
             if (!overlay) {
                 overlay = document.createElement('div');
-                overlay.id = 'kanban-overlay-simple';
+                overlay.id = 'kanban-overlay-full';
                 overlay.style.cssText = `
                     position: fixed !important;
                     top: 0 !important;
@@ -828,58 +1047,45 @@ class WhatsAppCRM {
                     font-family: system-ui, -apple-system, sans-serif !important;
                 `;
                 
-                overlay.innerHTML = `
-                    <div style="padding: 20px; background: #161b22; border-bottom: 1px solid #21262d; display: flex; justify-content: space-between; align-items: center;">
+                // Header del kanban fullscreen
+                const headerHTML = `
+                    <div class="kanban-fullscreen-header-custom" style="padding: 20px; background: #161b22; border-bottom: 1px solid #21262d; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
                         <div style="display: flex; align-items: center; gap: 15px;">
-                            <button id="kanban-back-btn" style="background: #00a884; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">← Volver</button>
-                            <h1 style="margin: 0; color: #e6edf3;">📋 CRM Kanban</h1>
+                            <button id="kanban-back-btn-full" style="background: #00a884; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px;">← Volver</button>
+                            <h1 style="margin: 0; color: #e6edf3; font-size: 24px;">📋 CRM Kanban</h1>
                         </div>
-                        <button id="kanban-close-btn" style="background: rgba(255,255,255,0.1); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;">✕</button>
-                    </div>
-                    <div style="flex: 1; padding: 20px; overflow: auto;">
-                        <div style="background: #161b22; padding: 40px; border-radius: 12px; text-align: center;">
-                            <h2 style="color: #e6edf3; margin-bottom: 20px;">🎯 Kanban CRM</h2>
-                            <p style="color: #8b949e; margin-bottom: 30px;">Vista en pantalla completa del sistema CRM</p>
-                            <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-                                <div style="background: #21262d; padding: 20px; border-radius: 8px; min-width: 200px;">
-                                    <h3 style="color: #58a6ff; margin-bottom: 10px;">📊 Contactos: ${this.contacts.length}</h3>
-                                    <p style="color: #8b949e; font-size: 14px;">Total en el sistema</p>
-                                </div>
-                                <div style="background: #21262d; padding: 20px; border-radius: 8px; min-width: 200px;">
-                                    <h3 style="color: #39d353; margin-bottom: 10px;">🏷️ Etiquetas: ${this.tags.length}</h3>
-                                    <p style="color: #8b949e; font-size: 14px;">Para organizar</p>
-                                </div>
-                                <div style="background: #21262d; padding: 20px; border-radius: 8px; min-width: 200px;">
-                                    <h3 style="color: #f85149; margin-bottom: 10px;">📋 Plantillas: ${this.templates.length}</h3>
-                                    <p style="color: #8b949e; font-size: 14px;">Mensajes rápidos</p>
-                                </div>
-                            </div>
-                            <div style="margin-top: 30px; padding: 20px; background: #21262d; border-radius: 8px; border-left: 4px solid #00a884;">
-                                <h4 style="color: #e6edf3; margin-bottom: 10px;">💡 Información</h4>
-                                <p style="color: #8b949e; font-size: 14px; line-height: 1.5;">
-                                    Este es el modo kanban fullscreen del CRM. Aquí podrás gestionar todos tus contactos de forma visual y organizada.
-                                    <br><br>
-                                    <strong style="color: #e6edf3;">Próximamente:</strong> Columnas dinámicas, drag & drop, y gestión completa de leads.
-                                </p>
-                            </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="add-contact-fullscreen" style="background: #238636; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">➕ Nuevo Contacto</button>
+                            <button id="add-tag-fullscreen" style="background: #7c3aed; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">🏷️ Nueva Etiqueta</button>
+                            <button id="kanban-close-btn-full" style="background: rgba(255,255,255,0.1); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 18px;">✕</button>
                         </div>
                     </div>
                 `;
                 
-                document.body.appendChild(overlay);
-                console.log('✅ Overlay creado y agregado al DOM');
+                // Container del kanban
+                const kanbanHTML = `
+                    <div class="kanban-fullscreen-content-custom" style="flex: 1; overflow: hidden; padding: 20px; background: #0d1117;">
+                        <div class="kanban-fullscreen-container-custom" id="kanbanFullscreenContainerCustom" style="display: flex; gap: 20px; height: 100%; overflow-x: auto; overflow-y: hidden;">
+                            <!-- Las columnas se generan aquí -->
+                        </div>
+                    </div>
+                `;
                 
-                // Vincular eventos de los botones
-                this.bindKanbanSimpleEvents();
+                overlay.innerHTML = headerHTML + kanbanHTML;
+                document.body.appendChild(overlay);
+                console.log('✅ Overlay fullscreen creado');
+                
+                // Vincular eventos
+                this.bindKanbanFullscreenCustomEvents();
             } else {
                 overlay.style.display = 'flex';
-                console.log('✅ Overlay existente mostrado');
-                
-                // Asegurar que los eventos estén vinculados
-                this.bindKanbanSimpleEvents();
+                console.log('✅ Overlay fullscreen existente mostrado');
             }
             
-            console.log('🎉 === KANBAN FULLSCREEN ACTIVO ===');
+            // 3. Renderizar kanban con datos reales
+            this.renderKanbanFullscreenCustom();
+            
+            console.log('🎉 === KANBAN FULLSCREEN COMPLETO ACTIVO ===');
             
         } catch (error) {
             console.error('❌ Error opening kanban fullscreen:', error);
@@ -938,12 +1144,13 @@ class WhatsAppCRM {
 
     closeKanbanSimple() {
         try {
-            console.log('🔄 Cerrando kanban simple...');
+            console.log('🔄 Cerrando kanban fullscreen...');
             
             // Mostrar WhatsApp y CRM de nuevo
             const whatsappApp = document.querySelector('#app');
             const crmSidebar = document.querySelector('.wa-crm-sidebar');
-            const overlay = document.getElementById('kanban-overlay-simple');
+            const overlayOld = document.getElementById('kanban-overlay-simple');
+            const overlayNew = document.getElementById('kanban-overlay-full');
             
             if (whatsappApp) {
                 whatsappApp.style.display = '';
@@ -955,9 +1162,14 @@ class WhatsAppCRM {
                 console.log('✅ CRM Sidebar restaurado');
             }
             
-            if (overlay) {
-                overlay.style.display = 'none';
-                console.log('✅ Overlay ocultado');
+            if (overlayOld) {
+                overlayOld.style.display = 'none';
+                console.log('✅ Overlay viejo ocultado');
+            }
+            
+            if (overlayNew) {
+                overlayNew.style.display = 'none';
+                console.log('✅ Overlay nuevo ocultado');
             }
             
             console.log('🎉 Kanban cerrado correctamente');
@@ -966,6 +1178,422 @@ class WhatsAppCRM {
             console.error('❌ Error closing kanban:', error);
         }
     }
+
+    // Vincular eventos del kanban fullscreen personalizado
+    bindKanbanFullscreenCustomEvents() {
+        try {
+            console.log('🔗 Vinculando eventos del kanban fullscreen personalizado...');
+            
+            const backBtn = document.getElementById('kanban-back-btn-full');
+            const closeBtn = document.getElementById('kanban-close-btn-full');
+            const addContactBtn = document.getElementById('add-contact-fullscreen');
+            const addTagBtn = document.getElementById('add-tag-fullscreen');
+            
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    console.log('🔙 Botón volver clickeado');
+                    this.closeKanbanSimple();
+                });
+                console.log('✅ Botón volver vinculado');
+            }
+            
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    console.log('❌ Botón cerrar clickeado');
+                    this.closeKanbanSimple();
+                });
+                console.log('✅ Botón cerrar vinculado');
+            }
+            
+            if (addContactBtn) {
+                addContactBtn.addEventListener('click', () => {
+                    console.log('➕ Abriendo modal de nuevo contacto desde kanban fullscreen');
+                    this.openContactModal();
+                });
+                console.log('✅ Botón nuevo contacto vinculado');
+            }
+            
+            if (addTagBtn) {
+                addTagBtn.addEventListener('click', () => {
+                    console.log('🏷️ Abriendo modal de nueva etiqueta desde kanban fullscreen');
+                    this.openTagModal();
+                });
+                console.log('✅ Botón nueva etiqueta vinculado');
+            }
+            
+            // También permitir cerrar con tecla Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const overlay = document.getElementById('kanban-overlay-full');
+                    if (overlay && overlay.style.display !== 'none') {
+                        console.log('⌨️ Escape presionado - cerrando kanban');
+                        this.closeKanbanSimple();
+                    }
+                }
+            });
+            
+            console.log('🎯 Eventos del kanban fullscreen vinculados correctamente');
+            
+        } catch (error) {
+            console.error('❌ Error vinculando eventos kanban fullscreen:', error);
+        }
+    }
+
+    // Renderizar kanban fullscreen con datos reales
+    renderKanbanFullscreenCustom() {
+        try {
+            console.log('🎨 Renderizando kanban fullscreen con datos reales...');
+            
+            const container = document.getElementById('kanbanFullscreenContainerCustom');
+            if (!container) {
+                console.error('❌ Container del kanban fullscreen no encontrado');
+                return;
+            }
+            
+            // Generar columnas usando el mismo sistema que el sidebar
+            const columns = this.generateKanbanColumnsFromImages();
+            
+            // Limpiar contenedor
+            container.innerHTML = '';
+            
+            columns.forEach(column => {
+                // Filtrar contactos para esta columna
+                const columnContacts = this.getContactsForColumn(this.contacts, column);
+                
+                // Crear elemento de columna para fullscreen
+                const columnElement = document.createElement('div');
+                columnElement.className = 'kanban-column-fullscreen';
+                columnElement.setAttribute('data-column-id', column.id);
+                
+                // Hacer que la primera columna (Todos os contatos) sea sticky
+                const isFirstColumn = column.type === 'all';
+                const stickyStyles = isFirstColumn ? `
+                    position: sticky;
+                    left: 0;
+                    z-index: 1000;
+                    box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+                ` : '';
+                
+                columnElement.style.cssText = `
+                    min-width: 350px;
+                    max-width: 400px;
+                    background: #161b22;
+                    border-radius: 12px;
+                    border: 1px solid #21262d;
+                    display: flex;
+                    flex-direction: column;
+                    height: calc(100vh - 140px);
+                    overflow: hidden;
+                    ${stickyStyles}
+                `;
+                
+                columnElement.innerHTML = `
+                    <div class="kanban-header-fullscreen" style="padding: 20px; background: ${column.color}; color: white; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 18px; font-weight: 700;">${column.title}</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 6px; font-weight: 700; min-width: 30px; text-align: center;">${columnContacts.length}</span>
+                            <span style="font-size: 14px; opacity: 0.8;">itens</span>
+                        </div>
+                    </div>
+                    <div class="kanban-cards-fullscreen" 
+                         data-tag-id="${column.tagId || 'untagged'}"
+                         ondragover="whatsappCRM.handleDragOver(event)"
+                         ondragenter="whatsappCRM.handleDragEnter(event)"
+                         ondragleave="whatsappCRM.handleDragLeave(event)"
+                         ondrop="whatsappCRM.handleDrop(event)"
+                         style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; position: relative;">
+                        ${this.renderContactCardsForKanbanFullscreen(columnContacts)}
+                    </div>
+                `;
+                
+                container.appendChild(columnElement);
+            });
+            
+            console.log(`✅ Kanban fullscreen renderizado: ${columns.length} columnas, ${this.contacts.length} contactos total`);
+            
+        } catch (error) {
+            console.error('❌ Error renderizando kanban fullscreen:', error);
+        }
+    }
+
+    // Renderizar tarjetas para kanban fullscreen (más grandes)
+    renderContactCardsForKanbanFullscreen(contacts) {
+        if (contacts.length === 0) {
+            return `
+                <div style="text-align: center; padding: 40px; color: #8b949e; border: 2px dashed #30363d; border-radius: 8px; margin: 20px 0;">
+                    <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">👤</div>
+                    <div style="font-size: 16px;">Sem contatos</div>
+                </div>
+            `;
+        }
+
+        return contacts.map(contact => {
+            const avatar = this.getContactInitials(contact.name || contact.phone);
+            const avatarColor = this.getContactColor(contact.phone);
+            const timeDisplay = contact.lastChat ? this.formatTime(contact.lastChat) : '19:43';
+            
+            return `
+                <div class="contact-card-fullscreen" 
+                     draggable="true"
+                     data-contact-id="${contact.id}"
+                     ondragstart="whatsappCRM.handleDragStart(event)"
+                     ondragend="whatsappCRM.handleDragEnd(event)"
+                     style="background: #21262d; border: 1px solid #30363d; border-radius: 12px; padding: 16px; transition: all 0.2s ease; cursor: grab;"
+                     onclick="whatsappCRM.openContactModal('${contact.id}')"
+                     onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.4)'; this.style.borderColor='#58a6ff';"
+                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'; this.style.borderColor='#30363d';">
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; flex: 1; min-width: 0;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: ${avatarColor}; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: white; margin-right: 12px; flex-shrink: 0;">
+                                ${avatar}
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-size: 16px; font-weight: 600; color: #e6edf3; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    ${this.escapeHtml(contact.name || contact.phone)}
+                                </div>
+                                <div style="font-size: 14px; color: #8b949e; font-family: monospace;">
+                                    ${timeDisplay}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            ${contact.tags && contact.tags.length > 0 ? `
+                                <button onclick="event.stopPropagation(); whatsappCRM.removeContactTag('${contact.id}')" 
+                                        style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 6px; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center;"
+                                        onmouseover="this.style.background='rgba(248,81,73,0.1)'; this.style.transform='scale(1.1)';"
+                                        onmouseout="this.style.background='none'; this.style.transform='scale(1)';"
+                                        title="Remover etiqueta">
+                                    <span style="color: #f85149; font-size: 18px;">🗑️</span>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 12px; border-top: 1px solid #30363d;">
+                        <button onclick="event.stopPropagation(); whatsappCRM.callContact('${contact.phone}')" 
+                                style="background: #30363d; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; color: #e6edf3;"
+                                onmouseover="this.style.background='#0891b2'; this.style.transform='scale(1.1)';"
+                                onmouseout="this.style.background='#30363d'; this.style.transform='scale(1)';"
+                                title="Acciones">
+                            ⏰
+                        </button>
+                        <button onclick="event.stopPropagation(); whatsappCRM.openWhatsApp('${contact.phone}')" 
+                                style="background: #30363d; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; color: #e6edf3;"
+                                onmouseover="this.style.background='#25d366'; this.style.transform='scale(1.1)';"
+                                onmouseout="this.style.background='#30363d'; this.style.transform='scale(1)';"
+                                title="WhatsApp">
+                            📋
+                        </button>
+                        <button onclick="event.stopPropagation(); whatsappCRM.openContactModal('${contact.id}')" 
+                                style="background: #30363d; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; color: #e6edf3;"
+                                onmouseover="this.style.background='#238636'; this.style.transform='scale(1.1)';"
+                                onmouseout="this.style.background='#30363d'; this.style.transform='scale(1)';"
+                                title="Editar">
+                            💬
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Actualizar todas las vistas de kanban que estén activas
+    updateAllKanbanViews() {
+        try {
+            console.log('🔄 Actualizando todas las vistas de kanban...');
+            
+            // Verificar si el kanban fullscreen está activo
+            const fullscreenOverlay = document.getElementById('kanban-overlay-full');
+            console.log('🔍 Estado del overlay fullscreen:', {
+                existe: !!fullscreenOverlay,
+                display: fullscreenOverlay?.style.display,
+                clases: fullscreenOverlay?.className
+            });
+            
+            // Actualizar kanban fullscreen si está activo
+            if (fullscreenOverlay && (fullscreenOverlay.style.display === 'flex' || fullscreenOverlay.style.display !== 'none')) {
+                console.log('📋 Actualizando kanban fullscreen...');
+                this.renderKanbanFullscreenCustom();
+            }
+            
+            // Actualizar kanban del sidebar si es la sección activa
+            if (this.currentSection === 'kanban') {
+                console.log('📋 Actualizando kanban del sidebar...');
+                this.renderKanbanCards();
+            }
+            
+            console.log('✅ Todas las vistas de kanban actualizadas');
+            
+        } catch (error) {
+            console.error('❌ Error actualizando vistas de kanban:', error);
+        }
+    }
+
+    // Función de prueba para el drag and drop
+    testDragAndDrop() {
+        console.log('🧪 === PRUEBA DE DRAG AND DROP ===');
+        console.log('📊 Contactos actuales:', this.contacts.length);
+        console.log('🏷️ Etiquetas actuales:', this.tags.length);
+        
+        // Mostrar estado de cada contacto
+        this.contacts.forEach(contact => {
+            console.log(`👤 ${contact.name}:`, {
+                id: contact.id,
+                tags: contact.tags,
+                tagNames: contact.tags?.map(tagId => {
+                    const tag = this.tags.find(t => t.id === tagId);
+                    return tag?.name || 'Etiqueta no encontrada';
+                })
+            });
+        });
+        
+        // Verificar estado del kanban
+        const overlay = document.getElementById('kanban-overlay-full');
+        console.log('🎯 Estado del kanban fullscreen:', {
+            existe: !!overlay,
+            visible: overlay?.style.display !== 'none',
+            display: overlay?.style.display
+        });
+        
+                 console.log('✅ === FIN PRUEBA ===');
+     }
+
+     // Función para simular movimiento de contacto programáticamente
+     simularMovimientoContacto(contactoNombre, etiquetaNombre) {
+         console.log(`🧪 === SIMULANDO MOVIMIENTO PROGRAMÁTICO ===`);
+         
+         // Buscar contacto por nombre
+         const contact = this.contacts.find(c => 
+             c.name.toLowerCase().includes(contactoNombre.toLowerCase())
+         );
+         
+         if (!contact) {
+             console.error(`❌ Contacto "${contactoNombre}" no encontrado`);
+             return;
+         }
+         
+         // Buscar etiqueta por nombre
+         let targetTagId = null;
+         if (etiquetaNombre && etiquetaNombre.toLowerCase() !== 'todos') {
+             const tag = this.tags.find(t => 
+                 t.name.toLowerCase().includes(etiquetaNombre.toLowerCase())
+             );
+             
+             if (!tag) {
+                 console.error(`❌ Etiqueta "${etiquetaNombre}" no encontrada`);
+                 return;
+             }
+             
+             targetTagId = tag.id;
+         }
+         
+         console.log(`📋 Simulando movimiento de "${contact.name}" a "${etiquetaNombre || 'Todos os contatos'}"`);
+         
+         // Ejecutar el movimiento
+         this.moveContactToTag(contact.id, targetTagId);
+         
+         console.log(`✅ === SIMULACIÓN COMPLETADA ===`);
+     }
+
+     // Función para probar el drag and drop manualmente
+     testDragAndDropEvents() {
+         console.log('🧪 === PROBANDO EVENTOS DRAG AND DROP ===');
+         
+         // Buscar todas las columnas
+         const columns = document.querySelectorAll('.kanban-cards-fullscreen');
+         console.log(`📋 Columnas encontradas: ${columns.length}`);
+         
+         columns.forEach((column, index) => {
+             console.log(`📋 Columna ${index + 1}:`, {
+                 tagId: column.dataset.tagId,
+                 hasEvents: {
+                     ondragover: !!column.ondragover,
+                     ondragenter: !!column.ondragenter,
+                     ondrop: !!column.ondrop
+                 },
+                 classList: Array.from(column.classList)
+             });
+             
+             // Simular evento dragover para mostrar el indicador
+             console.log(`✅ Agregando clase drag-over a columna ${index + 1}`);
+             column.classList.add('drag-over');
+             
+             setTimeout(() => {
+                 column.classList.remove('drag-over');
+                 console.log(`🗑️ Removida clase drag-over de columna ${index + 1}`);
+             }, 3000);
+         });
+         
+         // Buscar todas las tarjetas draggables
+         const cards = document.querySelectorAll('.contact-card-fullscreen[draggable="true"]');
+         console.log(`🎴 Tarjetas draggables encontradas: ${cards.length}`);
+         
+         console.log('✅ === FIN PRUEBA EVENTOS ===');
+         console.log('🎯 Para probar manualmente:');
+         console.log('   1. Arrastra cualquier contacto');
+         console.log('   2. Deberías ver el pulso en las columnas');
+         console.log('   3. Al pasar sobre una columna debería aparecer "📋 Soltar aquí"');
+     }
+
+     // Función para probar el nuevo sistema de etiquetas unificado
+     testNewTagSystem() {
+         console.log('🏷️ === PROBANDO NUEVO SISTEMA DE ETIQUETAS UNIFICADO ===');
+         
+         console.log('📋 Etiquetas disponibles en el CRM:');
+         this.tags.forEach((tag, index) => {
+             console.log(`   ${index + 1}. ${tag.name} (${tag.color})`);
+         });
+         
+         console.log('👥 Estado actual de contactos:');
+         this.contacts.forEach((contact, index) => {
+             const tagNames = contact.tags?.map(tagId => {
+                 const tag = this.tags.find(t => t.id === tagId);
+                 return tag ? tag.name : 'Etiqueta no encontrada';
+             }).join(', ') || 'Sin etiquetas';
+             
+             console.log(`   ${index + 1}. ${contact.name} - Etiquetas: ${tagNames}`);
+         });
+         
+         console.log('✅ === FIN PRUEBA SISTEMA ETIQUETAS ===');
+         console.log('🎯 Comandos útiles:');
+         console.log('   - whatsappCRM.openContactModal() - Abrir modal (debería mostrar etiquetas dinámicas)');
+         console.log('   - whatsappCRM.tags - Ver todas las etiquetas del CRM');
+         console.log('   - whatsappCRM.contacts - Ver todos los contactos y sus etiquetas');
+     }
+
+     // Función para probar las pestañas dinámicas tipo WhatsApp
+     testDynamicTabs() {
+         console.log('📋 === PROBANDO PESTAÑAS DINÁMICAS TIPO WHATSAPP ===');
+         
+         console.log('🔄 Regenerando pestañas...');
+         this.generateDynamicTabs();
+         
+         const counts = this.getContactCounts();
+         console.log('📊 Conteos actuales:');
+         console.log(`   📋 Todos: ${counts.all}`);
+         console.log(`   🏷️ Por etiquetas:`);
+         
+         this.tags.forEach(tag => {
+             const count = counts.tags[tag.id] || 0;
+             console.log(`      - ${tag.name}: ${count} contactos`);
+         });
+         
+         console.log(`   ❓ Sin etiqueta: ${counts.untagged}`);
+         
+         // Probar cambio de pestaña
+         console.log('🎯 Probando cambio de pestaña...');
+         if (this.tags.length > 0) {
+             const firstTag = this.tags[0];
+             console.log(`📋 Cambiando a pestaña: ${firstTag.name}`);
+             this.switchTab(`tag_${firstTag.id}`);
+         }
+         
+         console.log('✅ === FIN PRUEBA PESTAÑAS DINÁMICAS ===');
+         console.log('💡 Las pestañas deberían aparecer en la parte superior del sidebar');
+         console.log('🎯 Haz clic en las pestañas para filtrar contactos');
+     }
 
     closeKanbanFullscreen() {
         try {
@@ -1277,6 +1905,11 @@ class WhatsAppCRM {
             this.loadContacts();
             this.updateCurrentChat();
             
+            // Cargar kanban si es la sección activa
+            if (this.currentSection === 'kanban') {
+                this.loadKanban();
+            }
+            
             console.log('✅ Datos iniciales cargados');
             
         } catch (error) {
@@ -1343,12 +1976,18 @@ class WhatsAppCRM {
 
     loadSectionData(sectionName) {
         try {
+            console.log(`📊 Cargando datos para sección: ${sectionName}`);
+            
             switch (sectionName) {
                 case 'dashboard':
                     this.updateDashboard();
                     break;
                 case 'kanban':
-                    this.loadKanban();
+                    console.log('📋 Iniciando carga de kanban...');
+                    // Pequeño delay para asegurar que el DOM esté listo
+                    setTimeout(() => {
+                        this.loadKanban();
+                    }, 100);
                     break;
                 case 'contacts':
                     this.loadContactsList();
@@ -1381,25 +2020,37 @@ class WhatsAppCRM {
     // FILTROS Y BÚSQUEDA
     // ===========================================
 
-    applyFilters() {
+    applyCurrentFilter() {
         try {
             const filteredContacts = this.contacts.filter(contact => {
+                // Filtro de búsqueda
                 const matchesSearch = !this.searchQuery || 
-                    contact.name.toLowerCase().includes(this.searchQuery) ||
+                    contact.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
                     contact.phone.includes(this.searchQuery);
                 
-                const matchesFilter = this.currentFilter === 'all' || 
-                    contact.tags?.includes(this.currentFilter) ||
-                    contact.status === this.currentFilter;
+                // Filtro por pestaña
+                let matchesFilter = false;
+                
+                if (this.currentFilter === 'all') {
+                    matchesFilter = true;
+                } else if (this.currentFilter === 'untagged') {
+                    matchesFilter = !contact.tags || contact.tags.length === 0;
+                } else if (this.currentFilter.startsWith('tag_')) {
+                    const tagId = this.currentFilter.replace('tag_', '');
+                    matchesFilter = contact.tags && contact.tags.includes(tagId);
+                } else {
+                    // Compatibilidad con filtros antiguos
+                    matchesFilter = contact.status === this.currentFilter;
+                }
                 
                 return matchesSearch && matchesFilter;
             });
 
-            console.log(`🔍 Filtros aplicados: ${filteredContacts.length}/${this.contacts.length} contactos`);
+            console.log(`📋 Filtro aplicado (${this.currentFilter}): ${filteredContacts.length}/${this.contacts.length} contactos`);
             this.renderFilteredContacts(filteredContacts);
             
         } catch (error) {
-            console.error('Error applying filters:', error);
+            console.error('Error applying current filter:', error);
         }
     }
 
@@ -1532,57 +2183,195 @@ class WhatsAppCRM {
     }
 
     // ===========================================
-    // VISTA KANBAN
+    // VISTA KANBAN - BASADO EN IMÁGENES DE REFERENCIA
     // ===========================================
 
     loadKanban() {
         try {
-            console.log('📋 Cargando vista Kanban...');
+            console.log('📋 Cargando vista Kanban basada en imágenes...');
             this.renderKanbanCards();
         } catch (error) {
             console.error('Error loading kanban:', error);
         }
     }
 
-    renderKanbanCards(contacts = this.contacts) {
-        try {
-            // En el sidebar pequeño, solo mostrar un resumen con las etiquetas principales
-            const tagSummary = this.generateTagSummary(contacts);
-            
-            // Actualizar contadores básicos
-            const elements = {
-                leadsCards: document.getElementById('leadsCards'),
-                processCards: document.getElementById('processCards'),
-                clientsCards: document.getElementById('clientsCards'),
-                leadsCount: document.getElementById('leadsCount'),
-                processCount: document.getElementById('processCount'),
-                clientsCount: document.getElementById('clientsCount')
-            };
+    // Generar columnas basándose en las imágenes de referencia
+    generateKanbanColumnsFromImages() {
+        const columns = [];
+        
+        // Columna principal "Todos os contatos" (verde como en la imagen)
+        columns.push({
+            id: 'all',
+            title: 'Todos os contatos',
+            color: '#2563eb', // Azul como en la imagen
+            type: 'all'
+        });
+        
+        // Columnas por etiquetas (como "test" en la imagen)
+        this.tags.forEach(tag => {
+            columns.push({
+                id: `tag_${tag.id}`,
+                title: tag.name,
+                color: tag.color || '#7c3aed', // Color de la etiqueta o morado por defecto
+                type: 'tag',
+                tagId: tag.id
+            });
+        });
+        
+        return columns;
+    }
 
-            // Mostrar resumen por etiquetas en el sidebar
-            if (elements.leadsCards) {
-                elements.leadsCards.innerHTML = `
-                    <div class="kanban-summary">
-                        <p>Tienes <strong>${this.tags.length}</strong> etiquetas</p>
-                        <p>Contactos: <strong>${contacts.length}</strong></p>
-                        <button class="btn-primary kanban-fullscreen-btn">
-                            Ver Kanban Completo
+    // Filtrar contactos para cada columna
+    getContactsForColumn(contacts, column) {
+        if (column.type === 'all') {
+            // Columna "Todos os contatos" - mostrar todos
+            return contacts;
+        } else if (column.type === 'tag') {
+            // Columnas de etiquetas - mostrar solo contactos con esa etiqueta
+            return contacts.filter(contact => 
+                contact.tags && contact.tags.includes(column.tagId)
+            );
+        }
+        return [];
+    }
+
+    // Renderizar tarjetas de contactos exactamente como en las imágenes
+    renderContactCardsForKanban(contacts) {
+        if (contacts.length === 0) {
+            return `
+                <div class="empty-state" style="text-align: center; padding: 20px; color: #8b949e;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">👤</div>
+                    <div style="font-size: 14px;">Sem contatos</div>
+                </div>
+            `;
+        }
+
+        return contacts.map(contact => {
+            const avatar = this.getContactInitials(contact.name || contact.phone);
+            const avatarColor = this.getContactColor(contact.phone);
+            const currentTime = new Date().toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            return `
+                <div class="contact-card kanban-contact-card" data-contact-id="${contact.id}">
+                    <div class="contact-header">
+                        <div class="contact-avatar" style="background: ${avatarColor}">
+                            ${avatar}
+                        </div>
+                        <div class="contact-info">
+                            <div class="contact-name">${this.escapeHtml(contact.name || contact.phone)}</div>
+                            <div class="contact-time">${contact.lastChat ? this.formatTime(contact.lastChat) : currentTime}</div>
+                        </div>
+                        <div class="contact-actions-kanban">
+                            ${contact.tags && contact.tags.length > 0 ? `
+                                <button class="remove-tag-btn" onclick="whatsappCRM.removeContactTag('${contact.id}')" title="Remover etiqueta">
+                                    <span style="color: #f85149;">🗑️</span>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="contact-actions">
+                        <button class="contact-action-btn call" onclick="whatsappCRM.callContact('${contact.phone}')" title="Llamar">
+                            ⏰
+                        </button>
+                        <button class="contact-action-btn whatsapp" onclick="whatsappCRM.openWhatsApp('${contact.phone}')" title="WhatsApp">
+                            📋
+                        </button>
+                        <button class="contact-action-btn edit" onclick="whatsappCRM.openContactModal('${contact.id}')" title="Editar">
+                            💬
                         </button>
                     </div>
-                `;
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Formatear tiempo como en las imágenes (ej: 19:43)
+    formatTime(dateString) {
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        } catch (error) {
+            return '19:43'; // Valor por defecto como en las imágenes
+        }
+    }
+
+    // Remover etiqueta de contacto (funcionalidad del botón de basura)
+    removeContactTag(contactId) {
+        try {
+            const contact = this.contacts.find(c => c.id === contactId);
+            if (contact && contact.tags && contact.tags.length > 0) {
+                // Remover todas las etiquetas del contacto
+                contact.tags = [];
+                contact.updatedAt = new Date().toISOString();
+                
+                this.saveContacts();
+                
+                // Actualizar kanban en cualquier vista
+                this.updateAllKanbanViews();
+                this.updateDashboard();
+                
+                this.showNotification('Etiqueta removida del contacto', 'success');
+                console.log(`🗑️ Etiquetas removidas del contacto: ${contact.name}`);
+            }
+        } catch (error) {
+            console.error('Error removing tag from contact:', error);
+            this.showNotification('Error al remover etiqueta', 'error');
+        }
+    }
+
+    renderKanbanCards(contacts = this.contacts) {
+        try {
+            console.log('📋 Renderizando Kanban basado en las imágenes de referencia...');
+            
+            // Generar columnas dinámicas basadas en etiquetas + columna "Todos os contatos"
+            const columns = this.generateKanbanColumnsFromImages();
+            
+            // Obtener elementos del DOM
+            const container = document.getElementById('kanbanContainer');
+            if (!container) {
+                console.error('❌ Contenedor kanban no encontrado');
+                return;
             }
             
-            if (elements.leadsCount) elements.leadsCount.textContent = this.tags.length;
-            if (elements.processCount) elements.processCount.textContent = contacts.length;
-            if (elements.clientsCount) elements.clientsCount.textContent = '★';
-
-            // Vincular eventos después de renderizar
-            this.bindKanbanSidebarEvents();
-
-            console.log(`📋 Kanban sidebar renderizado - ${this.tags.length} etiquetas, ${contacts.length} contactos`);
+            // Limpiar contenedor y generar columnas
+            container.innerHTML = '';
+            
+            columns.forEach(column => {
+                // Filtrar contactos para esta columna
+                const columnContacts = this.getContactsForColumn(contacts, column);
+                
+                // Crear elemento de columna
+                const columnElement = document.createElement('div');
+                columnElement.className = 'kanban-column';
+                columnElement.setAttribute('data-column-id', column.id);
+                
+                columnElement.innerHTML = `
+                    <div class="kanban-header" style="background: ${column.color};">
+                        <span class="kanban-title">${column.title}</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="kanban-count" id="${column.id}Count">${columnContacts.length}</span>
+                            <span class="kanban-subtitle">itens</span>
+                        </div>
+                    </div>
+                    <div class="kanban-cards" id="${column.id}Cards">
+                        ${this.renderContactCardsForKanban(columnContacts)}
+                    </div>
+                `;
+                
+                container.appendChild(columnElement);
+            });
+            
+            console.log(`✅ Kanban renderizado: ${columns.length} columnas, ${contacts.length} contactos total`);
             
         } catch (error) {
-            console.error('Error rendering kanban cards:', error);
+            console.error('❌ Error renderizando kanban:', error);
         }
     }
 
@@ -1718,10 +2507,22 @@ class WhatsAppCRM {
 
     handleDragStart(event) {
         try {
-            const contactId = event.target.closest('.kanban-fullscreen-card').dataset.contactId;
+            const card = event.target.closest('.contact-card-fullscreen') || event.target.closest('.kanban-fullscreen-card');
+            const contactId = card.dataset.contactId;
+            
             event.dataTransfer.setData('text/plain', contactId);
-            event.target.style.opacity = '0.5';
-            console.log(`🖱️ Iniciando drag de contacto: ${contactId}`);
+            event.dataTransfer.effectAllowed = 'move';
+            
+            // Agregar clase visual de dragging
+            card.classList.add('dragging');
+            
+            // Hacer que todas las columnas pulsen para indicar que son zonas de drop
+            document.querySelectorAll('.kanban-column-fullscreen').forEach(column => {
+                column.classList.add('drag-active');
+            });
+            
+            const contact = this.contacts.find(c => c.id === contactId);
+            console.log(`🖱️ Iniciando drag de: ${contact?.name || contactId}`);
         } catch (error) {
             console.error('Error in drag start:', error);
         }
@@ -1729,21 +2530,70 @@ class WhatsAppCRM {
 
     handleDragEnd(event) {
         try {
-            event.target.style.opacity = '1';
+            const card = event.target.closest('.contact-card-fullscreen') || event.target.closest('.kanban-fullscreen-card');
+            if (card) {
+                card.classList.remove('dragging');
+            }
+            
+            // Limpiar todas las clases drag-over y drag-active
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+            
+            document.querySelectorAll('.drag-active').forEach(el => {
+                el.classList.remove('drag-active');
+            });
+            
+            console.log(`🏁 Drag terminado - efectos visuales limpiados`);
+            
         } catch (error) {
             console.error('Error in drag end:', error);
         }
     }
 
+    handleDragEnter(event) {
+        try {
+            console.log('🚪 HandleDragEnter ejecutado');
+            event.preventDefault();
+            
+            const targetColumn = event.target.closest('.kanban-cards-fullscreen');
+            if (targetColumn) {
+                console.log('✅ Entrando a zona de drop');
+                // Limpiar otros efectos visuales
+                document.querySelectorAll('.drag-over').forEach(el => {
+                    el.classList.remove('drag-over');
+                });
+                targetColumn.classList.add('drag-over');
+            }
+        } catch (error) {
+            console.error('Error in drag enter:', error);
+        }
+    }
+
     handleDragOver(event) {
         try {
+            console.log('🔄 HandleDragOver ejecutado');
             event.preventDefault();
             event.dataTransfer.dropEffect = 'move';
             
-            // Agregar efecto visual
-            const targetColumn = event.target.closest('.kanban-fullscreen-cards');
+            // Buscar la columna de destino
+            const targetColumn = event.target.closest('.kanban-cards-fullscreen');
+            console.log('🎯 Target column encontrada:', !!targetColumn);
+            console.log('🔍 Element actual:', event.target);
+            console.log('🔍 Classes del target:', event.target.className);
+            
             if (targetColumn && !targetColumn.classList.contains('drag-over')) {
+                console.log('✅ Agregando clase drag-over');
+                
+                // Limpiar otros efectos visuales
+                document.querySelectorAll('.drag-over').forEach(el => {
+                    el.classList.remove('drag-over');
+                });
+                
                 targetColumn.classList.add('drag-over');
+                console.log('📋 Clase drag-over agregada a columna');
+            } else if (!targetColumn) {
+                console.log('❌ No se encontró columna de destino válida');
             }
         } catch (error) {
             console.error('Error in drag over:', error);
@@ -1752,9 +2602,12 @@ class WhatsAppCRM {
 
     handleDragLeave(event) {
         try {
-            // Remover efecto visual cuando el drag sale de la columna
-            const targetColumn = event.target.closest('.kanban-fullscreen-cards');
-            if (targetColumn) {
+            console.log('🚪 HandleDragLeave ejecutado');
+            // Solo remover si realmente sale de la columna
+            const targetColumn = event.target.closest('.kanban-cards-fullscreen');
+            
+            if (targetColumn && !targetColumn.contains(event.relatedTarget)) {
+                console.log('🗑️ Removiendo clase drag-over');
                 targetColumn.classList.remove('drag-over');
             }
         } catch (error) {
@@ -1764,57 +2617,124 @@ class WhatsAppCRM {
 
     handleDrop(event) {
         try {
+            console.log(`🎯 === INICIANDO DROP ===`);
             event.preventDefault();
+            
             const contactId = event.dataTransfer.getData('text/plain');
-            const targetColumn = event.target.closest('.kanban-fullscreen-cards');
+            console.log(`📋 Contacto siendo arrastrado: ${contactId}`);
+            
+            const targetColumn = event.target.closest('.kanban-cards-fullscreen');
+            
+            if (!targetColumn) {
+                console.warn('⚠️ No se encontró columna de destino');
+                console.log('🔍 Target element:', event.target);
+                console.log('🔍 Target classList:', event.target.classList);
+                console.log('🔍 Parent elements:', {
+                    parentElement: event.target.parentElement?.className,
+                    grandParent: event.target.parentElement?.parentElement?.className
+                });
+                
+                // Intentar buscar manualmente el contenedor
+                let element = event.target;
+                while (element && !element.classList.contains('kanban-cards-fullscreen')) {
+                    element = element.parentElement;
+                    if (element && element.classList.contains('kanban-cards-fullscreen')) {
+                        console.log('🎯 Encontrado contenedor manualmente!');
+                        break;
+                    }
+                }
+                
+                if (!element) {
+                    console.error('❌ No se pudo encontrar contenedor de destino');
+                    return;
+                }
+            }
+            
             const newTagId = targetColumn.dataset.tagId;
+            console.log(`🎯 Columna de destino encontrada con tagId: ${newTagId}`);
             
             // Limpiar efecto visual
             targetColumn.classList.remove('drag-over');
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+            
+            // Obtener información del contacto para logging
+            const contact = this.contacts.find(c => c.id === contactId);
+            const contactName = contact?.name || 'Contacto desconocido';
+            
+            console.log(`📋 Procesando movimiento de "${contactName}" a columna: ${newTagId || 'sin etiqueta'}`);
             
             if (newTagId === 'untagged') {
+                console.log(`➡️ Moviendo a "Todos os contatos" (sin etiqueta)`);
                 this.moveContactToTag(contactId, null);
+            } else if (newTagId && newTagId.startsWith('tag_')) {
+                // Extraer el ID real de la etiqueta
+                const realTagId = newTagId.replace('tag_', '');
+                console.log(`➡️ Moviendo a etiqueta con ID: ${realTagId}`);
+                this.moveContactToTag(contactId, realTagId);
             } else {
+                console.log(`➡️ Moviendo a etiqueta con ID: ${newTagId}`);
                 this.moveContactToTag(contactId, newTagId);
             }
             
-            console.log(`📋 Contacto ${contactId} movido a columna: ${newTagId || 'sin etiqueta'}`);
+            console.log(`✅ === DROP COMPLETADO ===`);
             
         } catch (error) {
-            console.error('Error in drop:', error);
+            console.error('❌ Error in drop:', error);
         }
     }
 
     moveContactToTag(contactId, newTagId) {
         try {
+            console.log(`🔄 === MOVIENDO CONTACTO ===`);
+            console.log(`📋 Contacto ID: ${contactId}`);
+            console.log(`🏷️ Nueva etiqueta ID: ${newTagId}`);
+            
             const contact = this.contacts.find(c => c.id === contactId);
             if (!contact) {
                 console.warn('⚠️ Contacto no encontrado:', contactId);
+                this.showNotification('Error: Contacto no encontrado', 'error');
                 return;
             }
+
+            console.log(`👤 Contacto encontrado: ${contact.name}`);
+            console.log(`🏷️ Etiquetas anteriores:`, contact.tags);
 
             // Actualizar etiquetas del contacto
             if (newTagId) {
                 // Mover a una etiqueta específica
                 contact.tags = [newTagId];
                 const tag = this.tags.find(t => t.id === newTagId);
-                this.showNotification(`Contacto movido a "${tag?.name || 'etiqueta'}"`, 'success');
+                const tagName = tag?.name || 'etiqueta desconocida';
+                console.log(`✅ Contacto movido a etiqueta: ${tagName}`);
+                this.showNotification(`📋 ${contact.name} → ${tagName}`, 'success');
             } else {
-                // Remover todas las etiquetas
+                // Remover todas las etiquetas (mover a "Todos os contatos")
                 contact.tags = [];
-                this.showNotification('Etiquetas removidas del contacto', 'success');
+                console.log(`✅ Etiquetas removidas - contacto movido a "Todos os contatos"`);
+                this.showNotification(`📋 ${contact.name} → Todos os contatos`, 'success');
             }
+
+            console.log(`🏷️ Etiquetas nuevas:`, contact.tags);
+
+            // Actualizar timestamp
+            contact.updatedAt = new Date().toISOString();
 
             // Guardar cambios
             this.saveContacts();
+            console.log(`💾 Cambios guardados`);
             
-            // Actualizar interfaz
-            this.renderKanbanFullscreen();
+            // Forzar actualización del kanban fullscreen
+            console.log(`🔄 Forzando actualización del kanban...`);
+            setTimeout(() => {
+                this.renderKanbanFullscreenCustom();
+            }, 100);
             
-            console.log(`✅ Contacto ${contact.name} actualizado con etiquetas:`, contact.tags);
+            console.log(`✅ === MOVIMIENTO COMPLETADO ===`);
             
         } catch (error) {
-            console.error('Error moving contact:', error);
+            console.error('❌ Error moving contact:', error);
             this.showNotification('Error al mover contacto', 'error');
         }
     }
@@ -1967,36 +2887,112 @@ class WhatsAppCRM {
             const modal = document.getElementById('contactModal');
             const title = document.getElementById('contactModalTitle');
             
+            if (!modal) {
+                console.error('❌ Modal de contacto no encontrado');
+                return;
+            }
+            
+            // Asegurar que el modal esté en el body para máxima visibilidad
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+            
+            // Cargar etiquetas dinámicamente en el select
+            this.loadTagsIntoContactModal();
+            
+            // Limpiar y configurar modal
             if (contactId) {
                 const contact = this.contacts.find(c => c.id === contactId);
                 if (contact) {
                     title.textContent = 'Editar Contacto';
                     document.getElementById('contactName').value = contact.name;
                     document.getElementById('contactPhone').value = contact.phone;
-                    document.getElementById('contactStatus').value = contact.status;
+                    // Seleccionar la primera etiqueta del contacto si tiene alguna
+                    document.getElementById('contactTag').value = contact.tags?.[0] || '';
                     document.getElementById('contactNotes').value = contact.notes || '';
                 }
             } else {
                 title.textContent = 'Nuevo Contacto';
                 document.getElementById('contactName').value = '';
                 document.getElementById('contactPhone').value = '';
-                document.getElementById('contactStatus').value = 'lead';
+                // Preseleccionar etiqueta si fue especificada
+                document.getElementById('contactTag').value = preselectedTagId || '';
                 document.getElementById('contactNotes').value = '';
             }
             
+            // Forzar estilos para popup centrado
+            modal.style.cssText = `
+                display: flex !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                background: rgba(0, 0, 0, 0.85) !important;
+                z-index: 999999999 !important;
+                align-items: center !important;
+                justify-content: center !important;
+                backdrop-filter: blur(15px) !important;
+                margin: 0 !important;
+                padding: 20px !important;
+                box-sizing: border-box !important;
+            `;
+            
             modal.classList.add('active');
-            console.log(`📝 Modal de contacto abierto (${contactId ? 'editar' : 'nuevo'})${preselectedTagId ? ` con etiqueta preseleccionada: ${preselectedTagId}` : ''}`);
+            
+            // Enfocar el primer campo
+            setTimeout(() => {
+                const firstInput = document.getElementById('contactName');
+                if (firstInput) firstInput.focus();
+            }, 100);
+            
+            console.log(`📝 Modal de contacto abierto en pantalla completa (${contactId ? 'editar' : 'nuevo'})${preselectedTagId ? ` con etiqueta preseleccionada: ${preselectedTagId}` : ''}`);
             
         } catch (error) {
             console.error('Error opening contact modal:', error);
         }
     }
 
+    loadTagsIntoContactModal() {
+        try {
+            const tagSelect = document.getElementById('contactTag');
+            if (!tagSelect) return;
+            
+            // Limpiar opciones existentes (excepto "Sin etiqueta")
+            tagSelect.innerHTML = '<option value="">Sin etiqueta</option>';
+            
+            // Agregar etiquetas dinámicas
+            this.tags.forEach(tag => {
+                const option = document.createElement('option');
+                option.value = tag.id;
+                option.textContent = tag.name;
+                option.style.color = tag.color;
+                tagSelect.appendChild(option);
+            });
+            
+            console.log(`🏷️ ${this.tags.length} etiquetas cargadas en modal de contacto`);
+        } catch (error) {
+            console.error('Error loading tags into contact modal:', error);
+        }
+    }
+
     closeContactModal() {
         try {
             const modal = document.getElementById('contactModal');
-            modal.classList.remove('active');
+            if (modal) {
+                // Limpiar estilos inline forzados
+                modal.style.cssText = '';
+                modal.classList.remove('active');
+                
+                // Limpiar campos del formulario
+                document.getElementById('contactName').value = '';
+                document.getElementById('contactPhone').value = '';
+                document.getElementById('contactTag').value = '';
+                document.getElementById('contactNotes').value = '';
+            }
+            
             this.currentEditingContact = null;
+            this.preselectedTagId = null;
             console.log('❌ Modal de contacto cerrado');
         } catch (error) {
             console.error('Error closing contact modal:', error);
@@ -2007,7 +3003,7 @@ class WhatsAppCRM {
         try {
             const name = document.getElementById('contactName').value.trim();
             const phone = document.getElementById('contactPhone').value.trim();
-            const status = document.getElementById('contactStatus').value;
+            const selectedTagId = document.getElementById('contactTag').value;
             const notes = document.getElementById('contactNotes').value.trim();
 
             if (!name || !phone) {
@@ -2015,11 +3011,20 @@ class WhatsAppCRM {
                 return;
             }
 
+            // Preparar etiquetas del contacto
+            const contactTags = [];
+            if (selectedTagId) {
+                contactTags.push(selectedTagId);
+            } else if (this.preselectedTagId) {
+                contactTags.push(this.preselectedTagId);
+            }
+
             const contactData = {
                 name,
                 phone,
-                status,
                 notes,
+                tags: contactTags,
+                status: 'lead', // Mantener por compatibilidad, pero usar etiquetas como principal
                 updatedAt: new Date().toISOString()
             };
 
@@ -2027,25 +3032,33 @@ class WhatsAppCRM {
                 const contact = this.contacts.find(c => c.id === this.currentEditingContact);
                 if (contact) {
                     Object.assign(contact, contactData);
-                    this.showNotification('Contacto actualizado', 'success');
-                    console.log(`✏️ Contacto actualizado: ${contact.name}`);
+                    const tagName = selectedTagId ? this.tags.find(t => t.id === selectedTagId)?.name : 'Sin etiqueta';
+                    this.showNotification(`Contacto actualizado${tagName ? ` con etiqueta "${tagName}"` : ''}`, 'success');
+                    console.log(`✏️ Contacto actualizado: ${contact.name} - Etiqueta: ${tagName || 'Sin etiqueta'}`);
                 }
             } else {
                 const newContact = {
                     id: this.generateId(),
                     ...contactData,
-                    createdAt: new Date().toISOString(),
-                    tags: this.preselectedTagId ? [this.preselectedTagId] : []
+                    createdAt: new Date().toISOString()
                 };
                 this.contacts.push(newContact);
-                this.showNotification('Contacto creado', 'success');
-                console.log(`➕ Nuevo contacto creado: ${newContact.name}${this.preselectedTagId ? ' con etiqueta preseleccionada' : ''}`);
+                const tagName = contactTags.length > 0 ? this.tags.find(t => t.id === contactTags[0])?.name : 'Sin etiqueta';
+                this.showNotification(`Contacto creado${tagName ? ` con etiqueta "${tagName}"` : ''}`, 'success');
+                console.log(`➕ Nuevo contacto creado: ${newContact.name} - Etiqueta: ${tagName || 'Sin etiqueta'}`);
             }
 
             this.saveContacts();
             this.closeContactModal();
             this.loadContactsList();
-            this.loadKanban();
+            
+            // Actualizar todas las vistas de kanban
+            this.updateAllKanbanViews();
+            
+            // Actualizar pestañas dinámicas
+            this.generateDynamicTabs();
+            this.updateTabCounts();
+            
             this.updateDashboard();
             
             // Limpiar etiqueta preseleccionada
@@ -2277,13 +3290,24 @@ class WhatsAppCRM {
             const modal = document.getElementById('tagModal');
             const title = document.getElementById('tagModalTitle');
             
+            if (!modal) {
+                console.error('❌ Modal de etiqueta no encontrado');
+                return;
+            }
+            
+            // Asegurar que el modal esté en el body para máxima visibilidad
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+            
+            // Configurar contenido del modal
             if (tagId) {
                 const tag = this.tags.find(t => t.id === tagId);
                 if (tag) {
                     title.textContent = 'Editar Etiqueta';
                     document.getElementById('tagName').value = tag.name;
                     document.getElementById('tagColor').value = tag.color;
-                    document.getElementById('tagDescription').value = tag.description;
+                    document.getElementById('tagDescription').value = tag.description || '';
                 }
             } else {
                 title.textContent = 'Nueva Etiqueta';
@@ -2292,8 +3316,33 @@ class WhatsAppCRM {
                 document.getElementById('tagDescription').value = '';
             }
             
+            // Forzar estilos para que aparezca por encima del kanban fullscreen
+            modal.style.cssText = `
+                display: flex !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                background: rgba(0, 0, 0, 0.9) !important;
+                z-index: 9999999999 !important;
+                align-items: center !important;
+                justify-content: center !important;
+                backdrop-filter: blur(15px) !important;
+                margin: 0 !important;
+                padding: 20px !important;
+                box-sizing: border-box !important;
+            `;
+            
             modal.classList.add('active');
-            console.log(`🏷️ Modal de etiqueta abierto (${tagId ? 'editar' : 'nueva'})`);
+            
+            // Enfocar el primer campo
+            setTimeout(() => {
+                const firstInput = document.getElementById('tagName');
+                if (firstInput) firstInput.focus();
+            }, 100);
+            
+            console.log(`🏷️ Modal de etiqueta abierto en fullscreen (${tagId ? 'editar' : 'nueva'})`);
             
         } catch (error) {
             console.error('Error opening tag modal:', error);
@@ -2303,7 +3352,17 @@ class WhatsAppCRM {
     closeTagModal() {
         try {
             const modal = document.getElementById('tagModal');
-            modal.classList.remove('active');
+            if (modal) {
+                // Limpiar estilos inline forzados
+                modal.style.cssText = '';
+                modal.classList.remove('active');
+                
+                // Limpiar campos del formulario
+                document.getElementById('tagName').value = '';
+                document.getElementById('tagColor').value = '#00a884';
+                document.getElementById('tagDescription').value = '';
+            }
+            
             this.currentEditingTag = null;
             console.log('❌ Modal de etiqueta cerrado');
         } catch (error) {
@@ -2350,14 +3409,14 @@ class WhatsAppCRM {
             this.saveTags();
             this.closeTagModal();
             this.loadTags();
+            
+            // Regenerar pestañas dinámicas
+            this.generateDynamicTabs();
+            this.updateTabCounts();
             this.updateDashboard();
             
-            // Actualizar kanban si está abierto
-            if (document.getElementById('kanbanFullscreen')?.classList.contains('active')) {
-                this.renderKanbanFullscreen();
-            } else {
-                this.loadKanban();
-            }
+            // Actualizar todas las vistas de kanban
+            this.updateAllKanbanViews();
             
         } catch (error) {
             console.error('Error saving tag:', error);
@@ -3501,8 +4560,14 @@ class WhatsAppCRM {
                     this.saveTemplates();
                     this.saveSettings();
                     
-                    this.loadSettings();
-                    this.updateDashboard();
+                                this.loadSettings();
+            this.updateDashboard();
+            
+            // Generar pestañas dinámicas al cargar
+            setTimeout(() => {
+                this.generateDynamicTabs();
+                this.updateTabCounts();
+            }, 500);
                     this.loadKanban();
                     this.loadContactsList();
                     this.loadTags();
@@ -4007,6 +5072,41 @@ window.testTagModal = function() {
     }
 };
 
+// FUNCIÓN GLOBAL PARA PROBAR LAS PESTAÑAS DINÁMICAS TIPO WHATSAPP
+window.testWhatsAppTabs = function() {
+    console.log('📋 === PRUEBA PESTAÑAS TIPO WHATSAPP ===');
+    
+    if (!window.whatsappCRM) {
+        console.log('❌ whatsappCRM no disponible');
+        return false;
+    }
+    
+    try {
+        // Probar el sistema de pestañas
+        window.whatsappCRM.testDynamicTabs();
+        
+        // Mostrar información adicional
+        console.log('\n🎯 FUNCIONALIDADES DE LAS PESTAÑAS:');
+        console.log('✅ Conteo automático de contactos por etiqueta');
+        console.log('✅ Filtrado dinámico al hacer clic');
+        console.log('✅ Actualización en tiempo real');
+        console.log('✅ Scroll horizontal como WhatsApp');
+        console.log('✅ Diseño idéntico a WhatsApp Web');
+        console.log('✅ Botón + para crear nuevas etiquetas');
+        
+        console.log('\n💡 PARA USAR:');
+        console.log('1. Las pestañas aparecen automáticamente en la parte superior');
+        console.log('2. Cada etiqueta es una pestaña con su conteo');
+        console.log('3. Haz clic en una pestaña para filtrar contactos');
+        console.log('4. El botón + abre el modal de nueva etiqueta');
+        
+        return true;
+    } catch (error) {
+        console.log('❌ Error:', error.message);
+        return false;
+    }
+};
+
 // SINCRONIZACIÓN MANUAL CON WHATSAPP
 window.syncWithWhatsAppNow = function() {
     console.log('🔄 === SINCRONIZACIÓN MANUAL CON WHATSAPP ===');
@@ -4180,3 +5280,37 @@ console.log('   1. createTestTags()');
 console.log('   2. syncWithWhatsAppNow()');
 console.log('   3. detectCurrentChat()');
 console.log('   4. tagCurrentChat("Cliente VIP")'); 
+
+// FUNCIÓN GLOBAL PARA PROBAR EL NUEVO SISTEMA DE ETIQUETAS UNIFICADO
+window.testTagSystemUnified = function() {
+    console.log('🏷️ === PRUEBA SISTEMA DE ETIQUETAS UNIFICADO ===');
+    
+    if (!window.whatsappCRM) {
+        console.log('❌ whatsappCRM no disponible');
+        return false;
+    }
+    
+    try {
+        // Probar el sistema de etiquetas
+        window.whatsappCRM.testNewTagSystem();
+        
+        // Mostrar resumen
+        console.log('\n🎯 RESULTADO DE LA UNIFICACIÓN:');
+        console.log(`✅ Total etiquetas en CRM: ${window.whatsappCRM.tags.length}`);
+        console.log(`👥 Total contactos: ${window.whatsappCRM.contacts.length}`);
+        
+        const contactsWithTags = window.whatsappCRM.contacts.filter(c => c.tags && c.tags.length > 0);
+        console.log(`🏷️ Contactos con etiquetas: ${contactsWithTags.length}`);
+        
+        console.log('\n💡 AHORA PUEDES:');
+        console.log('1. Abrir modal de contacto - verás etiquetas dinámicas');
+        console.log('2. Las etiquetas del modal son las mismas de la sección Etiquetas');
+        console.log('3. El kanban usa las etiquetas unificadas');
+        console.log('4. Drag and drop funciona con etiquetas reales');
+        
+        return true;
+    } catch (error) {
+        console.log('❌ Error:', error.message);
+        return false;
+    }
+};

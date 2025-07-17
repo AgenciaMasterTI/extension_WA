@@ -173,21 +173,19 @@
   transform: scale(1.05) !important;
 }
 
-/* Filtros superiores */
-.filters-section {
-  padding: var(--spacing-lg) !important;
-  border-bottom: 1px solid var(--border-light) !important;
+/* Pestañas tipo WhatsApp - Sistema dinámico */
+.tabs-section {
   background: var(--surface-color) !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  padding: var(--spacing-md) !important;
 }
 
-.filters-row {
-  display: flex !important;
-  gap: var(--spacing-sm) !important;
+.search-row {
   margin-bottom: var(--spacing-md) !important;
 }
 
-.filter-input {
-  flex: 1 !important;
+.search-input {
+  width: 100% !important;
   padding: var(--spacing-md) var(--spacing-lg) !important;
   border: 1px solid var(--border-color) !important;
   border-radius: var(--radius-lg) !important;
@@ -198,37 +196,151 @@
   outline: none !important;
 }
 
-.filter-input:focus {
+.search-input:focus {
   border-color: var(--primary-color) !important;
   box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.1) !important;
 }
 
-.filter-tags {
+/* Contenedor de pestañas con scroll horizontal */
+.tabs-container {
   display: flex !important;
+  align-items: center !important;
   gap: var(--spacing-sm) !important;
-  flex-wrap: wrap !important;
+  overflow: hidden !important;
 }
 
-.filter-tag {
-  padding: var(--spacing-sm) var(--spacing-md) !important;
-  background: var(--border-color) !important;
-  color: var(--text-primary) !important;
-  border-radius: var(--radius-md) !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
+.tabs-scroll {
+  display: flex !important;
+  gap: var(--spacing-xs) !important;
+  overflow-x: auto !important;
+  flex: 1 !important;
+  padding: 2px !important;
+  scroll-behavior: smooth !important;
+  /* Ocultar scrollbar pero mantener funcionalidad */
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.tabs-scroll::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Pestañas individuales tipo WhatsApp */
+.tab-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-sm) !important;
+  padding: 8px 12px !important;
+  background: transparent !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 20px !important;
   cursor: pointer !important;
   transition: var(--transition-fast) !important;
-  border: none !important;
+  white-space: nowrap !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--text-secondary) !important;
+  min-height: 32px !important;
+  flex-shrink: 0 !important;
 }
 
-.filter-tag:hover {
+.tab-item:hover {
   background: var(--surface-hover) !important;
+  border-color: var(--primary-color) !important;
   transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(0, 168, 132, 0.15) !important;
 }
 
-.filter-tag.active {
+.tab-item.active {
   background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
   color: white !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 12px rgba(0, 168, 132, 0.3) !important;
+}
+
+.tab-text {
+  font-weight: inherit !important;
+  color: inherit !important;
+}
+
+.tab-count {
+  background: rgba(255, 255, 255, 0.2) !important;
+  padding: 2px 6px !important;
+  border-radius: 10px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  min-width: 18px !important;
+  text-align: center !important;
+  color: inherit !important;
+}
+
+.tab-item.active .tab-count {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+}
+
+.tab-item:not(.active) .tab-count {
+  background: var(--surface-color) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Botón para agregar nueva etiqueta */
+.tab-add-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: var(--border-color) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  cursor: pointer !important;
+  transition: var(--transition-fast) !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.tab-add-btn:hover {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: white !important;
+  transform: scale(1.1) !important;
+}
+
+/* Animaciones para pestañas */
+@keyframes tabSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.tab-item.new {
+  animation: tabSlideIn 0.3s ease-out !important;
+}
+
+/* Responsive para pestañas */
+@media (max-width: 768px) {
+  .tabs-section {
+    padding: var(--spacing-sm) !important;
+  }
+  
+  .tab-item {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+  
+  .tab-count {
+    font-size: 10px !important;
+    padding: 1px 4px !important;
+  }
 }
 
 /* Navegación rediseñada */
@@ -643,6 +755,86 @@
   overflow: hidden !important;
 }
 
+/* Kanban Contact Cards - Estilo exacto de las imágenes */
+.kanban-contact-card {
+  background: #1a1a1a !important;
+  border: 1px solid #333 !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  margin-bottom: 8px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  position: relative !important;
+}
+
+.kanban-contact-card:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  border-color: #555 !important;
+}
+
+.kanban-contact-card .contact-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 8px !important;
+}
+
+.kanban-contact-card .contact-info {
+  flex: 1 !important;
+  margin-left: 12px !important;
+  min-width: 0 !important;
+}
+
+.kanban-contact-card .contact-name {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #e6edf3 !important;
+  margin-bottom: 2px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.kanban-contact-card .contact-time {
+  font-size: 12px !important;
+  color: #8b949e !important;
+  font-family: monospace !important;
+}
+
+.contact-actions-kanban {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.remove-tag-btn {
+  background: none !important;
+  border: none !important;
+  cursor: pointer !important;
+  padding: 4px !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.remove-tag-btn:hover {
+  background: rgba(248, 81, 73, 0.1) !important;
+  transform: scale(1.1) !important;
+}
+
+.kanban-contact-card .contact-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+  border-top: 1px solid #333 !important;
+}
+
 /* Responsive card padding */
 @media (max-width: 768px) {
   .contact-card {
@@ -977,18 +1169,21 @@
   transform: translateY(-1px) !important;
 }
 
-/* Modales mejorados */
+/* Modales mejorados - POPUP CENTRADO EN TODA LA PANTALLA */
 .modal {
   display: none !important;
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  background: rgba(0, 0, 0, 0.8) !important;
-  z-index: 10000000 !important;
-  backdrop-filter: blur(12px) !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  z-index: 999999999 !important;
+  backdrop-filter: blur(15px) !important;
   animation: fadeIn 0.3s ease-out !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .modal.active {
@@ -1000,13 +1195,15 @@
 .modal-content {
   background: var(--card-background) !important;
   border-radius: var(--radius-2xl) !important;
-  box-shadow: var(--shadow-xl) !important;
-  min-width: 480px !important;
-  max-width: 90vw !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6) !important;
+  width: 500px !important;
+  max-width: 95vw !important;
   max-height: 90vh !important;
   overflow: hidden !important;
   border: 1px solid var(--border-color) !important;
   animation: slideInUp 0.3s ease-out !important;
+  position: relative !important;
+  margin: auto !important;
 }
 
 @keyframes fadeIn {
@@ -1361,6 +1558,271 @@
   font-family: inherit !important;
   white-space: pre-wrap !important;
   word-wrap: break-word !important;
+}
+
+/* MODAL DE CONTACTO - POPUP CENTRADO PERFECTO */
+#contactModal {
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  z-index: 999999999 !important;
+  backdrop-filter: blur(15px) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+}
+
+#contactModal.active {
+  display: flex !important;
+}
+
+#contactModal .modal-content {
+  background: var(--card-background) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6) !important;
+  width: 500px !important;
+  max-width: 95vw !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border-color) !important;
+  animation: modalFadeIn 0.3s ease-out !important;
+  position: relative !important;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Asegurar que el modal esté por encima de WhatsApp Web */
+#contactModal {
+  z-index: 999999999 !important;
+}
+
+/* Header del modal de contacto */
+#contactModal .modal-header {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  padding: 24px !important;
+  border-bottom: none !important;
+}
+
+#contactModal .modal-header h3 {
+  color: white !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+}
+
+#contactModal .modal-close {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  border: none !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  font-size: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+}
+
+#contactModal .modal-close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.1) !important;
+}
+
+/* MODAL DE ETIQUETAS - POPUP CENTRADO PERFECTO */
+#tagModal {
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.9) !important;
+  z-index: 9999999999 !important;
+  backdrop-filter: blur(15px) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+}
+
+#tagModal.active {
+  display: flex !important;
+}
+
+#tagModal .modal-content {
+  background: var(--card-background) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6) !important;
+  width: 500px !important;
+  max-width: 95vw !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border-color) !important;
+  animation: tagModalFadeIn 0.3s ease-out !important;
+  position: relative !important;
+}
+
+@keyframes tagModalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header del modal de etiquetas */
+#tagModal .modal-header {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%) !important;
+  color: white !important;
+  padding: 24px !important;
+  border-bottom: none !important;
+}
+
+#tagModal .modal-header h3 {
+  color: white !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+}
+
+#tagModal .modal-close {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  border: none !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  font-size: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+}
+
+#tagModal .modal-close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.1) !important;
+}
+
+/* KANBAN FULLSCREEN - DRAG AND DROP Y COLUMNA FIJA */
+
+/* Efectos de drag and drop */
+.contact-card-fullscreen[draggable="true"] {
+  cursor: grab !important;
+}
+
+.contact-card-fullscreen[draggable="true"]:active {
+  cursor: grabbing !important;
+}
+
+/* Columna sticky para "Todos os contatos" */
+.kanban-column-fullscreen[data-column-id="all"] {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 1000 !important;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.4) !important;
+}
+
+/* Asegurar que el scroll horizontal funcione correctamente */
+.kanban-fullscreen-container-custom {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scroll-behavior: smooth !important;
+}
+
+/* Mejorar el indicador visual de drag */
+.contact-card-fullscreen.dragging {
+  opacity: 0.5 !important;
+  transform: rotate(5deg) !important;
+  z-index: 1000 !important;
+}
+
+/* Hover states para mejor UX */
+.kanban-cards-fullscreen:hover {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  transition: background-color 0.2s ease !important;
+}
+
+/* Indicador visual de zona de drop activa - MEJORADO */
+.kanban-cards-fullscreen.drag-over {
+  background-color: rgba(88, 166, 255, 0.1) !important;
+  border: 2px dashed #58a6ff !important;
+  border-radius: 8px !important;
+  position: relative !important;
+}
+
+.kanban-cards-fullscreen.drag-over::before {
+  content: "📋 Soltar aquí" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background: linear-gradient(135deg, #58a6ff 0%, #0969da 100%) !important;
+  color: white !important;
+  padding: 20px 32px !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+  box-shadow: 0 8px 24px rgba(88, 166, 255, 0.4) !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  animation: dropIndicatorPulse 1s ease-in-out infinite !important;
+}
+
+@keyframes dropIndicatorPulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+/* Asegurar que el contenedor tenga posición relativa */
+.kanban-cards-fullscreen {
+  position: relative !important;
+}
+
+/* Animación para el contacto mientras se arrastra */
+.contact-card-fullscreen.dragging {
+  opacity: 0.7 !important;
+  transform: rotate(3deg) scale(1.05) !important;
+  z-index: 1000 !important;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.6) !important;
+  border-color: #58a6ff !important;
+}
+
+/* Pulso en las columnas cuando hay drag activo */
+@keyframes dragPulse {
+  0% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(88, 166, 255, 0.1); }
+  100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0); }
+}
+
+.kanban-column-fullscreen.drag-active {
+  animation: dragPulse 2s infinite !important;
 } 
 
 /* ========================================
