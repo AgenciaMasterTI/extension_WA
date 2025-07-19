@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Auth - WhatsApp CRM</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0b1426;
+            color: #e4e6ea;
+            margin: 0;
+            padding: 20px;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #1e2a3a;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #2a3441;
+        }
+        .test-title {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #00a884;
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #1a2332;
+            border-radius: 8px;
+            border: 1px solid #364152;
+        }
+        .test-button {
+            background: #00a884;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 8px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #008c73;
+        }
+        .test-button.secondary {
+            background: #667781;
+        }
+        .test-button.secondary:hover {
+            background: #5a6b7a;
+        }
+        .test-result {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .test-result.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+        .test-result.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+        .test-result.info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">🧪 Test de Autenticación - WhatsApp CRM</h1>
+        
+        <div class="test-section">
+            <h3>🔧 Configuración</h3>
+            <button class="test-button" onclick="testConfig()">Probar Configuración</button>
+            <button class="test-button secondary" onclick="testConnection()">Probar Conexión</button>
+            <div id="configResult" class="test-result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔐 Autenticación</h3>
+            <button class="test-button" onclick="testAuth()">Probar Auth Service</button>
+            <button class="test-button secondary" onclick="testLogin()">Probar Login</button>
+            <div id="authResult" class="test-result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Estado</h3>
+            <button class="test-button" onclick="showStatus()">Mostrar Estado</button>
+            <button class="test-button secondary" onclick="clearStorage()">Limpiar Storage</button>
+            <div id="statusResult" class="test-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { AuthService } from './services/authService.js';
+        import { isSupabaseConfigured, testSupabaseConnection } from './services/supabaseClient.js';
+
+        let authService = null;
+
+        window.testConfig = async function() {
+            const result = document.getElementById('configResult');
+            result.style.display = 'block';
+            
+            try {
+                const isConfigured = isSupabaseConfigured();
+                result.className = 'test-result ' + (isConfigured ? 'success' : 'error');
+                result.textContent = `Configuración: ${isConfigured ? '✅ Correcta' : '❌ Faltan credenciales'}`;
+            } catch (error) {
+                result.className = 'test-result error';
+                result.textContent = `Error: ${error.message}`;
+            }
+        };
+
+        window.testConnection = async function() {
+            const result = document.getElementById('configResult');
+            result.style.display = 'block';
+            
+            try {
+                const isConnected = await testSupabaseConnection();
+                result.className = 'test-result ' + (isConnected ? 'success' : 'error');
+                result.textContent = `Conexión: ${isConnected ? '✅ Exitosa' : '❌ Falló'}`;
+            } catch (error) {
+                result.className = 'test-result error';
+                result.textContent = `Error: ${error.message}`;
+            }
+        };
+
+        window.testAuth = async function() {
+            const result = document.getElementById('authResult');
+            result.style.display = 'block';
+            
+            try {
+                if (!authService) {
+                    authService = new AuthService();
+                }
+                
+                const isInitialized = await authService.init();
+                result.className = 'test-result ' + (isInitialized ? 'success' : 'info');
+                result.textContent = `Auth Service: ${isInitialized ? '✅ Inicializado (usuario autenticado)' : 'ℹ️ Inicializado (sin sesión)'}`;
+            } catch (error) {
+                result.className = 'test-result error';
+                result.textContent = `Error: ${error.message}`;
+            }
+        };
+
+        window.testLogin = async function() {
+            const result = document.getElementById('authResult');
+            result.style.display = 'block';
+            
+            try {
+                if (!authService) {
+                    authService = new AuthService();
+                    await authService.init();
+                }
+                
+                // Usar credenciales de prueba
+                const testResult = await authService.login('test@example.com', 'password123');
+                result.className = 'test-result ' + (testResult.success ? 'success' : 'error');
+                result.textContent = `Login: ${testResult.success ? '✅ Exitoso' : '❌ Falló'} - ${testResult.error || ''}`;
+            } catch (error) {
+                result.className = 'test-result error';
+                result.textContent = `Error: ${error.message}`;
+            }
+        };
+
+        window.showStatus = async function() {
+            const result = document.getElementById('statusResult');
+            result.style.display = 'block';
+            
+            try {
+                const storage = await chrome.storage.local.get(null);
+                const supabaseKeys = Object.keys(storage).filter(key => 
+                    key.startsWith('sb-') || key.includes('supabase')
+                );
+                
+                result.className = 'test-result info';
+                result.textContent = `Storage Keys: ${supabaseKeys.length > 0 ? supabaseKeys.join(', ') : 'Ninguna'}`;
+            } catch (error) {
+                result.className = 'test-result error';
+                result.textContent = `Error: ${error.message}`;
+            }
+        };
+
+        window.clearStorage = async function() {
+            const result = document.getElementById('statusResult');
+            result.style.display = 'block';
+            
+            try {
+                const storage = await chrome.storage.local.get(null);
+                const supabaseKeys = Object.keys(storage).filter(key => 
+                    key.startsWith('sb-') || key.includes('supabase')
+                );
+                
+                if (supabaseKeys.length > 0) {
+                    await chrome.storage.local.remove(supabaseKeys);
+                    result.className = 'test-result success';
+                    result.textContent = `Storage limpiado: ${supabaseKeys.length} claves removidas`;
+                } else {
+                    result.className = 'test-result info';
+                    result.textContent = 'No hay claves de Supabase para limpiar';
+                }
+            } catch (error) {
+                result.className = 'test-result error';
+                result.textContent = `Error: ${error.message}`;
+            }
+        };
+    </script>
+</body>
+</html> 

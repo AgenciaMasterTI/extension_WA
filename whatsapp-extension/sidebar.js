@@ -1,7 +1,15 @@
 
+// Importar servicios de autenticación
+import { AuthService } from './services/authService.js';
+
 class WhatsAppCRM {
     constructor() {
         console.log('🚀 WhatsApp CRM Professional (Modo Oscuro) - Iniciando...');
+        
+        // Inicializar servicio de autenticación
+        this.authService = new AuthService();
+        this.isAuthenticated = false;
+        this.currentUser = null;
         
         // Inicializar datos con valores por defecto
         this.contacts = this.loadData('contacts', []);
@@ -38,7 +46,7 @@ class WhatsAppCRM {
     // INICIALIZACIÓN Y CONFIGURACIÓN
     // ===========================================
 
-    init() {
+    async init() {
         try {
             console.log('🎯 Inicializando CRM Professional...');
             
@@ -51,9 +59,21 @@ class WhatsAppCRM {
             
             console.log('✅ HTML elements disponibles, continuando inicialización...');
             
+            // Inicializar autenticación
+            await this.initAuthentication();
+            
+            // Solo continuar si el usuario está autenticado
+            if (!this.isAuthenticated) {
+                console.log('🔐 Usuario no autenticado, mostrando formulario de login...');
+                this.showAuthSection();
+                return;
+            }
+            
+            console.log('✅ Usuario autenticado, continuando inicialización...');
+            
             // Crear datos de ejemplo si no existen
             this.createSampleDataIfEmpty();
-        this.migrateOldStatusToTags();
+            this.migrateOldStatusToTags();
             
             // Cargar configuraciones
             this.loadSettings();
@@ -72,7 +92,8 @@ class WhatsAppCRM {
                 contacts: this.contacts.length,
                 tags: this.tags.length,
                 templates: this.templates.length,
-                events: this.debugStats.eventsbound
+                events: this.debugStats.eventsbound,
+                user: this.currentUser?.email
             });
             
         } catch (error) {
@@ -90,7 +111,8 @@ class WhatsAppCRM {
             'addTemplateBtn',
             'templatesContainer',
             'tagModal',
-            'templateModal'
+            'templateModal',
+            'authSection'
         ];
         
         const missingElements = criticalElements.filter(id => !document.getElementById(id));
@@ -102,6 +124,353 @@ class WhatsAppCRM {
         
         console.log('✅ Todos los elementos críticos encontrados');
         return true;
+    }
+
+    // ===========================================
+    // AUTENTICACIÓN
+    // ===========================================
+
+    async initAuthentication() {
+        try {
+            console.log('🔐 Inicializando autenticación...');
+            
+            // Inicializar el servicio de autenticación
+            const isAuthenticated = await this.authService.init();
+            
+            if (isAuthenticated) {
+                this.isAuthenticated = true;
+                this.currentUser = this.authService.getCurrentUser();
+                console.log('✅ Usuario autenticado:', this.currentUser.email);
+            } else {
+                console.log('❌ Usuario no autenticado');
+            }
+            
+            // Configurar callback para cambios de autenticación
+            this.authService.onAuthStateChange((event, session) => {
+                console.log('🔄 Cambio de estado de autenticación:', event);
+                this.handleAuthStateChange(event, session);
+            });
+            
+        } catch (error) {
+            console.error('❌ Error inicializando autenticación:', error);
+            this.showNotification('Error de conexión con el servidor', 'error');
+        }
+    }
+
+    handleAuthStateChange(event, session) {
+        if (event === 'SIGNED_IN' && session) {
+            this.isAuthenticated = true;
+            this.currentUser = session.user;
+            this.showMainInterface();
+            this.showNotification('Sesión iniciada correctamente', 'success');
+        } else if (event === 'SIGNED_OUT') {
+            this.isAuthenticated = false;
+            this.currentUser = null;
+            this.showAuthSection();
+            this.showNotification('Sesión cerrada', 'info');
+        }
+    }
+
+    showAuthSection() {
+        // Ocultar toda la interfaz principal
+        const mainSections = [
+            'tabsSection',
+            'sidebar-nav',
+            'sidebar-content'
+        ];
+        
+        mainSections.forEach(sectionId => {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.style.display = 'none';
+            }
+        });
+        
+        // Mostrar sección de autenticación
+        const authSection = document.getElementById('authSection');
+        if (authSection) {
+            authSection.style.display = 'block';
+        }
+        
+        // Mostrar formulario de login por defecto
+        this.showLoginForm();
+        
+        // Vincular eventos de autenticación
+        this.bindAuthEvents();
+    }
+
+    showMainInterface() {
+        // Ocultar sección de autenticación
+        const authSection = document.getElementById('authSection');
+        if (authSection) {
+            authSection.style.display = 'none';
+        }
+        
+        // Mostrar interfaz principal
+        const mainSections = [
+            'tabsSection',
+            'sidebar-nav',
+            'sidebar-content'
+        ];
+        
+        mainSections.forEach(sectionId => {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.style.display = 'block';
+            }
+        });
+        
+        // Actualizar información del usuario
+        this.updateUserInfo();
+    }
+
+    showLoginForm() {
+        this.hideAllAuthForms();
+        const loginForm = document.getElementById('authLoginForm');
+        if (loginForm) {
+            loginForm.style.display = 'block';
+        }
+    }
+
+    showRegisterForm() {
+        this.hideAllAuthForms();
+        const registerForm = document.getElementById('authRegisterForm');
+        if (registerForm) {
+            registerForm.style.display = 'block';
+        }
+    }
+
+    showUserInfo() {
+        this.hideAllAuthForms();
+        const userInfo = document.getElementById('authUser');
+        if (userInfo) {
+            userInfo.style.display = 'block';
+        }
+    }
+
+    hideAllAuthForms() {
+        const forms = [
+            'authLoading',
+            'authLoginForm',
+            'authRegisterForm',
+            'authUser'
+        ];
+        
+        forms.forEach(formId => {
+            const form = document.getElementById(formId);
+            if (form) {
+                form.style.display = 'none';
+            }
+        });
+    }
+
+    updateUserInfo() {
+        if (!this.currentUser) return;
+        
+        const userName = document.getElementById('userName');
+        const userAvatar = document.getElementById('userAvatar');
+        const userPlan = document.getElementById('userPlan');
+        
+        if (userName) {
+            userName.textContent = this.currentUser.user_metadata?.name || this.currentUser.email;
+        }
+        
+        if (userAvatar) {
+            const initials = this.getUserInitials(this.currentUser.user_metadata?.name || this.currentUser.email);
+            userAvatar.textContent = initials;
+        }
+        
+        if (userPlan) {
+            userPlan.textContent = 'Plan Gratis'; // Por ahora hardcodeado
+        }
+    }
+
+    getUserInitials(name) {
+        return name
+            .split(' ')
+            .map(word => word.charAt(0))
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+    }
+
+    bindAuthEvents() {
+        // Eventos del formulario de login
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+        }
+        
+        // Eventos del formulario de registro
+        const registerForm = document.getElementById('registerForm');
+        if (registerForm) {
+            registerForm.addEventListener('submit', (e) => this.handleRegister(e));
+        }
+        
+        // Botones de cambio de formulario
+        const showRegisterBtn = document.getElementById('showRegisterForm');
+        if (showRegisterBtn) {
+            showRegisterBtn.addEventListener('click', () => this.showRegisterForm());
+        }
+        
+        const showLoginBtn = document.getElementById('showLoginForm');
+        if (showLoginBtn) {
+            showLoginBtn.addEventListener('click', () => this.showLoginForm());
+        }
+        
+        // Botón de logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.handleLogout());
+        }
+        
+        // Botón de olvidé contraseña
+        const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+        if (forgotPasswordBtn) {
+            forgotPasswordBtn.addEventListener('click', () => this.handleForgotPassword());
+        }
+    }
+
+    async handleLogin(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        const loginBtn = document.getElementById('loginBtn');
+        
+        if (!email || !password) {
+            this.showNotification('Por favor completa todos los campos', 'error');
+            return;
+        }
+        
+        // Mostrar estado de carga
+        this.setButtonLoading(loginBtn, true);
+        
+        try {
+            const result = await this.authService.login(email, password);
+            
+            if (result.success) {
+                this.isAuthenticated = true;
+                this.currentUser = result.user;
+                this.showMainInterface();
+                this.showNotification('Sesión iniciada correctamente', 'success');
+                
+                // Reinicializar la aplicación
+                this.init();
+            } else {
+                this.showNotification(result.error || 'Error al iniciar sesión', 'error');
+            }
+        } catch (error) {
+            console.error('Error en login:', error);
+            this.showNotification('Error al conectar con el servidor', 'error');
+        } finally {
+            this.setButtonLoading(loginBtn, false);
+        }
+    }
+
+    async handleRegister(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('registerName').value;
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+        const registerBtn = document.getElementById('registerBtn');
+        
+        if (!name || !email || !password || !passwordConfirm) {
+            this.showNotification('Por favor completa todos los campos', 'error');
+            return;
+        }
+        
+        if (password !== passwordConfirm) {
+            this.showNotification('Las contraseñas no coinciden', 'error');
+            return;
+        }
+        
+        if (password.length < 6) {
+            this.showNotification('La contraseña debe tener al menos 6 caracteres', 'error');
+            return;
+        }
+        
+        // Mostrar estado de carga
+        this.setButtonLoading(registerBtn, true);
+        
+        try {
+            const result = await this.authService.register({
+                name,
+                email,
+                password
+            });
+            
+            if (result.success) {
+                this.showNotification('Cuenta creada exitosamente. Revisa tu email para confirmar.', 'success');
+                this.showLoginForm();
+            } else {
+                this.showNotification(result.error || 'Error al crear la cuenta', 'error');
+            }
+        } catch (error) {
+            console.error('Error en registro:', error);
+            this.showNotification('Error al conectar con el servidor', 'error');
+        } finally {
+            this.setButtonLoading(registerBtn, false);
+        }
+    }
+
+    async handleLogout() {
+        try {
+            const result = await this.authService.logout();
+            
+            if (result.success) {
+                this.isAuthenticated = false;
+                this.currentUser = null;
+                this.showAuthSection();
+                this.showNotification('Sesión cerrada correctamente', 'info');
+            } else {
+                this.showNotification(result.error || 'Error al cerrar sesión', 'error');
+            }
+        } catch (error) {
+            console.error('Error en logout:', error);
+            this.showNotification('Error al cerrar sesión', 'error');
+        }
+    }
+
+    async handleForgotPassword() {
+        const email = document.getElementById('loginEmail').value;
+        
+        if (!email) {
+            this.showNotification('Por favor ingresa tu email primero', 'error');
+            return;
+        }
+        
+        try {
+            const result = await this.authService.requestPasswordReset(email);
+            
+            if (result.success) {
+                this.showNotification('Se ha enviado un enlace de recuperación a tu email', 'success');
+            } else {
+                this.showNotification(result.error || 'Error al enviar el enlace', 'error');
+            }
+        } catch (error) {
+            console.error('Error en forgot password:', error);
+            this.showNotification('Error al procesar la solicitud', 'error');
+        }
+    }
+
+    setButtonLoading(button, loading) {
+        if (!button) return;
+        
+        const btnText = button.querySelector('.btn-text');
+        const btnLoading = button.querySelector('.btn-loading');
+        
+        if (loading) {
+            if (btnText) btnText.style.display = 'none';
+            if (btnLoading) btnLoading.style.display = 'inline-block';
+            button.disabled = true;
+        } else {
+            if (btnText) btnText.style.display = 'inline-block';
+            if (btnLoading) btnLoading.style.display = 'none';
+            button.disabled = false;
+        }
     }
 
     createSampleDataIfEmpty() {
@@ -365,6 +734,9 @@ class WhatsAppCRM {
             }
             
             console.log('✅ Contenedor del sidebar encontrado, vinculando eventos...');
+            
+            // Autenticación
+            this.bindAuthEvents();
             
             // Toggle sidebar
             this.bindToggleEvents();

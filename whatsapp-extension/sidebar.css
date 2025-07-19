@@ -1211,6 +1211,249 @@
   to { opacity: 1; }
 }
 
+/* =====================================================
+   SECCIÓN DE AUTENTICACIÓN
+   ===================================================== */
+
+.auth-section {
+  background: var(--surface-color) !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  padding: var(--spacing-lg) !important;
+}
+
+.auth-container {
+  position: relative !important;
+}
+
+/* Estado de carga */
+.auth-loading {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: var(--spacing-2xl) !important;
+  text-align: center !important;
+}
+
+.auth-loading-spinner {
+  width: 32px !important;
+  height: 32px !important;
+  border: 3px solid var(--border-color) !important;
+  border-top: 3px solid var(--primary-color) !important;
+  border-radius: 50% !important;
+  animation: spin 1s linear infinite !important;
+  margin-bottom: var(--spacing-md) !important;
+}
+
+.auth-loading-text {
+  color: var(--text-secondary) !important;
+  font-size: 14px !important;
+}
+
+/* Formularios de autenticación */
+.auth-form {
+  animation: fadeIn 0.3s ease-in-out !important;
+}
+
+.auth-header {
+  text-align: center !important;
+  margin-bottom: var(--spacing-xl) !important;
+}
+
+.auth-logo {
+  width: 48px !important;
+  height: 48px !important;
+  background: var(--gradient-primary) !important;
+  border-radius: var(--radius-lg) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 24px !important;
+  margin: 0 auto var(--spacing-md) !important;
+}
+
+.auth-header h3 {
+  color: var(--text-primary) !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  margin-bottom: var(--spacing-sm) !important;
+}
+
+.auth-header p {
+  color: var(--text-secondary) !important;
+  font-size: 14px !important;
+}
+
+/* Grupos de formulario */
+.form-group {
+  margin-bottom: var(--spacing-lg) !important;
+}
+
+.form-group label {
+  display: block !important;
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+  margin-bottom: var(--spacing-sm) !important;
+  font-size: 14px !important;
+}
+
+.form-group input {
+  width: 100% !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--card-background) !important;
+  color: var(--text-primary) !important;
+  font-size: 14px !important;
+  transition: var(--transition-fast) !important;
+  outline: none !important;
+}
+
+.form-group input:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.1) !important;
+}
+
+.form-group input::placeholder {
+  color: var(--text-tertiary) !important;
+}
+
+/* Botones de formulario */
+.btn-full {
+  width: 100% !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.btn-loading {
+  position: absolute !important;
+  right: var(--spacing-md) !important;
+  animation: spin 1s linear infinite !important;
+}
+
+/* Footer de autenticación */
+.auth-footer {
+  margin-top: var(--spacing-xl) !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-md) !important;
+}
+
+.btn-link {
+  background: none !important;
+  border: none !important;
+  color: var(--primary-color) !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: var(--transition-fast) !important;
+  text-decoration: underline !important;
+  padding: var(--spacing-sm) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.btn-link:hover {
+  color: var(--primary-light) !important;
+  background: rgba(0, 168, 132, 0.1) !important;
+}
+
+/* Usuario autenticado */
+.auth-user {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: var(--spacing-md) !important;
+  background: var(--card-background) !important;
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--border-color) !important;
+  animation: fadeIn 0.3s ease-in-out !important;
+}
+
+.user-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-md) !important;
+  flex: 1 !important;
+}
+
+.user-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  background: var(--gradient-primary) !important;
+  border-radius: var(--radius-md) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: white !important;
+}
+
+.user-details {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.user-name {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  margin-bottom: var(--spacing-xs) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.user-plan {
+  color: var(--text-secondary) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.user-actions {
+  display: flex !important;
+  gap: var(--spacing-sm) !important;
+}
+
+/* Responsive para autenticación */
+@media (max-width: 768px) {
+  .auth-section {
+    padding: var(--spacing-md) !important;
+  }
+  
+  .auth-user {
+    flex-direction: column !important;
+    gap: var(--spacing-md) !important;
+    text-align: center !important;
+  }
+  
+  .user-actions {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* Estados de error y éxito */
+.auth-error {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+  padding: var(--spacing-md) !important;
+  border-radius: var(--radius-md) !important;
+  margin-bottom: var(--spacing-lg) !important;
+  font-size: 14px !important;
+}
+
+.auth-success {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  color: #6ee7b7 !important;
+  padding: var(--spacing-md) !important;
+  border-radius: var(--radius-md) !important;
+  margin-bottom: var(--spacing-lg) !important;
+  font-size: 14px !important;
+}
+
 @keyframes slideInUp {
   from {
     opacity: 0;

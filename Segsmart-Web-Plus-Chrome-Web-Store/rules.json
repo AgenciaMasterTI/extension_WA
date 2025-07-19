@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        {
+          "header": "Content-Security-Policy",
+          "operation": "set",
+          "value": "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; img-src * data: blob:;"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "https://web.whatsapp.com/*",
+      "resourceTypes": ["main_frame"]
+    }
+  }
+]

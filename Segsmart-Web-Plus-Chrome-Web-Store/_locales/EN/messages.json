@@ -1,0 +1,1710 @@
+{
+	"quickMessage": {
+		"message": "Quick Message"
+	},
+	"search": {
+		"message": "Search"
+	},
+	"createTextMessage": {
+		"message": "Create  Text Message"
+	},
+	"createAudioMessage": {
+		"message": "Create Audio Message"
+	},
+	"createImageMessage": {
+		"message": "Create image Message"
+	},
+	"createVideoMessage": {
+		"message": "Create video message"
+	},
+	"createDocumentMessage": {
+		"message": "Create document message"
+	},
+	"createUserMessage": {
+		"message": "Create user message"
+	},
+	"createMultipleSend": {
+		"message": "Create multiple send (script)"
+	},
+	"createGrouper": {
+		"message": "Create grouper"
+	},
+	"deleteGrouper": {
+		"message": "Delete grouper"
+	},
+	"areUSureDeleteGrouper": {
+		"message": "Are you sure you want to delete this grouper (this will not delete the messages within it)?"
+	},
+	"yesDeleteGrouper": {
+		"message": "Yes"
+	},
+	"cancelDeleteGrouper": {
+		"message": "Cancel"
+	},
+	"grouperSuccessfullyRemoved": {
+		"message": "Grouper successfully removed"
+	},
+	"nameIsMandatory": {
+		"message": "Name is mandatory"
+	},
+	"grouperSuccessfullySaved": {
+		"message": "Grouper successfully saved"
+	},
+	"toSave": {
+		"message": "Save"
+	},
+	"toCancel": {
+		"message": "Cancel"
+	},
+	"toEdit": {
+		"message": "Edit"
+	},
+	"toClose": {
+		"message": "Close"
+	},
+	"toOpen": {
+		"message": "Open"
+	},
+	"enterQuickMessageName": {
+		"message": "Enter quick message name"
+	},
+	"deleteQuickMessage": {
+		"message": "Delete quick message"
+	},
+	"areUSureDeleteQuickMessage": {
+		"message": "Are you sure you want to delete this quick message?"
+	},
+	"yesDeleteQuickMessage": {
+		"message": "Yes"
+	},
+	"cancelDeleteQuickMessage": {
+		"message": "Cancel"
+	},
+	"quickMessageSucessfullyRemoved": {
+		"message": "Quick message successfully removed"
+	},
+	"sendMessageToSelectedChat": {
+		"message": "Send message to selected chat"
+	},
+	"name": {
+		"message": "Name"
+	},
+	"nickName": {
+		"message": "Nickname"
+	},
+	"optional": {
+		"message": "Optional"
+	},
+	"userName": {
+		"message": "Username"
+	},
+	"userNameDescription": {
+		"message": "Used to identify the contact attendant"
+	},
+	"signAsdescription": {
+		"message": "Used to sign with text other than the username."
+	},
+	"signAsName": {
+		"message": "Sign message as"
+	},
+	"typeSignAsName": {
+		"message": "Enter name to sign message"
+	},
+	"freeUsersJustOneQuickMessage": {
+		"message": "Free users can only have 1 quick message of each type. Subscribe to premium to enjoy 100%."
+	},
+	"selectMessageForAllSteps": {
+		"message": "Select one message for all steps"
+	},
+	"messageSuccessfullySaved": {
+		"message": "Message successfully saved"
+	},
+	"selectAMessage": {
+		"message": "Select a message"
+	},
+	"typeDelayInSeconds": {
+		"message": "Type the delay in seconds"
+	},
+	"toRemove": {
+		"message": "Remove"
+	},
+	"toAddStep": {
+		"message": "Add step"
+	},
+	"numberIsMandatory": {
+		"message": "Number is mandatory"
+	},
+	"thisNumberIsNotInWhatsapp": {
+		"message": "This number is not on Whatsapp"
+	},
+	"typeTheNameThatWillAppearWhenSendContact": {
+		"message": "Enter the name that will appear when sending contact"
+	},
+	"typeTheNumber": {
+		"message": "Enter the number XX (XX) XXXX-XXXX"
+	},
+	"videoIsMandatory": {
+		"message": "Video is mandatory"
+	},
+	"theFileMustBeAMaximum": {
+		"message": "The file must be a maximum of 40mb"
+	},
+	"uploadAFileVideo": {
+		"message": "Upload a file video"
+	},
+	"typeTheMessageUseNameForUser": {
+		"message": "Enter the message, use #name or #fullName to use the user's name"
+	},
+	"documentIsMandatory": {
+		"message": "Document is mandatory"
+	},
+	"uploadADocumentFile": {
+		"message": "Upload document file"
+	},
+	"imageIsMandatory": {
+		"message": "Image is mandatory"
+	},
+	"uploadAImageFile": {
+		"message": "Upload image file"
+	},
+	"audioIsMandatory": {
+		"message": "Audio is mandatory"
+	},
+	"messageIsMandatory": {
+		"message": "Message is mandatory"
+	},
+	"createMessageContact": {
+		"message": "Create contact message"
+	},
+	"contactName": {
+		"message": "Contact name"
+	},
+	"contactNumber": {
+		"message": "Contact number"
+	},
+	"message": {
+		"message": "Message"
+	},
+	"document": {
+		"message": "Document"
+	},
+	"image": {
+		"message": "Image"
+	},
+	"recordAudio": {
+		"message": "Record audio"
+	},
+	"video": {
+		"message": "Video"
+	},
+	"startRecording": {
+		"message": "Start recording"
+	},
+	"stopRecording": {
+		"message": "Stop recording"
+	},
+	"uploadAudioFile": {
+		"message": "Upload audio file"
+	},
+	"justPremiumUsersCreateBot": {
+		"message": "Only premium users can create more than 1 bot"
+	},
+	"deleteBot": {
+		"message": "Delete bot"
+	},
+	"areUSureDeleteBot": {
+		"message": "Are you sure you want to delete this bot?"
+	},
+	"yesDeleteBot": {
+		"message": "Yes"
+	},
+	"cancelDeleteBot": {
+		"message": "Cancel"
+	},
+	"botSuccessfullyRemoved": {
+		"message": "Bot successfully removed"
+	},
+	"activateOrDeactivateBot": {
+		"message": "Activate or deactivate bot"
+	},
+	"uNeedToAddTrigger": {
+		"message": "You need to add a trigger"
+	},
+	"uNeedToHaveOneStep": {
+		"message": "You need to have at least one step"
+	},
+	"botSuccessfullySaved": {
+		"message": "Bot successfully saved"
+	},
+	"typeTheBotName": {
+		"message": "Enter the bot name"
+	},
+	"trigger": {
+		"message": "Trigger"
+	},
+	"selectBotLauncher": {
+		"message": "Select bot launcher"
+	},
+	"containsOnMessage": {
+		"message": "Contains on message"
+	},
+	"exactMessage": {
+		"message": "Exact message"
+	},
+	"firstMessage": {
+		"message": "First message"
+	},
+	"steps": {
+		"message": "Steps:"
+	},
+	"selectTheStepType": {
+		"message": "Select the step type:"
+	},
+	"quickMessages": {
+		"message": "Quick Messages"
+	},
+	"textMessage": {
+		"message": "Text message"
+	},
+	"voiceMessage": {
+		"message": "Voice message"
+	},
+	"wait": {
+		"message": "Wait"
+	},
+	"transferToUser": {
+		"message": "Transfer to user"
+	},
+	"addTag": {
+		"message": "Add tag"
+	},
+	"removeTag": {
+		"message": "Remove tag"
+	},
+	"botChat": {
+		"message": "Bot chat"
+	},
+	"modCRMKamban": {
+		"message": "CRM Mode (Kanban)"
+	},
+	"campaigns": {
+		"message": "Campaigns"
+	},
+	"referralLink": {
+		"message": "Referral Link"
+	},
+	"privacity": {
+		"message": "Privacity"
+	},
+	"generateLinkAndQr": {
+		"message": "Generate link and QR"
+	},
+	"importExportData": {
+		"message": "Import/export data"
+	},
+	"cloudBackup": {
+		"message": "Cloud backup"
+	},
+	"sendCloudBackup": {
+		"message": "Send backup to cloud"
+	},
+	"lastSync": {
+		"message": "Last Sync"
+	},
+	"appointmentAndReminders": {
+		"message": "Appointment and reminders"
+	},
+	"preferences": {
+		"message": "Preferences"
+	},
+	"selectTheme": {
+		"message": "Theme"
+	},
+	"synchronize": {
+		"message": "Synchronize"
+	},
+	"exporting": {
+		"message": "Exporting..."
+	},
+	"uploading": {
+		"message": "Uploading..."
+	},
+	"failed": {
+		"message": "Failure..."
+	},
+	"importCloud": {
+		"message": "Restore backup"
+	},
+	"lightMode": {
+		"message": "Light"
+	},
+	"darkMode": {
+		"message": "Dark"
+	},
+	"account": {
+		"message": "Account"
+	},
+	"chatWithSupport": {
+		"message": "Chat with support"
+	},
+	"createBot": {
+		"message": "Create bot"
+	},
+	"activateInGroups": {
+		"message": "Activate in groups"
+	},
+	"errorWhenSaving": {
+		"message": "Error when saving"
+	},
+	"successfullySaved": {
+		"message": "Successfully saved"
+	},
+	"contentMessage": {
+		"message": "Message contains"
+	},
+	"typeTheMessageContain": {
+		"message": "Enter the message that should contain"
+	},
+	"firstMessageType": {
+		"message": "First message type"
+	},
+	"firstMessageDay": {
+		"message": "First message of the day"
+	},
+	"firstMessageClient": {
+		"message": "Customer's first message"
+	},
+	"actions": {
+		"message": "Actions"
+	},
+
+	"audio": {
+		"message": "Audio"
+	},
+	"openToReproduce": {
+		"message": "Open to reproduce"
+	},
+	"timeIsMandatory": {
+		"message": "Time is mandatory"
+	},
+	"invalidTime": {
+		"message": "Invalid time, put in the following model: 00:00"
+	},
+	"waitingTimeInSeconds": {
+		"message": "Waiting time in seconds"
+	},
+	"userIsMandatory": {
+		"message": "User is mandatory"
+	},
+	"tagIsMandatory": {
+		"message": "Tag is mandatory"
+	},
+	"selectTag": {
+		"message": "Select a tag"
+	},
+	"tags": {
+		"message": "Tags"
+	},
+	"selectAUser": {
+		"message": "Select a user"
+	},
+	"createCampaign": {
+		"message": "Create campaign"
+	},
+	"deleteCampaign": {
+		"message": "Delete campaign"
+	},
+	"areUSureDeleteCampaign": {
+		"message": "Are you sure you want to delete this campaign?"
+	},
+	"yesDeleteCampaign": {
+		"message": "Yes"
+	},
+	"campaignSuccessfullyRemoved": {
+		"message": "campaign successfully removed"
+	},
+	"sendToContact": {
+		"message": "send to contact"
+	},
+	"campaignNameIsMandatory": {
+		"message": "Campaign name is mandatory"
+	},
+	"quickMessageIsMandatory": {
+		"message": "Quick message is mandatory"
+	},
+	"campaignSuccessfullySaved": {
+		"message": "Campaign successfully saved"
+	},
+	"typeCampaignName": {
+		"message": "Enter the campaign name"
+	},
+	"createQuickMessage": {
+		"message": "Create quick message"
+	},
+	"typeTheMessageToSentUseNameForUser": {
+		"message": "Type the message to be sent, use #name or #fullName to mention the contact's name"
+	},
+	"hideProfilePhotos": {
+		"message": "Hide profile photos"
+	},
+	"hideContactNames": {
+		"message": "Hide contact names"
+	},
+	"hideContactNamesInChat": {
+		"message": "Hide contact names in chat"
+	},
+	"hideCurrentChat": {
+		"message": "Hide current chat"
+	},
+	"generateLink": {
+		"message": "Generate link"
+	},
+	"copyLink": {
+		"message": "Copy link"
+	},
+	"downloadQrCode": {
+		"message": "Download QR Code"
+	},
+	"qrCode": {
+		"message": "QR Code"
+	},
+	"availableOnlyForPremiumUsers": {
+		"message": "This functionality is only available to premium users."
+	},
+	"botNameUninformed": {
+		"message": "Bot name not provided"
+	},
+	"triggerTypeUninformed": {
+		"message": "Trigger type not specified"
+	},
+	"stepTypeUninformed": {
+		"message": "Step type not specified"
+	},
+	"botsSuccessfullyImported": {
+		"message": "Bots imported successfully"
+	},
+	"errorImportBots": {
+		"message": "Error importing bots."
+	},
+	"nameUninformed": {
+		"message": "Name uninformed"
+	},
+	"messageOrMidiaUninformed": {
+		"message": "Message or midia uninformed"
+	},
+	"quickMessagesSuccessfullyImported": {
+		"message": "Quick messages successfully imported"
+	},
+	"errorImportQuickMessages": {
+		"message": "Error importing quick messages."
+	},
+	"contact": {
+		"message": "Contacts"
+	},
+	"toExport": {
+		"message": "Export"
+	},
+	"bots": {
+		"message": "Bots"
+	},
+	"toImport": {
+		"message": "Import"
+	},
+	"importing": {
+		"message": "Importing..."
+	},
+	"restore": {
+		"message": "Restore"
+	},
+	"unableGetBackup": {
+		"message": "Unable to get backup."
+	},
+	"appointmentAndRemindersOfMessages": {
+		"message": "Appointment and reminders of messages"
+	},
+	"openCalendar": {
+		"message": "Create reminder/schedule"
+	},
+	"noNotification": {
+		"message": "No notifications"
+	},
+	"appointmentError": {
+		"message": "Appointment error"
+	},
+	"reminders": {
+		"message": "Reminders"
+	},
+	"scheduledMessagesSent": {
+		"message": "Scheduled messages sent"
+	},
+	"sendNow": {
+		"message": "Send now"
+	},
+	"openChat": {
+		"message": "Open chat"
+	},
+	"toDelete": {
+		"message": "Delete"
+	},
+	"markAsViewed": {
+		"message": "Mark as viewed"
+	},
+	"emailIsMandatory": {
+		"message": "E-mail is mandatory"
+	},
+	"emailIvalid": {
+		"message": "E-mail invalid"
+	},
+	"loading": {
+		"message": "Loading..."
+	},
+	"passwordIsMandatory": {
+		"message": "Password is mandatory"
+	},
+	"passwordMustHaveAtLeastSixCharacters": {
+		"message": "Password must contain at least 6 characters"
+	},
+	"passwordsDontMatch": {
+		"message": "Passwords dont match"
+	},
+	"attention": {
+		"message": "Attention"
+	},
+	"areUSureAlterUserName": {
+		"message": "Are you sure you want to change the username? This may remove conversations linked to it"
+	},
+	"no": {
+		"message": "No"
+	},
+	"yes": {
+		"message": "Yes"
+	},
+	"typeUrEmail": {
+		"message": "Type your e-mail"
+	},
+	"justAdminCanEditName": {
+		"message": "Only the admin user can edit the name"
+	},
+	"typeUserName": {
+		"message": "Type the user name"
+	},
+	"editPassword": {
+		"message": "Edit password?"
+	},
+	"typeNewPassword": {
+		"message": "Type new password"
+	},
+	"password": {
+		"message": "Password"
+	},
+	"repeatNewPassword": {
+		"message": "Repeat new password"
+	},
+	"repeatPassword": {
+		"message": "Repeat the password"
+	},
+	"createUser": {
+		"message": "Create user"
+	},
+	"successfullyLoggedOut": {
+		"message": "Successfully logged out"
+	},
+	"welcome": {
+		"message": "Welcome,"
+	},
+	"editUrUser": {
+		"message": "Edit your user"
+	},
+	"loggedOut": {
+		"message": "Logged out"
+	},
+	"yourAccessMustHaveNAgents": {
+		"message": "Your contracted plan supports up to {agents} agents"
+	},
+	"deleteUser": {
+		"message": "Delete user"
+	},
+	"areUSureDeleteUser": {
+		"message": "Are you sure you want to delete this user?"
+	},
+	"createNewUser": {
+		"message": "Create new user"
+	},
+	"congratsUAreAUser": {
+		"message": "Congratulations! You are a user"
+	},
+	"andCanEnjoyUrPlugin": {
+		"message": "and can fully enjoy your plugin."
+	},
+	"manageLicense": {
+		"message": "Manage license"
+	},
+	"sharePluginLinkWithOtherUsers": {
+		"message": "Share the plugin link to other users"
+	},
+	"linkCopiedToClipboard": {
+		"message": "Link copied to clipboard"
+	},
+	"email": {
+		"message": "E-mail"
+	},
+	"forgotPassword": {
+		"message": "I forgot the password"
+	},
+	"resetPasswordLinkSent": {
+		"message": "A link to reset the password for the associated account has been sent to the email address provided"
+	},
+	"createAccount": {
+		"message": "Create account"
+	},
+	"toEnter": {
+		"message": "Enter"
+	},
+	"typeUrPassword": {
+		"message": "Type your password"
+	},
+	"freeVersionOneReminder": {
+		"message": "The free version only allows one schedule and one reminder"
+	},
+	"dayReminder": {
+		"message": "Schedules for the day"
+	},
+	"showOnlyThisUser": {
+		"message": "Show only from this user"
+	},
+	"noneReminderForTheSelectDay": {
+		"message": "No schedule for the selected day."
+	},
+	"createReminder": {
+		"message": "Create reminder"
+	},
+	"scheduleShipping": {
+		"message": "Schedule message"
+	},
+	"deleteReminder": {
+		"message": "Delete reminder"
+	},
+	"areUSureDeleteReminder": {
+		"message": "Are you sure you want to delete this schedule?"
+	},
+	"reminderSuccessfullyRemoved": {
+		"message": "Schedule removed successfully"
+	},
+	"toSchedule": {
+		"message": "Schedule"
+	},
+	"notificationsAlreadyRead": {
+		"message": "Notifications already read"
+	},
+	"necessaryInformTheDayOfTheReminder": {
+		"message": "It is necessary to inform the day of the reminder"
+	},
+	"necessaryInformTheChat": {
+		"message": "Chat required"
+	},
+	"necessaryInformTheHourOfTheReminder": {
+		"message": "It is necessary to inform the reminder time"
+	},
+	"necessaryInformTheReminderName": {
+		"message": "You must enter the name of the reminder"
+	},
+	"reminderSuccessfullyCreated": {
+		"message": "Reminder created successfully"
+	},
+	"typeRemindersName": {
+		"message": "Enter the reminder name"
+	},
+	"remindersName": {
+		"message": "Reminder name:"
+	},
+	"remindersComments": {
+		"message": "Reminder notes:"
+	},
+	"ifNecessaryAddComments": {
+		"message": "If necessary, add a note"
+	},
+	"hourToActiveReminder": {
+		"message": "Time to activate reminder:"
+	},
+	"necessaryInformTheDay": {
+		"message": "It is necessary to inform the day"
+	},
+	"necessaryInformTheHour": {
+		"message": "Time required"
+	},
+	"necessaryInformTheName": {
+		"message": "Name required"
+	},
+	"schedulingSuccessfullyCreated": {
+		"message": "Schedule created successfully"
+	},
+	"typeSchedulingName": {
+		"message": "Enter the name of the schedule"
+	},
+	"comments": {
+		"message": "Comments:"
+	},
+	"hourToSendTheMessage": {
+		"message": "Time to send the message:"
+	},
+	"notes": {
+		"message": "Notes"
+	},
+	"modifyUserNotes": {
+		"message": "Modify user notes"
+	},
+	"youNeedToBePremiumToAddTags": {
+		"message": "You need to be premium to add tags"
+	},
+	"youNeedToBePremiumToTranfer": {
+		"message": "To transfer service, you need to be premium."
+	},
+	"serviceTransferredIn": {
+		"message": "Service transferred from"
+	},
+	"to": {
+		"message": "to"
+	},
+	"serviceTransferredTo": {
+		"message": "Service transferred to"
+	},
+	"transfer": {
+		"message": "Transfer"
+	},
+	"transferCall": {
+		"message": "Transfer service"
+	},
+	"endCall": {
+		"message": "End service"
+	},
+	"noneUserAvailable": {
+		"message": "No users available"
+	},
+	"end": {
+		"message": "Close"
+	},
+	"toUseSignatureUNeedToBeLogged": {
+		"message": "To use subscription, you need to be logged in."
+	},
+	"toUseSignatureUNeedToBePremium": {
+		"message": "To use subscription, you need to be premium."
+	},
+	"removeSignature": {
+		"message": "Remove subscription"
+	},
+	"signMessage": {
+		"message": "Sign message"
+	},
+	"login": {
+		"message": "Login"
+	},
+	"toWait": {
+		"message": "Wait"
+	},
+	"reportShippingInterval": {
+		"message": "Enter the interval between shipments"
+	},
+	"shippingIntervalMustBe": {
+		"message": "The interval between sends must be greater than 1 second"
+	},
+	"enterBothPause": {
+		"message": "Enter both pause fields or none"
+	},
+	"toSendForMoreContactsEnterBothPause": {
+		"message": "To send to more than 25 contacts, you must enter the pause amount"
+	},
+	"quantityPauseShouldBeBigger": {
+		"message": "The pause amount must be greater than 2 contacts"
+	},
+	"breakContactIntervalShouldBeMoreThanFiveSeconds": {
+		"message": "The pause interval between contacts must be greater than 5 seconds"
+	},
+	"iUnderstoodAndWantToProceed": {
+		"message": "I understand and wish to continue"
+	},
+	"configureShipping": {
+		"message": "Configure shipments"
+	},
+	"theInformedTimeMayHaveChange": {
+		"message": "The time provided may undergo minor changes"
+	},
+	"intervalBetweenShipments": {
+		"message": "Interval between sending"
+	},
+	"quantitySecondsBetweenShipments": {
+		"message": "Number of seconds between each send"
+	},
+	"pauseShipmentsAfterContacts": {
+		"message": "Pause sending after X contacts"
+	},
+	"afterSentAQuantityOfContactsWait": {
+		"message": "After sending a number of contacts, you will wait a while"
+	},
+	"pauseFor": {
+		"message": "Pause for"
+	},
+	"quantityOfSecondsWillPause": {
+		"message": "Number of seconds it will pause"
+	},
+	"estimatedTime": {
+		"message": "Estimated time:"
+	},
+	"startSending": {
+		"message": "Start Sending"
+	},
+	"stopSending": {
+		"message": "Stop sending"
+	},
+	"sendingCampaign": {
+		"message": "Sending campaign"
+	},
+	"quantityContacts": {
+		"message": "Number of contacts:"
+	},
+	"sent": {
+		"message": "Sent"
+	},
+	"alreadySent": {
+		"message": "Already Sent"
+	},
+	"pending": {
+		"message": "Pending send:"
+	},
+	"sentTo": {
+		"message": "Sent to"
+	},
+	"contacts": {
+		"message": "Contacts"
+	},
+	"signUpForAPlanRightNow": {
+		"message": "Sign up for a plan right now."
+	},
+	"serviceCompleted": {
+		"message": "Service completed"
+	},
+	"sendCampaign": {
+		"message": "Send campaign"
+	},
+	"toResearch": {
+		"message": "Research"
+	},
+	"selected": {
+		"message": "selected"
+	},
+	"selectAll": {
+		"message": "Select all"
+	},
+	"tagNameIsMandatory": {
+		"message": "Tag name is mandatory"
+	},
+	"labelSuccessfullyCreated": {
+		"message": "Label successfully created"
+	},
+	"errorWhenCreateTag": {
+		"message": "Error when create tag"
+	},
+	"createTag": {
+		"message": "Create tag"
+	},
+	"sendingCanceled": {
+		"message": "Canceled shipping"
+	},
+	"campaingSuccessfullySent": {
+		"message": "Campaign successfully sent"
+	},
+	"errorToSendCampaingAccessConsole": {
+		"message": "Error sending campaign, access the console for more information"
+	},
+	"onlyPremiumUsersCanFilterAttendants": {
+		"message": "Only premium users can filter by agents."
+	},
+	"unread": {
+		"message": "Unread"
+	},
+	"groups": {
+		"message": "Groups"
+	},
+	"all": {
+		"message": "All"
+	},
+	"knowPlans": {
+		"message": "Know the plans"
+	},
+	"maybeLater": {
+		"message": "Maybe later"
+	},
+	"onlyPremiumUsersCanSendMessagesByKanban": {
+		"message": "Only Premium Users can send messages by Kanban"
+	},
+	"chatNotFoundMessageNotSend": {
+		"message": "Chat not found message not sent."
+	},
+	"scheduledMessageSent": {
+		"message": "Scheduled message sent:"
+	},
+	"scheduledNotSentWhatsappWasNotOpen": {
+		"message": "WhatsApp was not open at the time of the appointment, appointment not sent."
+	},
+	"buttonReminder": {
+		"message": "View reminder"
+	},
+	"reminder": {
+		"message": "Reminder:"
+	},
+	"premiumAdTrialPeriod": {
+		"message": "You are in your {duration}-day trial period. Enjoy all the unlocked premium features!"
+	},
+	"premiumAdCouponPeriod": {
+		"message": "You are in your {duration}-day trial period of the coupon '{code}'. Enjoy all the unlocked premium features!"
+	},
+	"premiumAdFree": {
+		"message": "You are on the free version of the extension, with limited features."
+	},
+	"attendants": {
+		"message": "Attendants"
+	},
+	"allAttendants": {
+		"message": "All attendants"
+	},
+	"loggedOutAttendantsWarn": {
+		"message": "Log in to see attendants"
+	},
+	"createKanbanCol": {
+		"message": "Create column (label)"
+	},
+	"kanbanContactAlreadyInCol": {
+		"message": "The contact {contactName} It's already in the column {colName}"
+	},
+	"removeLabelChatError": {
+		"message": "Error removing chat tag"
+	},
+	"addLabelChatError": {
+		"message": "Error adding tag to chat"
+	},
+	"showArchivedChats": {
+		"message": "View archived"
+	},
+	"labelDeleteConfirmation": {
+		"message": "Are you sure you want to delete the tag {labelName}? This action cannot be undone"
+	},
+	"cancelDeleteLabel": {
+		"message": "Cancel"
+	},
+	"deleteLabelError": {
+		"message": "Error when deleting tag"
+	},
+	"deleteLabelSuccess": {
+		"message": "Tag deleted successfully"
+	},
+	"allContacts": {
+		"message": "All contacts"
+	},
+	"searchLabelContacts": {
+		"message": "Search..."
+	},
+	"deleteTag": {
+		"message": "Delete label"
+	},
+	"editTag": {
+		"message": "Edit label"
+	},
+	"downloadTagCSV": {
+		"message": "Download CSV"
+	},
+	"removeChatFromLabelSuccess": {
+		"message": "Chat removed from tag successfully"
+	},
+	"removeChatFromLabelError": {
+		"message": "Error removing chat from tag"
+	},
+	"archived": {
+		"message": "Filed"
+	},
+	"messageTypeImage": {
+		"message": "Image"
+	},
+	"messageTypeAudio": {
+		"message": "Audio"
+	},
+	"messageTypeSticker": {
+		"message": "Sticker"
+	},
+	"messageTypeDocument": {
+		"message": "Document"
+	},
+	"messageTypeVideo": {
+		"message": "Video"
+	},
+	"kanbanTitle": {
+		"message": "CRM Kanban"
+	},
+	"contactNotes": {
+		"message": "Contact notes"
+	},
+	"fullBackup": {
+		"message": "Full backup"
+	},
+	"importDataError": {
+		"message": "Error importing data"
+	},
+	"savedBackups": {
+		"message": "Saved backups"
+	},
+	"savedBackupsDescription": {
+		"message": "The system will keep up to 3 backups per device."
+	},
+	"selectLanguage": {
+		"message": "Language"
+	},
+	"nickNameDescription": {
+		"message": "HOME, WORK, etc."
+	},
+	"device": {
+		"message": "Device"
+	},
+	"deviceNickName": {
+		"message": "Device nickname"
+	},
+	"deviceNickNameDescription": {
+		"message": "It will be used to identify this device when restoring a backups"
+	},
+	"editUrDeviceName": {
+		"message": "Edit device nickname"
+	},
+	"defineDeviceName": {
+		"message": "Define a name for this device."
+	},
+	"deviceNameInfo": {
+		"message": "Define a name for this device. E.g.: HOME, WORK, etc"
+	},
+	"webhooksPaused": {
+		"message": "Webhooks (queue paused)"
+	},
+	"updatedAt": {
+		"message": "Update date"
+	},
+	"backupNotFound": {
+		"message": "No backups found."
+	},
+	"thisPc": {
+		"message": "This PC"
+	},
+	"anotherPc": {
+		"message": "Another PC"
+	},
+	"settings": {
+		"message": "Settings"
+	},
+	"webhookCreat": {
+		"message": "Create Webhook"
+	},
+	"download": {
+		"message": "Download"
+	},
+	"downloadOpenAPI": {
+		"message": "OpenAPI specifications"
+	},
+	"webhookSectionTitle": {
+		"message": "You can integrate with thousands of platforms"
+	},
+	"webhookSectionDescription": {
+		"message": "You can integrate our platform so that it sends real-time data to another system as soon as a specific event occurs."
+	},
+	"noWebhooks": {
+		"message": "No webhooks registered"
+	},
+	"webhookNamePlaceholder": {
+		"message": "Enter the webhook name"
+	},
+	"webhookUrlLabel": {
+		"message": "URL"
+	},
+	"webhookUrlPlaceholder": {
+		"message": "Enter the URL for request"
+	},
+	"webhookEventsLabel": {
+		"message": "Events"
+	},
+	"whatsappNativeEventsLabel": {
+		"message": "WhatsApp Native Events"
+	},
+	"modifiedLabel": {
+		"message": "Modified label"
+	},
+	"webhookInternalEventsLabel": {
+		"message": "Internal extension events"
+	},
+	"scheduleCreation": {
+		"message": "Creating a schedule"
+	},
+	"scheduleUpdate": {
+		"message": "Schedule update"
+	},
+	"webookDelete": {
+		"message": "Delete webhook"
+	},
+	"webookDeleteConfirm": {
+		"message": "Are you sure you want to delete this webhook?"
+	},
+	"yesDeleteWebhook": {
+		"message": "Yes"
+	},
+	"cancelDeleteWebhook": {
+		"message": "Cancel"
+	},
+	"webhookSuccessfullySaved": {
+		"message": "Webhook saved successfully"
+	},
+	"webhookSuccessfullyRemoved": {
+		"message": "Webhook removed successfully"
+	},
+	"removeWebhookError": {
+		"message": "Error removing webhook"
+	},
+	"saveWebhookError": {
+		"message": "Error saving webhook"
+	},
+	"webhookHasErrorMessage": {
+		"message": "There was an error in the request, the queue was paused"
+	},
+	"webhookToggleActive": {
+		"message": "Enable or disable webhook"
+	},
+	"webhookShowHistory": {
+		"message": "View logs"
+	},
+	"webhookDelete": {
+		"message": "Delete webhook"
+	},
+	"requiredField": {
+		"message": "{field} is a required field"
+	},
+	"maxLenghtField": {
+		"message": "{field} must be less than 15 characters"
+	},
+	"webhookMinimumEvents": {
+		"message": "Select at least one event"
+	},
+	"webhookNoHistory": {
+		"message": "No recent history for this webhook"
+	},
+	"history": {
+		"message": "History"
+	},
+	"historyUpdated": {
+		"message": "Updated history"
+	},
+	"toUpdate": {
+		"message": "Update"
+	},
+	"webhookHistoryLimit": {
+		"message": "Only the last {value} events from each webhook are stored."
+	},
+	"status": {
+		"message": "Status"
+	},
+	"date": {
+		"message": "Date"
+	},
+	"id": {
+		"message": "ID"
+	},
+	"event": {
+		"message": "Event"
+	},
+	"requestPayload": {
+		"message": "Payload"
+	},
+	"responsePayload": {
+		"message": "Response"
+	},
+	"downloadFileError": {
+		"message": "Error downloading file"
+	},
+	"whatsapp": {
+		"message": "WhatsApp"
+	},
+	"webhooks": {
+		"message": "Webhooks"
+	},
+	"portuguese": {
+		"message": "Portuguese"
+	},
+	"english": {
+		"message": "English"
+	},
+	"spanish": {
+		"message": "Spanish"
+	},
+	"devEmpty": {
+		"message": "DEV - Empty"
+	},
+	"loginRequired": {
+		"message": "You must be logged in to use this feature!"
+	},
+	"goToLogin": {
+		"message": "Log in"
+	},
+	"displayTranscription": {
+		"message": "View Transcript"
+	},
+	"transcribing": {
+		"message": "Transcribing..."
+	},
+	"transcription": {
+		"message": "Transcription"
+	},
+	"schedules": {
+		"message": "Schedule"
+	},
+	"removeTagNamed": {
+		"message": "Remove tag: {name}"
+	},
+	"removeTagPhoneWarning": {
+		"message": "This will also delete the tag from your phone."
+	},
+	"numberOfitems": {
+		"message": "{number} items"
+	},
+	"you": {
+		"message": "You"
+	},
+	"user": {
+		"message": "User"
+	},
+	"messageTypeVcard": {
+		"message": "Contact"
+	},
+	"messageRevoked": {
+		"message": "{author} deleted this message"
+	},
+	"messageGroupCreated": {
+		"message": "Group Created"
+	},
+	"messageGroupMemberAdded": {
+		"message": "{author} added {target}"
+	},
+	"messageGroupMemberRemoved": {
+		"message": "{author} removed {target}"
+	},
+	"messageGroupMemberLeaved": {
+		"message": "{target} left the group"
+	},
+	"crmBlockTitle": {
+		"message": "Block title"
+	},
+	"crmAddField": {
+		"message": "Add field"
+	},
+	"crmAddBlock": {
+		"message": "Add new block"
+	},
+	"crmRemoveField": {
+		"message": "Remove field"
+	},
+	"crmFieldName": {
+		"message": "Field name"
+	},
+	"fieldTypeCheckbox": {
+		"message": "Checkbox"
+	},
+	"fieldTypeDate": {
+		"message": "Date"
+	},
+	"fieldTypeNumber": {
+		"message": "Number"
+	},
+	"fieldTypeText": {
+		"message": "Text"
+	},
+	"blockName": {
+		"message": "Block name"
+	},
+	"crmEmptyBLock": {
+		"message": "Block must have at least one field"
+	},
+	"crmTitle": {
+		"message": "CRM"
+	},
+	"spamWarning": {
+		"message": "This campaign is being sent to more than 5 contacts, before continuing read <a href='{policyLink}' target='_blank'>WhatsApp message policies</a><br><b>We are not responsible for, nor do we encourage, misuse of the tool.</b>"
+	},
+	"selectingContacts": {
+		"message": "Selecting contacts..."
+	},
+	"selectContactsError": {
+		"message": "Error selecting contacts"
+	},
+	"waitingTimeInSecondsPlaceholder": {
+		"message": "Enter time"
+	},
+	"fieldMinChars": {
+		"message": "{field} must contain at least {amount} characters"
+	},
+	"editUser": {
+		"message": "Edit User"
+	},
+	"planPremium": {
+		"message": "Premium"
+	},
+	"planBasic": {
+		"message": "Basic"
+	},
+	"unexpectedError": {
+		"message": "Unexpected error"
+	},
+	"lastDay": {
+		"message": "Yesterday"
+	},
+	"today": {
+		"message": "Today"
+	},
+	"nextDay": {
+		"message": "Tomorrow"
+	},
+	"crmNotProvided": {
+		"message": "CRM block not provided"
+	},
+	"crmUserValuesNotProvided": {
+		"message": "CRM user values not provided"
+	},
+	"chatIdNotProvided": {
+		"message": "Chat ID not provided"
+	},
+	"audioFileNotProvided": {
+		"message": "Audio file not provided"
+	},
+	"serverError": {
+		"message": "Server Error"
+	},
+	"webhookNotProvided": {
+		"message": "Webhook not provided"
+	},
+	"webhookIdNotProvided": {
+		"message": "Webhook ID not provided"
+	},
+	"webhookOrEventNotProvided": {
+		"message": "Webhook or event not provided"
+	},
+	"responseReadError": {
+		"message": "Error reading response"
+	},
+	"webhookSendError": {
+		"message": "Error sending webhook"
+	},
+	"requestNotSend": {
+		"message": "Request not sent"
+	},
+	"webhookErrorTrys": {
+		"message": "Error sending webhook after {trys} attempts"
+	},
+	"actionNotFound": {
+		"message": "Action not found: {action}"
+	},
+	"botTagAddError": {
+		"message": "There was an error adding the tag with the bot"
+	},
+	"botTagRemoveError": {
+		"message": "There was an error removing the tag with the bot"
+	},
+	"exportDataError": {
+		"message": "Error exporting data: {error}"
+	},
+	"exportDataSuccess": {
+		"message": "Backup performed successfully!"
+	},
+	"fieldNotProvided": {
+		"message": "{field} not provided"
+	},
+	"campaignId": {
+		"message": "Campaign ID"
+	},
+	"campaignName": {
+		"message": "Campaign name"
+	},
+	"campaignType": {
+		"message": "Campaign type"
+	},
+	"scheduleId": {
+		"message": "Schedule ID"
+	},
+	"chatId": {
+		"message": "Chat ID"
+	},
+	"scheduleDateTime": {
+		"message": "Schedule date and time"
+	},
+	"scheduleType": {
+		"message": "Schedule type"
+	},
+	"campaignImportSuccess": {
+		"message": "Campaigns imported successfully"
+	},
+	"campaignImportError": {
+		"message": "Error importing campaigns: {error}"
+	},
+	"scheduleImportSuccess": {
+		"message": "Schedules imported successfully"
+	},
+	"scheduleImportError": {
+		"message": "Error importing schedules: {error}"
+	},
+	"crmFillContactError": {
+		"message": "Error filling CRM for contact {chatId} {error}"
+	},
+	"crmImportSuccess": {
+		"message": "CRM imported successfully"
+	},
+	"crmImportError": {
+		"message": "Error importing CRM: {error}"
+	},
+	"selectChatToSend": {
+		"message": "Select a chat to send the message"
+	},
+	"scriptMessageNotSend": {
+		"message": "One of the script messages was not found"
+	},
+	"scheduledWhatsappWasNotOpen": {
+		"message": "WhatsApp was not open at the time of scheduling"
+	},
+	"webhookPausedError": {
+		"message": "WEBHOOK PAUSED - Error sending webhook {webhook}, check logs for more information"
+	},
+	"subscribe": {
+		"message": "Subscribe Plan"
+	},
+	"webhookCreate": {
+		"message": "Create Webhook"
+	},
+	"crmClientInfo": {
+		"message": "Client Info"
+	},
+	"crmLeadNotes": {
+		"message": "Notes"
+	},
+	"crmLeadOrigin": {
+		"message": "Lead origin"
+	},
+	"crmLeadCreateDate": {
+		"message": "Created date"
+	},
+	"crmLeadValue": {
+		"message": "Lead value"
+	},
+	"crmLeadInterest": {
+		"message": "Interest"
+	},
+	"privacySettings": {
+		"message": "Privacy settings"
+	},
+	"campaignNotFound": {
+		"message": "Campaign not found"
+	},
+	"quickMessageId": {
+		"message": "Quick message ID"
+	},
+	"quickMessageNotFound": {
+		"message": "Quick message not found"
+	},
+	"url": {
+		"message": "URL"
+	},
+	"quickMessageFolder": {
+		"message": "Quick message folder"
+	},
+	"quickMessageFolderId": {
+		"message": "Quick message folder ID"
+	},
+	"addQuickMessageInFolderError": {
+		"message": "No quick message or folder ID provided"
+	},
+	"bot": {
+		"message": "Bot"
+	},
+	"botId": {
+		"message": "Bot ID"
+	},
+	"campaign": {
+		"message": "Campaign"
+	},
+	"campaignSettings": {
+		"message": "Campaign Settings"
+	},
+	"addSentOnCampaign": {
+		"message": "No campaign or chat ID provided"
+	},
+	"tag": {
+		"message": "Tag"
+	},
+	"fileUrl": {
+		"message": "File URL"
+	},
+	"tagNotFound": {
+		"message": "Tag not found"
+	},
+	"loginInfo": {
+		"message": "Login info"
+	},
+	"chatAssignmentInfo": {
+		"message": "Chat Assignment info"
+	},
+	"userInfo": {
+		"message": "User info"
+	},
+	"userId": {
+		"message": "User ID"
+	},
+	"cancelRecording": {
+		"message": "Stop Recording"
+	},
+	"addTagError": {
+		"message": "Error adding tag"
+	},
+	"ofDay": {
+		"message": "of day"
+	},
+	"ofClient": {
+		"message": "of client"
+	},
+	"filters": {
+		"message": "Filters"
+	},
+	"selectToSend": {
+		"message": "Select to send"
+	},
+	"exitEditMode": {
+		"message": "Exit edit mode"
+	},
+	"startEditMode": {
+		"message": "Start edit mode"
+	},
+	"transcribingError": {
+		"message": "Error transcribing audio"
+	},
+	"toTranscribe": {
+		"message": "Transcribe"
+	},
+	"transcriptionUsage": {
+		"message": "Transcription Usage"
+	},
+	"noSyncMessage": {
+		"message": "No synchronization performed!"
+	},
+	"transcriptionTrialUsage": {
+		"message": "Trial Usage"
+	},
+	"transcriptionMonthlyUsage": {
+		"message": "Monthly Usage"
+	},
+	"transcriptionAddonUsage": {
+		"message": "Addon Usage"
+	},
+	"tagName": {
+		"message": "Tag name"
+	},
+	"webhook": {
+		"message": "Webhook"
+	},
+	"indexes": {
+		"message": "Indexes"
+	},
+	"schedule": {
+		"message": "Schedule"
+	},
+	"tagMsgIsMandatory": {
+		"message": "Message is mandatory!"
+	},
+	"labelAutomaticMsgSuccessfullyCreated": {
+		"message": "Automatic message successfully created!"
+	},
+	"errorWhenCreateAutomaticMsgTag": {
+		"message": "Failed to create automatic message!"
+	},
+	"editIncludeMsg": {
+		"message": "Include/Edit message"
+	},
+	"automaticMessage": {
+		"message": "Automatic message"
+	},
+	"sendAutomaticMessage": {
+		"message": "Send automatic message"
+	},
+	"confirmSendAutomaticMessage": {
+		"message": "Confirm send automatic message?"
+	},
+	"toConfirm": {
+		"message": "Confirm"
+	},
+	"addedMessages": {
+		"message": "Message(s) added:"
+	},
+	"noMessagesYet": {
+		"message": "No messages added"
+	},
+	"messageAlreadyExists": {
+		"message": "Message already exists!"
+	},
+	"emptyMessage": {
+		"message": "Message is required!"
+  },
+	"descriptionAlertModal": {
+		"message": "Set a name for the current device. This name will be essential for organizing and locating the backups created, facilitating management and access to your information."
+	},
+	"alertModalButton": {
+		"message": "Set now"
+	},
+	"descriptionIntegrityCloudBackup": {
+		"message": "To maintain the integrity of your data, this backup does not store conversation data."
+	},
+	"showUnreadChats": {
+		"message": "Just unread"
+	},
+	"information": {
+		"message": "Information"
+	},
+	"pluginVersion": {
+		"message": "Plugin Version"
+	},
+	"wppVersion": {
+		"message": "WhatsApp version"
+	},
+	"limitKanbanCol": {
+		"message": "Limit of 20 tags reached!"
+	},
+	"businessAreaSavedSuccessfully": {
+		"message": "Business area saved successfully!"
+	},
+	"areaBusinessRequired": {
+		"message": "Select a business area and click save."
+	},
+	"addPinChat": {
+		"message": "Put on radar"
+	},
+	"removePinChat": {
+		"message": "Remove from radar"
+	},
+	"chatLimit": {
+		"message": "Limit of 10 contacts reached!"
+	},
+	"pinnedChatTitle": {
+		"message": "Contact Radar"
+	},
+	"pinnedChatInfoDescriptionLine1": {
+		"message": "Add up to 10 contacts to your radar."
+	},
+	"pinnedDescriptionLine2": {
+		"message": "Click the radar icon within the conversation to add or remove."
+	},
+	"pinnedDescriptionLine3": {
+		"message": "The last contact added appears at the top of the list."
+	},
+	"pinnedDescriptionLine4": {
+		"message": "To move a contact to the top, remove it and add it again."
+	},
+	"manageLabels": {
+		"message": "Manage tags"
+	},
+	"saveOrder": {
+		"message": "Save the order"
+	}
+}

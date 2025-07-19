@@ -18,6 +18,93 @@
             </button>
         </div>
 
+        <!-- Sección de Autenticación -->
+        <div class="auth-section" id="authSection">
+            <div class="auth-container" id="authContainer">
+                <!-- Estado de carga -->
+                <div class="auth-loading" id="authLoading">
+                    <div class="auth-loading-spinner"></div>
+                    <div class="auth-loading-text">Conectando...</div>
+                </div>
+
+                <!-- Formulario de Login -->
+                <div class="auth-form" id="authLoginForm" style="display: none;">
+                    <div class="auth-header">
+                        <div class="auth-logo">🔐</div>
+                        <h3>Iniciar Sesión</h3>
+                        <p>Accede a tu cuenta CRM</p>
+                    </div>
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="loginEmail">Email</label>
+                            <input type="email" id="loginEmail" placeholder="tu@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Contraseña</label>
+                            <input type="password" id="loginPassword" placeholder="••••••••" required>
+                        </div>
+                        <button type="submit" class="btn-primary btn-full" id="loginBtn">
+                            <span class="btn-text">Iniciar Sesión</span>
+                            <span class="btn-loading" style="display: none;">⏳</span>
+                        </button>
+                    </form>
+                    <div class="auth-footer">
+                        <button class="btn-link" id="showRegisterForm">¿No tienes cuenta? Regístrate</button>
+                        <button class="btn-link" id="forgotPasswordBtn">¿Olvidaste tu contraseña?</button>
+                    </div>
+                </div>
+
+                <!-- Formulario de Registro -->
+                <div class="auth-form" id="authRegisterForm" style="display: none;">
+                    <div class="auth-header">
+                        <div class="auth-logo">📝</div>
+                        <h3>Crear Cuenta</h3>
+                        <p>Únete a CRM Pro</p>
+                    </div>
+                    <form id="registerForm">
+                        <div class="form-group">
+                            <label for="registerName">Nombre</label>
+                            <input type="text" id="registerName" placeholder="Tu nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerEmail">Email</label>
+                            <input type="email" id="registerEmail" placeholder="tu@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerPassword">Contraseña</label>
+                            <input type="password" id="registerPassword" placeholder="••••••••" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerPasswordConfirm">Confirmar Contraseña</label>
+                            <input type="password" id="registerPasswordConfirm" placeholder="••••••••" required>
+                        </div>
+                        <button type="submit" class="btn-primary btn-full" id="registerBtn">
+                            <span class="btn-text">Crear Cuenta</span>
+                            <span class="btn-loading" style="display: none;">⏳</span>
+                        </button>
+                    </form>
+                    <div class="auth-footer">
+                        <button class="btn-link" id="showLoginForm">¿Ya tienes cuenta? Inicia sesión</button>
+                    </div>
+                </div>
+
+                <!-- Usuario Autenticado -->
+                <div class="auth-user" id="authUser" style="display: none;">
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar">👤</div>
+                        <div class="user-details">
+                            <div class="user-name" id="userName">Usuario</div>
+                            <div class="user-plan" id="userPlan">Plan Gratis</div>
+                        </div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="btn-secondary btn-sm" id="userSettingsBtn">⚙️</button>
+                        <button class="btn-secondary btn-sm" id="logoutBtn">🚪</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Sección de Pestañas Dinámicas tipo WhatsApp -->
         <div class="tabs-section" id="tabsSection">
             <div class="search-row">

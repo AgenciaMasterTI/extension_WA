@@ -3,12 +3,15 @@
  * Maneja login, logout y gestión de sesiones
  */
 
+import { supabase, isSupabaseConfigured, testSupabaseConnection } from './supabaseClient.js';
+
 class AuthService {
   constructor() {
     this.currentUser = null;
     this.authToken = null;
     this.isAuthenticated = false;
     this.supabase = null;
+    this.authStateChangeCallback = null;
   }
 
   /**
@@ -18,8 +21,18 @@ class AuthService {
     try {
       console.log('[AuthService] Inicializando con Supabase...');
       
-      // Inicializar Supabase
-      await this.initSupabase();
+      // Verificar configuración de Supabase
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase no está configurado correctamente');
+      }
+      
+      // Probar conexión
+      const isConnected = await testSupabaseConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo conectar con Supabase');
+      }
+      
+      this.supabase = supabase;
       
       // Verificar si hay una sesión guardada
       const { data: { session } } = await this.supabase.auth.getSession();
@@ -45,6 +58,11 @@ class AuthService {
           this.currentUser = null;
           this.isAuthenticated = false;
         }
+        
+        // Notificar al callback si existe
+        if (this.authStateChangeCallback) {
+          this.authStateChangeCallback(event, session);
+        }
       });
       
       return this.isAuthenticated;
@@ -55,19 +73,10 @@ class AuthService {
   }
 
   /**
-   * Inicializar cliente de Supabase
+   * Configurar callback para cambios de autenticación
    */
-  async initSupabase() {
-    try {
-      if (window.SupabaseConfig) {
-        this.supabase = await window.SupabaseConfig.getClient();
-      } else {
-        throw new Error('Supabase no está configurado');
-      }
-    } catch (error) {
-      console.error('[AuthService] Error inicializando Supabase:', error);
-      throw error;
-    }
+  onAuthStateChange(callback) {
+    this.authStateChangeCallback = callback;
   }
 
   /**
@@ -78,7 +87,7 @@ class AuthService {
       console.log('[AuthService] Intentando login para:', email);
       
       if (!this.supabase) {
-        await this.initSupabase();
+        throw new Error('Supabase no está inicializado');
       }
 
       const { data, error } = await this.supabase.auth.signInWithPassword({
@@ -114,7 +123,7 @@ class AuthService {
       console.log('[AuthService] Intentando registro para:', userData.email);
       
       if (!this.supabase) {
-        await this.initSupabase();
+        throw new Error('Supabase no está inicializado');
       }
 
       const { data, error } = await this.supabase.auth.signUp({
@@ -160,7 +169,7 @@ class AuthService {
       console.log('[AuthService] Cerrando sesión...');
       
       if (!this.supabase) {
-        await this.initSupabase();
+        throw new Error('Supabase no está inicializado');
       }
 
       const { error } = await this.supabase.auth.signOut();

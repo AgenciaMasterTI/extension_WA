@@ -1,17 +1,24 @@
+/**
+ * Configuración de Supabase
+ * Reemplaza estas credenciales con las de tu proyecto
+ */
+
 // Configuración de Supabase
-const SUPABASE_CONFIG = {
-  url: 'TU_URL_DE_SUPABASE_AQUI',
-  anonKey: 'TU_ANON_KEY_AQUI'
+export const SUPABASE_CONFIG = {
+  url: 'https://ujiustwxxbzyrswftysn.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqaXVzdHd4eGJ6eXJzd2Z0eXNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5NDg2NzksImV4cCI6MjA2ODUyNDY3OX0.5RbcuPBJv3pPkrSuHyuWDZvrjb7h_yk5xeo82F0scIU'
 };
 
-// Función para verificar si las credenciales están configuradas
-function isSupabaseConfigured() {
-  return SUPABASE_CONFIG.url !== 'TU_URL_DE_SUPABASE_AQUI' && 
-         SUPABASE_CONFIG.anonKey !== 'TU_ANON_KEY_AQUI';
-}
+// Configuración de la aplicación
+export const APP_CONFIG = {
+  name: 'WhatsApp CRM Extension',
+  version: '1.0.0',
+  debug: true // Cambiar a false en producción
+};
 
-// Exportar configuración
-window.SupabaseConfig = {
-  config: SUPABASE_CONFIG,
-  isConfigured: isSupabaseConfigured
+// Configuración de autenticación
+export const AUTH_CONFIG = {
+  autoRefreshToken: true,
+  persistSession: true,
+  detectSessionInUrl: false
 }; 

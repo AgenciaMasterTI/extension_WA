@@ -1,0 +1,170 @@
+#Use um swagger editor para visualizar melhor
+#Por exemplo: https://editor-next.swagger.io/
+
+openapi: "3.0.3"
+info:
+  title: Webhook API
+  description: API documentation for Webhook callbacks
+  version: 1.0.0
+servers:
+  - url: https://api.server.test/v1
+paths:
+  /webhook:
+    post:
+      summary: Webhook event listener
+      description: Endpoint to receive webhook events.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/NewMessageEvent"
+                - $ref: "#/components/schemas/ChatLabelUpdateEvent"
+                - $ref: "#/components/schemas/ScheduleCreateEvent"
+                - $ref: "#/components/schemas/ScheduleUpdateEvent"
+      responses:
+        "200":
+          description: Acknowledgement of the event
+components:
+  schemas:
+    WebhookEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        originDeviceId:
+          type: string
+          nullable: true
+        originUsername:
+          type: string
+          nullable: true
+        isNative:
+          type: boolean
+        data:
+          type: object
+
+    Chat:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        name:
+          type: string
+          nullable: true
+
+    Label:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        color:
+          type: string
+
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        chatId:
+          type: string
+        datetime:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: ["REMINDER", "SCHEDULE"]
+        contentType:
+          type: string
+          enum: ["TEXT", "AUDIO", "QUICK_MESSAGE"]
+          nullable: true
+        hasSent:
+          type: boolean
+          nullable: true
+        read:
+          type: boolean
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        content:
+          type: string
+          nullable: true
+
+    NewMessageEvent:
+      allOf:
+        - $ref: "#/components/schemas/WebhookEvent"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                messageId:
+                  type: string
+                chat:
+                  $ref: "#/components/schemas/Chat"
+                message:
+                  type: string
+                  nullable: true
+                type:
+                  type: string
+                media:
+                  type: string
+                  nullable: true
+
+    ChatLabelUpdateEvent:
+      allOf:
+        - $ref: "#/components/schemas/WebhookEvent"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                labels:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Label"
+                chat:
+                  $ref: "#/components/schemas/Chat"
+                type:
+                  type: string
+
+    ScheduleCreateEvent:
+      allOf:
+        - $ref: "#/components/schemas/WebhookEvent"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                schedule:
+                  $ref: "#/components/schemas/Schedule"
+                chat:
+                  $ref: "#/components/schemas/Chat"
+
+    ScheduleUpdateEvent:
+      allOf:
+        - $ref: "#/components/schemas/WebhookEvent"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                schedule:
+                  $ref: "#/components/schemas/Schedule"
+                chat:
+                  $ref: "#/components/schemas/Chat"
+                action:
+                  type: string
+                actionDescription:
+                  type: string
+                  nullable: true

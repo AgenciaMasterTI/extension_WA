@@ -1,0 +1,1715 @@
+{
+	"quickMessage": {
+		"message": "Mensagem Rápida"
+	},
+	"search": {
+		"message": "Pesquisar"
+	},
+	"createTextMessage": {
+		"message": "Criar mensagem de texto"
+	},
+	"createAudioMessage": {
+		"message": "Criar mensagem de áudio"
+	},
+	"createImageMessage": {
+		"message": "Criar mensagem de imagem"
+	},
+	"createVideoMessage": {
+		"message": "Criar mensagem de vídeo"
+	},
+	"createDocumentMessage": {
+		"message": "Criar mensagem de documento"
+	},
+	"createUserMessage": {
+		"message": "Criar mensagem de usuário"
+	},
+	"createMultipleSend": {
+		"message": "Criar envio múltiplo (script)"
+	},
+	"createGrouper": {
+		"message": "Criar agrupador"
+	},
+	"deleteGrouper": {
+		"message": "Excluir agrupador"
+	},
+	"areUSureDeleteGrouper": {
+		"message": "Tem certeza que deseja excluir esse agrupador (isso não irá excluir as mensagens de dentro dele)?"
+	},
+	"yesDeleteGrouper": {
+		"message": "Sim"
+	},
+	"cancelDeleteGrouper": {
+		"message": "Cancelar"
+	},
+	"grouperSuccessfullyRemoved": {
+		"message": "Agrupador excluído com sucesso"
+	},
+	"nameIsMandatory": {
+		"message": "Nome é obrigatório"
+	},
+	"grouperSuccessfullySaved": {
+		"message": "Agrupador salvo com sucesso"
+	},
+	"toSave": {
+		"message": "Salvar"
+	},
+	"toCancel": {
+		"message": "Cancelar"
+	},
+	"toEdit": {
+		"message": "Editar"
+	},
+	"toClose": {
+		"message": "Fechar"
+	},
+	"toOpen": {
+		"message": "Abrir"
+	},
+	"enterQuickMessageName": {
+		"message": "Digite o nome da mensagem rápida"
+	},
+	"deleteQuickMessage": {
+		"message": "Excluir mensagem rápida"
+	},
+	"areUSureDeleteQuickMessage": {
+		"message": "Tem certeza que deseja excluir essa mensagem rápida?"
+	},
+	"yesDeleteQuickMessage": {
+		"message": "Sim"
+	},
+	"cancelDeleteQuickMessage": {
+		"message": "Cancelar"
+	},
+	"quickMessageSucessfullyRemoved": {
+		"message": "Mensagem removida com sucesso"
+	},
+	"sendMessageToSelectedChat": {
+		"message": "Enviar Mensagem para chat selecionado"
+	},
+	"name": {
+		"message": "Nome"
+	},
+	"nickName": {
+		"message": "Apelido"
+	},
+	"optional": {
+		"message": "Opcional"
+	},
+	"userName": {
+		"message": "Nome do usuário"
+	},
+	"userNameDescription": {
+		"message": "Usado para identificar o atendente dos contatos"
+	},
+	"signAsdescription": {
+		"message": "Usado para assinar com texto diferente do nome de usuário."
+	},
+	"signAsName": {
+		"message": "Assinar mensagem como"
+	},
+	"typeSignAsName": {
+		"message": "Digite o nome para assinar as mensagens"
+	},
+	"freeUsersJustOneQuickMessage": {
+		"message": "Usuários gratuitos podem ter apenas 1 mensagem rápida de cada tipo. Assine o premium para aproveitar 100%."
+	},
+	"selectMessageForAllSteps": {
+		"message": "Selecione uma mensagem para todos os passos"
+	},
+	"messageSuccessfullySaved": {
+		"message": "Mensagem salva com sucesso"
+	},
+	"selectAMessage": {
+		"message": "Selecione uma mensagem"
+	},
+	"typeDelayInSeconds": {
+		"message": "Digite o delay em segundos"
+	},
+	"toRemove": {
+		"message": "Remover"
+	},
+	"toAddStep": {
+		"message": "Adicionar passo"
+	},
+	"numberIsMandatory": {
+		"message": "Número é obrigatório"
+	},
+	"thisNumberIsNotInWhatsapp": {
+		"message": "Esse número não está no Whatsapp"
+	},
+	"typeTheNameThatWillAppearWhenSendContact": {
+		"message": "Digite o nome que irá aparecer ao enviar contato"
+	},
+	"typeTheNumber": {
+		"message": "Digite o número XX (XX) XXXX-XXXX"
+	},
+	"videoIsMandatory": {
+		"message": "Vídeo é obrigatório"
+	},
+	"theFileMustBeAMaximum": {
+		"message": "O arquivo deve ter no máximo 40mb"
+	},
+	"uploadAFileVideo": {
+		"message": "Fazer upload de um arquivo de vídeo"
+	},
+	"typeTheMessageUseNameForUser": {
+		"message": "Digite a mensagem, use #name ou #fullName para usar o nome do usuário"
+	},
+	"documentIsMandatory": {
+		"message": "Documento é obrigatório"
+	},
+	"uploadADocumentFile": {
+		"message": "Fazer upload de um arquivo de documento"
+	},
+	"imageIsMandatory": {
+		"message": "Imagem é obrigatória"
+	},
+	"uploadAImageFile": {
+		"message": "Fazer upload de um arquivo de imagem"
+	},
+	"audioIsMandatory": {
+		"message": "Áudio é obrigatório"
+	},
+	"messageIsMandatory": {
+		"message": "Mensagem é obrigatória"
+	},
+	"createMessageContact": {
+		"message": "Criar mensagem de contato"
+	},
+	"contactName": {
+		"message": "Nome do contato"
+	},
+	"contactNumber": {
+		"message": "Número do contato"
+	},
+	"message": {
+		"message": "Mensagem"
+	},
+	"document": {
+		"message": "Documento"
+	},
+	"image": {
+		"message": "Imagem"
+	},
+	"recordAudio": {
+		"message": "Gravar áudio"
+	},
+	"video": {
+		"message": "Vídeo"
+	},
+	"startRecording": {
+		"message": "Iniciar gravação"
+	},
+	"stopRecording": {
+		"message": "Parar gravação"
+	},
+	"uploadAudioFile": {
+		"message": "Fazer upload de um arquivo de áudio"
+	},
+	"justPremiumUsersCreateBot": {
+		"message": "Apenas usuários premium podem criar mais que 1 bot"
+	},
+	"deleteBot": {
+		"message": "Excluir bot"
+	},
+	"areUSureDeleteBot": {
+		"message": "Tem certeza que deseja excluir esse bot?"
+	},
+	"yesDeleteBot": {
+		"message": "Sim"
+	},
+	"cancelDeleteBot": {
+		"message": "Cancelar"
+	},
+	"botSuccessfullyRemoved": {
+		"message": "Bot removido com sucesso"
+	},
+	"activateOrDeactivateBot": {
+		"message": "Ativar ou desativar o bot"
+	},
+	"uNeedToAddTrigger": {
+		"message": "Você precisa adicionar um gatilho"
+	},
+	"uNeedToHaveOneStep": {
+		"message": "Você precisa ter pelo menos um passo"
+	},
+	"botSuccessfullySaved": {
+		"message": "Bot salvo com sucesso"
+	},
+	"typeTheBotName": {
+		"message": "Digite o nome do bot"
+	},
+	"trigger": {
+		"message": "Gatilhos"
+	},
+	"selectBotLauncher": {
+		"message": "Selecione o iniciador do Bot"
+	},
+	"containsOnMessage": {
+		"message": "Contém na mensagem"
+	},
+	"exactMessage": {
+		"message": "Mensagem exata"
+	},
+	"firstMessage": {
+		"message": "Primeira mensagem"
+	},
+	"steps": {
+		"message": "Passos:"
+	},
+	"selectTheStepType": {
+		"message": "Selecione o tipo de passo:"
+	},
+	"quickMessages": {
+		"message": "Mensagens rápidas"
+	},
+	"textMessage": {
+		"message": "Mensagem de texto"
+	},
+	"voiceMessage": {
+		"message": "Mensagem de voz"
+	},
+	"wait": {
+		"message": "Esperar"
+	},
+	"transferToUser": {
+		"message": "Transferir para usuário"
+	},
+	"addTag": {
+		"message": "Adicionar etiqueta"
+	},
+	"removeTag": {
+		"message": "Remover etiqueta"
+	},
+	"botChat": {
+		"message": "Chat Bot"
+	},
+	"modCRMKamban": {
+		"message": "Modo CRM (Kanban)"
+	},
+	"campaigns": {
+		"message": "Campanhas"
+	},
+	"referralLink": {
+		"message": "Link de Indicação"
+	},
+	"privacity": {
+		"message": "Privacidade"
+	},
+	"generateLinkAndQr": {
+		"message": "Gerar link e QR"
+	},
+	"importExportData": {
+		"message": "Importar/Exportar dados"
+	},
+	"cloudBackup": {
+		"message": "Backup na Nuvem"
+	},
+	"sendCloudBackup": {
+		"message": "Enviar backup para nuvem"
+	},
+	"lastSync": {
+		"message": "Última sincronização"
+	},
+	"appointmentAndReminders": {
+		"message": "Lembretes e agendamentos"
+	},
+	"preferences": {
+		"message": "Preferências"
+	},
+	"selectTheme": {
+		"message": "Tema"
+	},
+	"synchronize": {
+		"message": "Enviar para nuvem"
+	},
+	"exporting": {
+		"message": "Exportando..."
+	},
+	"uploading": {
+		"message": "Enviando..."
+	},
+	"failed": {
+		"message": "Falha..."
+	},
+	"importCloud": {
+		"message": "Importar da nuvem"
+	},
+	"lightMode": {
+		"message": "Claro"
+	},
+	"darkMode": {
+		"message": "Escuro"
+	},
+	"account": {
+		"message": "Conta"
+	},
+	"chatWithSupport": {
+		"message": "Conversar com suporte"
+	},
+	"createBot": {
+		"message": "Criar bot"
+	},
+	"activateInGroups": {
+		"message": "Ativar em grupos"
+	},
+	"errorWhenSaving": {
+		"message": "Erro ao salvar"
+	},
+	"successfullySaved": {
+		"message": "Salvo com sucesso"
+	},
+	"contentMessage": {
+		"message": "Conteúdo na mensagem"
+	},
+	"typeTheMessageContain": {
+		"message": "Digite a mensagem que deve conter"
+	},
+	"firstMessageType": {
+		"message": "Tipo de primeira mensagem"
+	},
+	"firstMessageDay": {
+		"message": "Primeira mensagem do dia"
+	},
+	"firstMessageClient": {
+		"message": "Primeira mensagem do cliente"
+	},
+	"actions": {
+		"message": "Ações"
+	},
+	"audio": {
+		"message": "Áudio"
+	},
+	"openToReproduce": {
+		"message": "Abra para reproduzir"
+	},
+	"timeIsMandatory": {
+		"message": "Tempo é obrigatório"
+	},
+	"invalidTime": {
+		"message": "Tempo inválido, coloque no seguinte modelo: 00:00"
+	},
+	"waitingTimeInSeconds": {
+		"message": "Tempo de espera em segundos"
+	},
+	"userIsMandatory": {
+		"message": "Usuário é obrigatório"
+	},
+	"tagIsMandatory": {
+		"message": "Etiqueta é obrigatória"
+	},
+	"selectTag": {
+		"message": "Selecione a etiqueta"
+	},
+	"tags": {
+		"message": "Etiquetas"
+	},
+	"selectAUser": {
+		"message": "Selecione um usuário"
+	},
+	"createCampaign": {
+		"message": "Criar campanha"
+	},
+	"deleteCampaign": {
+		"message": "Exluir campanha"
+	},
+	"areUSureDeleteCampaign": {
+		"message": "Tem certeza que deseja excluir essa campanha?"
+	},
+	"yesDeleteCampaign": {
+		"message": "Sim"
+	},
+	"campaignSuccessfullyRemoved": {
+		"message": "Campanha excluída com sucesso"
+	},
+	"sendToContact": {
+		"message": "Enviar para contatos"
+	},
+	"campaignNameIsMandatory": {
+		"message": "Nome da campanha é obrigatório"
+	},
+	"quickMessageIsMandatory": {
+		"message": "Mensagem rápida é obrigatória"
+	},
+	"campaignSuccessfullySaved": {
+		"message": "Campanha salva com sucesso"
+	},
+	"typeCampaignName": {
+		"message": "Digite o nome da campanha"
+	},
+	"createQuickMessage": {
+		"message": "Criar mensagem rápida"
+	},
+	"typeTheMessageToSentUseNameForUser": {
+		"message": "Digite a mensagem a ser enviada, utilize #name ou #fullName para citar o nome do contato"
+	},
+	"hideProfilePhotos": {
+		"message": "Ocultar fotos de perfil"
+	},
+	"hideContactNames": {
+		"message": "Ocultar nomes de contato"
+	},
+	"hideContactNamesInChat": {
+		"message": "Ocultar nomes de contato em chat"
+	},
+	"hideCurrentChat": {
+		"message": "Ocultar chat atual"
+	},
+	"generateLink": {
+		"message": "Gerar link"
+	},
+	"copyLink": {
+		"message": "Copiar link"
+	},
+	"downloadQrCode": {
+		"message": "Baixar QR Code"
+	},
+	"qrCode": {
+		"message": "QR Code"
+	},
+	"availableOnlyForPremiumUsers": {
+		"message": "Essa funcionalidade está disponível apenas para usuários premium."
+	},
+	"botNameUninformed": {
+		"message": "Nome do bot não informado"
+	},
+	"triggerTypeUninformed": {
+		"message": "Tipo do gatilho não informado"
+	},
+	"stepTypeUninformed": {
+		"message": "Tipo do passo não informado"
+	},
+	"botsSuccessfullyImported": {
+		"message": "Bots importados com sucesso"
+	},
+	"errorImportBots": {
+		"message": "Erro ao importar bots."
+	},
+	"nameUninformed": {
+		"message": "Nome não informado"
+	},
+	"messageOrMidiaUninformed": {
+		"message": "Mensagem ou mídia não informada"
+	},
+	"quickMessagesSuccessfullyImported": {
+		"message": "Mensagens rápidas importadas com sucesso"
+	},
+	"errorImportQuickMessages": {
+		"message": "Erro ao importar mensagens rápidas."
+	},
+	"contact": {
+		"message": "Contatos"
+	},
+	"toExport": {
+		"message": "Exportar"
+	},
+	"bots": {
+		"message": "Bots"
+	},
+	"toImport": {
+		"message": "Importar"
+	},
+	"importing": {
+		"message": "Importando..."
+	},
+	"restore": {
+		"message": "Restaurar"
+	},
+	"unableGetBackup": {
+		"message": "Não foi possível obter o backup."
+	},
+	"appointmentAndRemindersOfMessages": {
+		"message": "Lembretes e agendamentos de mensagens"
+	},
+	"openCalendar": {
+		"message": "Criar lembrete/agendamento"
+	},
+	"noNotification": {
+		"message": "Nenhuma notificação"
+	},
+	"appointmentError": {
+		"message": "Agendamentos com erro"
+	},
+	"reminders": {
+		"message": "Lembretes"
+	},
+	"scheduledMessagesSent": {
+		"message": "Mensagens agendadas enviadas"
+	},
+	"sendNow": {
+		"message": "Enviar agora"
+	},
+	"openChat": {
+		"message": "Abrir conversa"
+	},
+	"toDelete": {
+		"message": "Excluir"
+	},
+	"markAsViewed": {
+		"message": "Marcar como visualizado"
+	},
+	"emailIsMandatory": {
+		"message": "E-mail é obrigatório"
+	},
+	"emailIvalid": {
+		"message": "E-mail inválido"
+	},
+	"loading": {
+		"message": "Carregando..."
+	},
+	"passwordIsMandatory": {
+		"message": "Senha é obrigatória"
+	},
+	"passwordMustHaveAtLeastSixCharacters": {
+		"message": "Senha deve conter pelo menos 6 caracteres"
+	},
+	"passwordsDontMatch": {
+		"message": "Senhas não coincidem"
+	},
+	"attention": {
+		"message": "Atenção"
+	},
+	"areUSureAlterUserName": {
+		"message": "Você tem certeza que deseja alterar o nome do usuário? Isso poderá remover as conversas vinculadas a ele"
+	},
+	"no": {
+		"message": "Não"
+	},
+	"yes": {
+		"message": "Sim"
+	},
+	"typeUrEmail": {
+		"message": "Digite seu e-mail"
+	},
+	"justAdminCanEditName": {
+		"message": "Apenas o usuário administrador pode editar o nome"
+	},
+	"typeUserName": {
+		"message": "Digite o nome de usuário"
+	},
+	"editPassword": {
+		"message": "Editar senha?"
+	},
+	"typeNewPassword": {
+		"message": "Digite a nova senha"
+	},
+	"password": {
+		"message": "Senha"
+	},
+	"repeatNewPassword": {
+		"message": "Repita a nova senha"
+	},
+	"repeatPassword": {
+		"message": "Repita a senha"
+	},
+	"createUser": {
+		"message": "Criar usuário"
+	},
+	"successfullyLoggedOut": {
+		"message": "Deslogado com sucesso"
+	},
+	"welcome": {
+		"message": "Bem vindo,"
+	},
+	"editUrUser": {
+		"message": "Editar seu usuário"
+	},
+	"loggedOut": {
+		"message": "Deslogar"
+	},
+	"yourAccessMustHaveNAgents": {
+		"message": "Seu plano contratado suporta até {agents} atendentes"
+	},
+	"deleteUser": {
+		"message": "Deletar usuário"
+	},
+	"areUSureDeleteUser": {
+		"message": "Você tem certeza que deseja deletar esse usuário?"
+	},
+	"createNewUser": {
+		"message": "Criar novo usuário"
+	},
+	"congratsUAreAUser": {
+		"message": "Parabéns! Você é um usuário"
+	},
+	"andCanEnjoyUrPlugin": {
+		"message": "e pode aproveitar totalmente seu plugin."
+	},
+	"manageLicense": {
+		"message": "Gerenciar licença"
+	},
+	"sharePluginLinkWithOtherUsers": {
+		"message": "Compartilhe o link do plugin para os outros usuários"
+	},
+	"linkCopiedToClipboard": {
+		"message": "Link copiado para a área de transferência"
+	},
+	"email": {
+		"message": "E-mail"
+	},
+	"forgotPassword": {
+		"message": "Esqueci a senha"
+	},
+	"resetPasswordLinkSent": {
+		"message": "Foi enviado para o e-mail informado um link para redefinir a senha da conta associada"
+	},
+	"createAccount": {
+		"message": "Criar conta"
+	},
+	"toEnter": {
+		"message": "Entrar"
+	},
+	"typeUrPassword": {
+		"message": "Digite sua senha"
+	},
+	"freeVersionOneReminder": {
+		"message": "A versão gratuita permite apenas um agendamento e um lembrete"
+	},
+	"dayReminder": {
+		"message": "Agendamentos para o dia"
+	},
+	"showOnlyThisUser": {
+		"message": "Exibir apenas desse usuário"
+	},
+	"noneReminderForTheSelectDay": {
+		"message": "Nenhum agendamento para o dia selecionado."
+	},
+	"createReminder": {
+		"message": "Criar lembrete"
+	},
+	"scheduleShipping": {
+		"message": "Agendar envio"
+	},
+	"deleteReminder": {
+		"message": "Excluir agendamento"
+	},
+	"areUSureDeleteReminder": {
+		"message": "Tem certeza que deseja excluir esse agendamento?"
+	},
+	"reminderSuccessfullyRemoved": {
+		"message": "Agendamento removido com sucesso"
+	},
+	"toSchedule": {
+		"message": "Agendar"
+	},
+	"notificationsAlreadyRead": {
+		"message": "Notificações já lidas"
+	},
+	"necessaryInformTheDayOfTheReminder": {
+		"message": "Necessário informar o dia do lembrete"
+	},
+	"necessaryInformTheChat": {
+		"message": "Necessário informar o chat"
+	},
+	"necessaryInformTheHourOfTheReminder": {
+		"message": "Necessário informar a hora do lembrete"
+	},
+	"necessaryInformTheReminderName": {
+		"message": "Necessário informar o nome do lembrete"
+	},
+	"reminderSuccessfullyCreated": {
+		"message": "Lembrete criado com sucesso"
+	},
+	"typeRemindersName": {
+		"message": "Digite o nome do lembrete"
+	},
+	"remindersName": {
+		"message": "Nome do lembrete:"
+	},
+	"remindersComments": {
+		"message": "Observações do lembrete:"
+	},
+	"ifNecessaryAddComments": {
+		"message": "Caso necessário, adicione uma observação"
+	},
+	"hourToActiveReminder": {
+		"message": "Hora para ativar lembrete:"
+	},
+	"necessaryInformTheDay": {
+		"message": "Necessário informar o dia"
+	},
+	"necessaryInformTheHour": {
+		"message": "Necessário informar a hora"
+	},
+	"necessaryInformTheName": {
+		"message": "Necessário informar o nome"
+	},
+	"schedulingSuccessfullyCreated": {
+		"message": "Agendamento criado com sucesso"
+	},
+	"typeSchedulingName": {
+		"message": "Digite o nome do agendamento"
+	},
+	"comments": {
+		"message": "Observações:"
+	},
+	"hourToSendTheMessage": {
+		"message": "Hora para enviar a mensagem:"
+	},
+	"notes": {
+		"message": "Notas"
+	},
+	"modifyUserNotes": {
+		"message": "Modificar notas do usuário"
+	},
+	"youNeedToBePremiumToAddTags": {
+		"message": "Você precisa ser premium para adicionar etiquetas"
+	},
+	"youNeedToBePremiumToTranfer": {
+		"message": "Para transferir atendimento, você precisa ser premium."
+	},
+	"serviceTransferredIn": {
+		"message": "Atendimento transferido de"
+	},
+	"to": {
+		"message": "Para"
+	},
+	"serviceTransferredTo": {
+		"message": "Atendimento transferido para"
+	},
+	"transfer": {
+		"message": "Transferir"
+	},
+	"transferCall": {
+		"message": "Transferir atendimento"
+	},
+	"endCall": {
+		"message": "Encerrar atendimento"
+	},
+	"noneUserAvailable": {
+		"message": "Nenhum usuário disponível"
+	},
+	"end": {
+		"message": "Encerrar"
+	},
+	"toUseSignatureUNeedToBeLogged": {
+		"message": "Para usar assinatura, você precisa estar logado."
+	},
+	"toUseSignatureUNeedToBePremium": {
+		"message": "Para usar assinatura, você precisa ser premium."
+	},
+	"removeSignature": {
+		"message": "Remover assinatura"
+	},
+	"signMessage": {
+		"message": "Assinar mensagem"
+	},
+	"login": {
+		"message": "Faça login"
+	},
+	"toWait": {
+		"message": "Esperar"
+	},
+	"reportShippingInterval": {
+		"message": "Informe o intervalo entre envios"
+	},
+	"shippingIntervalMustBe": {
+		"message": "O intervalo entre envios deve ser maior que 1 segundo"
+	},
+	"enterBothPause": {
+		"message": "Informe ambos os campos de pausa ou nenhum"
+	},
+	"toSendForMoreContactsEnterBothPause": {
+		"message": "Para enviar para mais de 25 contatos, é necessário informar a quantidade de pausa"
+	},
+	"quantityPauseShouldBeBigger": {
+		"message": "A quantidade de pausa deve ser maior que 2 contatos"
+	},
+	"breakContactIntervalShouldBeMoreThanFiveSeconds": {
+		"message": "O intervalo de pausa entre contatos deve ser maior que 5 segundos"
+	},
+	"iUnderstoodAndWantToProceed": {
+		"message": "Compreendo e desejo continuar"
+	},
+	"configureShipping": {
+		"message": "Configurar envios"
+	},
+	"theInformedTimeMayHaveChange": {
+		"message": "O tempo informado talvez sofra pequenas alterações"
+	},
+	"intervalBetweenShipments": {
+		"message": "Intervalo entre envios"
+	},
+	"quantitySecondsBetweenShipments": {
+		"message": "Quantidade de segundos entre cada envio"
+	},
+	"pauseShipmentsAfterContacts": {
+		"message": "Pausar envio após X contatos"
+	},
+	"afterSentAQuantityOfContactsWait": {
+		"message": "Após enviar uma quantidade de contatos, irá esperar um tempo"
+	},
+	"pauseFor": {
+		"message": "Pausar por"
+	},
+	"quantityOfSecondsWillPause": {
+		"message": "Quantidade de segundos que irá pausar"
+	},
+	"estimatedTime": {
+		"message": "Tempo estimado:"
+	},
+	"startSending": {
+		"message": "Iniciar envio"
+	},
+	"stopSending": {
+		"message": "Parar envio"
+	},
+	"sendingCampaign": {
+		"message": "Enviando campanha"
+	},
+	"quantityContacts": {
+		"message": "Quantidade de contatos:"
+	},
+	"sent": {
+		"message": "Enviados"
+	},
+	"alreadySent": {
+		"message": "Já Enviado"
+	},
+	"pending": {
+		"message": "Pendente enviar:"
+	},
+	"sentTo": {
+		"message": "Enviado para"
+	},
+	"contacts": {
+		"message": "Contatos"
+	},
+	"signUpForAPlanRightNow": {
+		"message": "Contrate um plano agora mesmo."
+	},
+	"serviceCompleted": {
+		"message": "Atendimento finalizado"
+	},
+	"sendCampaign": {
+		"message": "Enviar campanha"
+	},
+	"toResearch": {
+		"message": "Pesquisar"
+	},
+	"selected": {
+		"message": "selecionados"
+	},
+	"selectAll": {
+		"message": "Selecionar todos"
+	},
+	"tagNameIsMandatory": {
+		"message": "Nome da etiqueta é obrigatório"
+	},
+	"labelSuccessfullyCreated": {
+		"message": "Label criada com sucesso"
+	},
+	"errorWhenCreateTag": {
+		"message": "Erro ao criar etiqueta"
+	},
+	"createTag": {
+		"message": "Criar etiqueta"
+	},
+	"sendingCanceled": {
+		"message": "Envio cancelado"
+	},
+	"campaingSuccessfullySent": {
+		"message": "Campanha enviada com sucesso"
+	},
+	"errorToSendCampaingAccessConsole": {
+		"message": "Erro ao enviar campanha, acesse o console para mais informações"
+	},
+	"onlyPremiumUsersCanFilterAttendants": {
+		"message": "Apenas usuários premium podem filtrar por atendentes."
+	},
+	"unread": {
+		"message": "Não lidas"
+	},
+	"groups": {
+		"message": "Grupos"
+	},
+	"all": {
+		"message": "Todos"
+	},
+	"knowPlans": {
+		"message": "Conhecer os planos"
+	},
+	"maybeLater": {
+		"message": "Talvez depois"
+	},
+	"onlyPremiumUsersCanSendMessagesByKanban": {
+		"message": "Apenas usuários premium pode enviar mensagens pelo kanban"
+	},
+	"chatNotFoundMessageNotSend": {
+		"message": "Chat não encontrado, agendamento não enviado."
+	},
+	"scheduledMessageSent": {
+		"message": "Mensagem agendada enviada:"
+	},
+	"scheduledNotSentWhatsappWasNotOpen": {
+		"message": "WhatsApp não estava aberto na hora do agendamento, agendamento não enviado."
+	},
+	"buttonReminder": {
+		"message": "Ver lembrete"
+	},
+	"reminder": {
+		"message": "Lembrete:"
+	},
+	"premiumAdTrialPeriod": {
+		"message": "Você está no seu período de teste de {duration} dias. Aproveite todos os recursos premium liberados!"
+	},
+	"premiumAdCouponPeriod": {
+		"message": "Você está no seu período de teste de {duration} dias do cupom {code}. Aproveite todos os recursos premium liberados!"
+	},
+	"premiumAdFree": {
+		"message": "Você está na versão gratuita da extensão, com recursos limitados."
+	},
+	"attendants": {
+		"message": "Atendentes"
+	},
+	"allAttendants": {
+		"message": "Todos atendentes"
+	},
+	"loggedOutAttendantsWarn": {
+		"message": "Faça login para ver os atendentes"
+	},
+	"createKanbanCol": {
+		"message": "Criar coluna (etiqueta)"
+	},
+	"kanbanContactAlreadyInCol": {
+		"message": "O contato {contactName} já está na coluna {colName}"
+	},
+	"removeLabelChatError": {
+		"message": "Erro ao remover etiqueta do chat"
+	},
+	"addLabelChatError": {
+		"message": "Erro ao adicionar etiqueta ao chat"
+	},
+	"showArchivedChats": {
+		"message": "Exibir arquivados"
+	},
+	"labelDeleteConfirmation": {
+		"message": "Você tem certeza que deseja deletar a etiqueta {labelName}? Essa ação não pode ser desfeita"
+	},
+	"cancelDeleteLabel": {
+		"message": "Cancelar"
+	},
+	"deleteLabelError": {
+		"message": "Erro ao deletar etiqueta"
+	},
+	"deleteLabelSuccess": {
+		"message": "Etiqueta deletada com sucesso"
+	},
+	"allContacts": {
+		"message": "Todos os contatos"
+	},
+	"searchLabelContacts": {
+		"message": "Pesquisar..."
+	},
+	"deleteTag": {
+		"message": "Excluir etiqueta"
+	},
+	"editTag": {
+		"message": "Editar etiqueta"
+	},
+	"downloadTagCSV": {
+		"message": "Baixar CSV"
+	},
+	"removeChatFromLabelSuccess": {
+		"message": "Chat removido da etiqueta com sucesso"
+	},
+	"removeChatFromLabelError": {
+		"message": "Erro ao remover chat da etiqueta"
+	},
+	"archived": {
+		"message": "Arquivado"
+	},
+	"messageTypeImage": {
+		"message": "Imagem"
+	},
+	"messageTypeAudio": {
+		"message": "Áudio"
+	},
+	"messageTypeSticker": {
+		"message": "Sticker"
+	},
+	"messageTypeDocument": {
+		"message": "Documento"
+	},
+	"messageTypeVideo": {
+		"message": "Vídeo"
+	},
+	"kanbanTitle": {
+		"message": "CRM Kanban"
+	},
+	"contactNotes": {
+		"message": "Notas do contato"
+	},
+	"fullBackup": {
+		"message": "Backup completo"
+	},
+	"importDataError": {
+		"message": "Erro ao importar dados"
+	},
+	"savedBackups": {
+		"message": "Backups salvos"
+	},
+	"savedBackupsDescription": {
+		"message": "O Sistema irá manter até 3 backups por dispositivo."
+	},
+	"selectLanguage": {
+		"message": "Idioma"
+	},
+	"nickNameDescription": {
+		"message": "Exemplo: CASA, TRABALHO, etc."
+	},
+	"device": {
+		"message": "Dispositivo"
+	},
+	"deviceNickName": {
+		"message": "Apelido do dispositivo"
+	},
+	"deviceNickNameDescription": {
+		"message": "Ele será usado para identificar o dispositivo quando restaurando backups"
+	},
+	"editUrDeviceName": {
+		"message": "Editar apelido do dispositivo"
+	},
+	"defineDeviceName": {
+		"message": "Defina um nome para o dispositivo atual."
+	},
+	"deviceNameInfo": {
+		"message": "Defina um nome para este dispositivo. Ex.: CASA, TRABALHO, etc"
+	},
+	"webhooksPaused": {
+		"message": "Webhooks (fila pausada)"
+	},
+	"updatedAt": {
+		"message": "Data de atualização"
+	},
+	"backupNotFound": {
+		"message": "Nenhum backup encontrado."
+	},
+	"thisPc": {
+		"message": "Este PC"
+	},
+	"anotherPc": {
+		"message": "Outro PC"
+	},
+	"settings": {
+		"message": "Configurações"
+	},
+	"webhookCreat": {
+		"message": "Criar Webhook"
+	},
+	"download": {
+		"message": "Baixar"
+	},
+	"downloadOpenAPI": {
+		"message": "especificações OpenAPI"
+	},
+	"webhookSectionTitle": {
+		"message": "Você pode integrar com milhares de plataformas"
+	},
+	"webhookSectionDescription": {
+		"message": "Você pode integrar nossa plataforma para que envie dados em tempo real para outro sistema assim que um evento especifico ocorra"
+	},
+	"noWebhooks": {
+		"message": "Nenhum webhook cadastrado"
+	},
+	"webhookNamePlaceholder": {
+		"message": "Digite o nome do webhook"
+	},
+	"webhookUrlLabel": {
+		"message": "URL"
+	},
+	"webhookUrlPlaceholder": {
+		"message": "Digite a URL que será feita a chamada"
+	},
+	"webhookEventsLabel": {
+		"message": "Eventos"
+	},
+	"whatsappNativeEventsLabel": {
+		"message": "Eventos nativos do WhatsApp"
+	},
+	"modifiedLabel": {
+		"message": "Label modificada"
+	},
+	"webhookInternalEventsLabel": {
+		"message": "Eventos internos da ferramenta"
+	},
+	"scheduleCreation": {
+		"message": "Criação de agendamento"
+	},
+	"scheduleUpdate": {
+		"message": "Atualização de agendamento"
+	},
+	"webookDelete": {
+		"message": "Excluir webhook"
+	},
+	"webookDeleteConfirm": {
+		"message": "Tem certeza que deseja excluir esse webhook?"
+	},
+	"yesDeleteWebhook": {
+		"message": "Sim"
+	},
+	"cancelDeleteWebhook": {
+		"message": "Cancelar"
+	},
+	"webhookSuccessfullySaved": {
+		"message": "Webhook salvo com sucesso"
+	},
+	"webhookSuccessfullyRemoved": {
+		"message": "Webhook removido com sucesso"
+	},
+	"removeWebhookError": {
+		"message": "Erro ao remover webhook"
+	},
+	"saveWebhookError": {
+		"message": "Erro ao salvar webhook"
+	},
+	"webhookHasErrorMessage": {
+		"message": "Houve requisição com erro, fila pausada"
+	},
+	"webhookToggleActive": {
+		"message": "Ativar ou desativar webhook"
+	},
+	"webhookShowHistory": {
+		"message": "Visualizar logs"
+	},
+	"webhookDelete": {
+		"message": "Excluir webhook"
+	},
+	"requiredField": {
+		"message": "{field} é um campo obrigatório"
+	},
+	"maxLenghtField": {
+		"message": "{field} não pode ter mais de 15 caracteres"
+	},
+	"webhookMinimumEvents": {
+		"message": "Selecione ao menos um evento"
+	},
+	"webhookNoHistory": {
+		"message": "Sem histórico recente para esse webhook"
+	},
+	"history": {
+		"message": "Histórico"
+	},
+	"historyUpdated": {
+		"message": "Histórico atualizado"
+	},
+	"toUpdate": {
+		"message": "Atualizar"
+	},
+	"webhookHistoryLimit": {
+		"message": "São armazenados apenas os últimos {value} eventos de cada webhook."
+	},
+	"status": {
+		"message": "Status"
+	},
+	"date": {
+		"message": "Data"
+	},
+	"id": {
+		"message": "ID"
+	},
+	"event": {
+		"message": "Evento"
+	},
+	"requestPayload": {
+		"message": "Payload"
+	},
+	"responsePayload": {
+		"message": "Resposta"
+	},
+	"downloadFileError": {
+		"message": "Erro ao baixar arquivo"
+	},
+	"whatsapp": {
+		"message": "WhatsApp"
+	},
+	"webhooks": {
+		"message": "Webhooks"
+	},
+	"portuguese": {
+		"message": "Português"
+	},
+	"english": {
+		"message": "Inglês"
+	},
+	"spanish": {
+		"message": "Español"
+	},
+	"devEmpty": {
+		"message": "DEV - Vazio"
+	},
+	"loginRequired": {
+		"message": "Você precisa estar logado para usar essa funcionalidade!"
+	},
+	"goToLogin": {
+		"message": "Fazer Login"
+	},
+	"displayTranscription": {
+		"message": "Exibir Transcrição"
+	},
+	"transcribing": {
+		"message": "Transcrevendo..."
+	},
+	"transcription": {
+		"message": "Transcrição"
+	},
+	"schedules": {
+		"message": "Agendamentos"
+	},
+	"removeTagNamed": {
+		"message": "Remover etiqueta: {name}"
+	},
+	"removeTagPhoneWarning": {
+		"message": "Isso também irá deletar a etiqueta de seu celular."
+	},
+	"numberOfitems": {
+		"message": "{number} itens"
+	},
+	"you": {
+		"message": "Você"
+	},
+	"user": {
+		"message": "Usuário"
+	},
+	"messageTypeVcard": {
+		"message": "Contato"
+	},
+	"messageRevoked": {
+		"message": "{author} apagou essa mensagem"
+	},
+	"messageGroupCreated": {
+		"message": "Grupo Criado"
+	},
+	"messageGroupMemberAdded": {
+		"message": "{author} adicionou {target}"
+	},
+	"messageGroupMemberRemoved": {
+		"message": "{author} removeu {target}"
+	},
+	"messageGroupMemberLeaved": {
+		"message": "{target} saiu do grupo"
+	},
+	"crmBlockTitle": {
+		"message": "Titulo do bloco"
+	},
+	"crmAddField": {
+		"message": "Adicionar campo"
+	},
+	"crmAddBlock": {
+		"message": "Adicionar novo bloco"
+	},
+	"crmRemoveField": {
+		"message": "Remover campo"
+	},
+	"crmFieldName": {
+		"message": "Nome do campo"
+	},
+	"fieldTypeCheckbox": {
+		"message": "Checkbox"
+	},
+	"fieldTypeDate": {
+		"message": "Data"
+	},
+	"fieldTypeNumber": {
+		"message": "Número"
+	},
+	"fieldTypeText": {
+		"message": "Texto"
+	},
+	"blockName": {
+		"message": "Nome do bloco"
+	},
+	"crmEmptyBLock": {
+		"message": "Bloco deve ter ao menos um campo"
+	},
+	"crmTitle": {
+		"message": "CRM"
+	},
+	"spamWarning": {
+		"message": "Essa campanha está sendo enviada para mais que 5 contatos, antes de prosseguir leia <a href='{policyLink}' target='_blank'>as políticas de mensagem do WhatsApp</a><br><b>Não nos responsabilizamos, nem incentivamos mau uso da ferramenta.</b>"
+	},
+	"selectingContacts": {
+		"message": "Selecionando contatos..."
+	},
+	"selectContactsError": {
+		"message": "Erro ao selecionar contatos"
+	},
+	"waitingTimeInSecondsPlaceholder": {
+		"message": "Digite o tempo"
+	},
+	"fieldMinChars": {
+		"message": "{field} deve conter pelo menos {amount} caracteres"
+	},
+	"editUser": {
+		"message": "Editar Usuário"
+	},
+	"planPremium": {
+		"message": "Premium"
+	},
+	"planBasic": {
+		"message": "Basic"
+	},
+	"unexpectedError": {
+		"message": "Erro inesperado"
+	},
+	"lastDay": {
+		"message": "Ontem"
+	},
+	"today": {
+		"message": "Hoje"
+	},
+	"nextDay": {
+		"message": "Amanhã"
+	},
+	"crmNotProvided": {
+		"message": "Bloco CRM não fornecido"
+	},
+	"crmUserValuesNotProvided": {
+		"message": "Valores do Usuário CRM não fornecidos"
+	},
+	"chatIdNotProvided": {
+		"message": "ID do chat não fornecido"
+	},
+	"audioFileNotProvided": {
+		"message": "Arquivo de áudio não fornecido"
+	},
+	"serverError": {
+		"message": "Erro no servidor"
+	},
+	"webhookNotProvided": {
+		"message": "Webhook não fornecido"
+	},
+	"webhookIdNotProvided": {
+		"message": "ID do webhook não fornecido"
+	},
+	"webhookOrEventNotProvided": {
+		"message": "Webhook ou evento não fornecido"
+	},
+	"responseReadError": {
+		"message": "Erro ao ler resposta"
+	},
+	"webhookSendError": {
+		"message": "Erro ao enviar webhook"
+	},
+	"requestNotSend": {
+		"message": "Requisição não enviada"
+	},
+	"webhookErrorTrys": {
+		"message": "Erro ao enviar webhook após {trys} tentativas"
+	},
+	"actionNotFound": {
+		"message": "Ação não encontrada: {action}"
+	},
+	"botTagAddError": {
+		"message": "Houve um erro ao adicionar a etiqueta com o bot"
+	},
+	"botTagRemoveError": {
+		"message": "Houve um erro ao remover a etiqueta com o bot"
+	},
+	"exportDataError": {
+		"message": "Erro ao exportar dados: {error}"
+	},
+	"exportDataSuccess": {
+		"message": "Backup realizado com sucesso!"
+	},
+	"fieldNotProvided": {
+		"message": "{field} não informado"
+	},
+	"campaignId": {
+		"message": "ID da campanha"
+	},
+	"campaignName": {
+		"message": "Nome da campanha"
+	},
+	"campaignType": {
+		"message": "Tipo da campanha"
+	},
+	"scheduleId": {
+		"message": "ID do agendamento"
+	},
+	"chatId": {
+		"message": "ID do chat"
+	},
+	"scheduleDateTime": {
+		"message": "Data e hora do agendamento"
+	},
+	"scheduleType": {
+		"message": "Tipo do agendamento"
+	},
+	"campaignImportSuccess": {
+		"message": "Campanhas importada com sucesso"
+	},
+	"campaignImportError": {
+		"message": "Erro ao importar campanhas: {error}"
+	},
+	"scheduleImportSuccess": {
+		"message": "Agendamentos importados com sucesso"
+	},
+	"scheduleImportError": {
+		"message": "Erro ao importar agendamentos: {error}"
+	},
+	"crmFillContactError": {
+		"message": "Erro ao preencher CRM do contato {chatId} {error}"
+	},
+	"crmImportSuccess": {
+		"message": "CRM importado com sucesso"
+	},
+	"crmImportError": {
+		"message": "Erro ao importar CRM: {error}"
+	},
+	"selectChatToSend": {
+		"message": "Selecione um chat para enviar a mensagem"
+	},
+	"scriptMessageNotSend": {
+		"message": "Uma das mensagens do script não foi encontrada"
+	},
+	"scheduledWhatsappWasNotOpen": {
+		"message": "WhatsApp não estava aberto na hora do agendamento"
+	},
+	"webhookPausedError": {
+		"message": "WEBHOOK PAUSADO - Erro ao enviar webhook {webhook}, acesse os logs para mais informações"
+	},
+	"subscribe": {
+		"message": "Assinar Plano"
+	},
+	"webhookCreate": {
+		"message": "Criar Webhook"
+	},
+	"crmClientInfo": {
+		"message": "Informações do cliente"
+	},
+	"crmLeadNotes": {
+		"message": "Notas"
+	},
+	"crmLeadOrigin": {
+		"message": "Origem do lead"
+	},
+	"crmLeadCreateDate": {
+		"message": "Data de entrada"
+	},
+	"crmLeadValue": {
+		"message": "Valor do negócio"
+	},
+	"crmLeadInterest": {
+		"message": "Produtos de interesse"
+	},
+	"privacySettings": {
+		"message": "Configurações de privacidade"
+	},
+	"campaignNotFound": {
+		"message": "Campanha não encontrada"
+	},
+	"quickMessageId": {
+		"message": "ID da mensagem rápida"
+	},
+	"quickMessageNotFound": {
+		"message": "Mensagem rápida não encontrada"
+	},
+	"url": {
+		"message": "URL"
+	},
+	"quickMessageFolder": {
+		"message": "Pasta da mensagem rápida"
+	},
+	"quickMessageFolderId": {
+		"message": "ID da pasta de mensagem rápida"
+	},
+	"addQuickMessageInFolderError": {
+		"message": "Nenhuma mensagem rápida ou ID de pasta informada"
+	},
+	"bot": {
+		"message": "Bot"
+	},
+	"botId": {
+		"message": "ID do bot"
+	},
+	"campaign": {
+		"message": "Campanha"
+	},
+	"campaignSettings": {
+		"message": "Configurações da campanha"
+	},
+	"addSentOnCampaign": {
+		"message": "Nenhuma campanha ou ID de chat informados"
+	},
+	"tag": {
+		"message": "Etiqueta"
+	},
+	"fileUrl": {
+		"message": "URL do arquivo"
+	},
+	"tagNotFound": {
+		"message": "Etiqueta não encontrada"
+	},
+	"loginInfo": {
+		"message": "Informação de login"
+	},
+	"chatAssignmentInfo": {
+		"message": "Informação de responsável pela conversa"
+	},
+	"userInfo": {
+		"message": "Informação do usuário"
+	},
+	"userId": {
+		"message": "ID do usuário"
+	},
+	"cancelRecording": {
+		"message": "Cancelar gravação"
+	},
+	"addTagError": {
+		"message": "Erro ao adicionar etiqueta"
+	},
+	"ofDay": {
+		"message": "do dia"
+	},
+	"ofClient": {
+		"message": "do cliente"
+	},
+	"filters": {
+		"message": "Filtros"
+	},
+	"selectToSend": {
+		"message": "Selecione para enviar"
+	},
+	"exitEditMode": {
+		"message": "Sair do modo edição"
+	},
+	"startEditMode": {
+		"message": "Entrar no modo edição"
+	},
+	"transcribingError": {
+		"message": "Erro ao transcrever o audio"
+	},
+	"toTranscribe": {
+		"message": "Transcrever"
+	},
+	"transcriptionUsage": {
+		"message": "Uso de Transcrição"
+	},
+	"noSyncMessage": {
+		"message": "Nenhuma sincronização efetuada!"
+	},
+	"transcriptionTrialUsage": {
+		"message": "Uso do Teste"
+	},
+	"transcriptionMonthlyUsage": {
+		"message": "Uso Mensal"
+	},
+	"transcriptionAddonUsage": {
+		"message": "Uso de Addons"
+	},
+	"tagName": {
+		"message": "Nome da etiqueta"
+	},
+	"webhook": {
+		"message": "Webhook"
+	},
+	"indexes": {
+		"message": "Indices"
+	},
+	"tagMsgIsMandatory": {
+		"message": "Mensagem é obrigatória!"
+	},
+	"labelAutomaticMsgSuccessfullyCreated": {
+		"message": "Mensagem automática criada com sucesso!"
+	},
+	"errorWhenCreateAutomaticMsgTag": {
+		"message": "Falha ao criar mensagem automática!"
+	},
+	"editIncludeMsg": {
+		"message": "Incluir/Alterar mensagem"
+	},
+	"automaticMessage": {
+		"message": "Mensagem automática"
+	},
+	"sendAutomaticMessage": {
+		"message": "Enviar mensagem automática"
+	},
+	"confirmSendAutomaticMessage": {
+		"message": "Confirmar o envio da mensagem automática?"
+	},
+	"toConfirm": {
+		"message": "Confirmar"
+	},
+	"schedule": {
+		"message": "Agendamento"
+	},
+	"addedMessages": {
+		"message": "Mensagem(s) adicionadas:"
+	},
+	"noMessagesYet": {
+		"message": "Nenhuma mensagem adicionada"
+	},
+	"messageAlreadyExists": {
+		"message": "Mensagem já existe!"
+	},
+	"emptyMessage": {
+		"message": "Mensagem é obrigatória!"
+	},
+	"descriptionAlertModal": {
+		"message": "Defina um nome para o dispositivo atual. Esse nome será essencial para organizar e localizar os backups criados, facilitando a gestão e o acesso às suas informações."
+	},
+	"alertModalButton": {
+		"message": "Definir agora"
+	},
+	"descriptionIntegrityCloudBackup": {
+		"message": "Para manter a integridade de seus dados, este backup não armazena dados de conversa."
+	},
+	"showUnreadChats": {
+		"message": "Somente não lidas"
+	},
+	"information": {
+		"message": "Informações"
+	},
+	"pluginVersion": {
+		"message": "Versão do Plugin"
+	},
+	"wppVersion": {
+		"message": "Versão do WhatsApp"
+	},
+	"limitKanbanCol": {
+		"message": "Limite de 20 etiquetas atingido!"
+	},
+	"titleBusinessAreaModal": {
+		"message": "Otimize sua experiência na plataforma"
+	},
+	"descriptionBusinessAreaModal": {
+		"message": "Nos informe o ramo de atividade da sua empresa para que possamos adaptar funcionalidades, sugestões e comunicações de acordo com o seu perfil. Com isso, você aproveita o máximo que a ferramenta pode oferecer ao seu negócio."
+	},
+	"businessAreaSavedSuccessfully": {
+		"message": "Área de atuação salva com sucesso!"
+	},
+	"areaBusinessRequired": {
+		"message": "Selecione uma área de atuação e clique em salvar."
+	},
+	"addPinChat": {
+		"message": "Colocar no radar"
+	},
+	"removePinChat": {
+		"message": "Remover do radar"
+	},
+	"chatLimit": {
+		"message": "Limite de 10 contatos atingido!"
+	},
+	"pinnedChatTitle": {
+		"message": "Radar de Contatos"
+	},
+	"pinnedChatInfoDescriptionLine1": {
+		"message": "Adicione até 10 contatos ao radar."
+	},
+	"pinnedDescriptionLine2": {
+		"message": "Clique no ícone de radar dentro da conversa para adicionar ou remover."
+	},
+	"pinnedDescriptionLine3": {
+		"message": "O último contato adicionado aparece no topo da lista."
+	},
+	"pinnedDescriptionLine4": {
+		"message": "Para mover um contato para o início, remova e adicione novamente."
+	},
+	"manageLabels": {
+		"message": "Gerenciar etiquetas"
+	},
+	"saveOrder": {
+		"message": "Salvar a ordem"
+	}
+}
