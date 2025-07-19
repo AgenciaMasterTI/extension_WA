@@ -31,13 +31,12 @@ class PopupManager {
 
   async initAuthService() {
     try {
-      // Por ahora, usar un AuthService simplificado
+      // Modo demo simple
       this.authService = {
         isUserAuthenticated: () => false,
         getCurrentUser: () => null,
         login: async (email, password) => {
-          // Simular login exitoso para demo
-          return { user: { email, user_metadata: { name: email.split('@')[0] } } };
+          return { success: true, user: { email, user_metadata: { name: email.split('@')[0] } } };
         },
         logout: async () => {
           this.currentUser = null;
@@ -48,7 +47,6 @@ class PopupManager {
       console.log('[Popup] AuthService inicializado (modo demo)');
     } catch (error) {
       console.error('[Popup] Error inicializando AuthService:', error);
-      // No mostrar error, continuar en modo offline
     }
   }
 
@@ -184,16 +182,20 @@ class PopupManager {
       
       console.log('[Popup] Intentando login con:', email);
       
-      // Simular login exitoso
+      // Intentar login real o demo
       const result = await this.authService.login(email, password);
-      this.currentUser = result.user;
       
-      this.showUserInterface();
-      this.setOnlineStatus(true);
-      this.showMessage('¡Bienvenido!', 'success');
-      
-      // Cargar datos del usuario
-      await this.loadUserData();
+      if (result.success) {
+        this.currentUser = result.user;
+        this.showUserInterface();
+        this.setOnlineStatus(true);
+        this.showMessage('¡Bienvenido!', 'success');
+        
+        // Cargar datos del usuario
+        await this.loadUserData();
+      } else {
+        this.showMessage(result.error || 'Error al iniciar sesión', 'error');
+      }
       
     } catch (error) {
       console.error('[Popup] Error en login:', error);
