@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp CRM Extension - Test</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <!-- Header -->
+        <div class="popup-header">
+            <div class="logo">
+                <span class="logo-icon">📱</span>
+                <span class="logo-text">WhatsApp CRM</span>
+            </div>
+            <div class="version">v1.0.0</div>
+        </div>
+
+        <!-- Contenido principal -->
+        <div class="popup-content">
+            <!-- Estado de conexión -->
+            <div class="connection-status">
+                <div class="status-indicator offline"></div>
+                <span class="status-text">Desconectado</span>
+            </div>
+
+            <!-- Sección de login -->
+            <div class="login-section">
+                <h3>Iniciar Sesión</h3>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" required placeholder="tu@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Contraseña:</label>
+                        <input type="password" id="password" required placeholder="********">
+                    </div>
+                    <button type="submit" class="btn-primary">Iniciar Sesión</button>
+                </form>
+                
+                <div class="divider">
+                    <span>o</span>
+                </div>
+                
+                <button class="btn-secondary" id="offlineModeBtn">Usar sin cuenta</button>
+            </div>
+
+            <!-- Mensaje de prueba -->
+            <div class="message success">
+                <span>¡Popup funcionando correctamente!</span>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="popup-footer">
+            <div class="footer-links">
+                <button class="link-btn">Ayuda</button>
+                <button class="link-btn">Configuración</button>
+            </div>
+            <div class="footer-text">
+                <small>© 2024 WhatsApp CRM Extension</small>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Script de prueba simple
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Popup de prueba cargado correctamente');
+            
+            // Manejar formulario de login
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value;
+                    
+                    console.log('Login intentado:', { email, password });
+                    alert('Login simulado: ' + email);
+                });
+            }
+            
+            // Manejar modo offline
+            const offlineBtn = document.getElementById('offlineModeBtn');
+            if (offlineBtn) {
+                offlineBtn.addEventListener('click', () => {
+                    console.log('Modo offline activado');
+                    alert('Modo offline activado');
+                });
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -8,6 +8,7 @@ class PopupManager {
     this.isOnline = false;
     this.currentUser = null;
     this.stats = { tags: 0, templates: 0, chats: 0 };
+    this.authService = null;
     
     this.init();
   }
@@ -15,14 +16,40 @@ class PopupManager {
   async init() {
     console.log('[Popup] Iniciando Popup Manager...');
     
-    // Configurar event listeners
+    // Configurar event listeners primero
     this.setupEventListeners();
     
-    // Cargar estado inicial
-    await this.loadInitialState();
+    // Mostrar interfaz de login por defecto
+    this.showLoginInterface();
     
     // Verificar estado de WhatsApp Web
     this.checkWhatsAppStatus();
+    
+    // Intentar inicializar AuthService (opcional)
+    this.initAuthService();
+  }
+
+  async initAuthService() {
+    try {
+      // Por ahora, usar un AuthService simplificado
+      this.authService = {
+        isUserAuthenticated: () => false,
+        getCurrentUser: () => null,
+        login: async (email, password) => {
+          // Simular login exitoso para demo
+          return { user: { email, user_metadata: { name: email.split('@')[0] } } };
+        },
+        logout: async () => {
+          this.currentUser = null;
+          this.showLoginInterface();
+        }
+      };
+      
+      console.log('[Popup] AuthService inicializado (modo demo)');
+    } catch (error) {
+      console.error('[Popup] Error inicializando AuthService:', error);
+      // No mostrar error, continuar en modo offline
+    }
   }
 
   setupEventListeners() {
@@ -106,36 +133,9 @@ class PopupManager {
     }
   }
 
-  async loadInitialState() {
-    try {
-      // Cargar configuración del usuario
-      const data = await this.getFromStorage(['currentUser', 'userConfig', 'tags', 'templates']);
-      
-      if (data.currentUser) {
-        this.currentUser = data.currentUser;
-        this.showUserInterface();
-      } else {
-        this.showLoginInterface();
-      }
-
-      // Cargar estadísticas
-      if (data.tags) this.stats.tags = data.tags.length || 0;
-      if (data.templates) this.stats.templates = data.templates.length || 0;
-      
-      this.updateStats();
-
-      // Cargar configuraciones
-      if (data.userConfig) {
-        this.loadUserConfig(data.userConfig);
-      }
-
-    } catch (error) {
-      console.error('[Popup] Error cargando estado inicial:', error);
-      this.showMessage('Error cargando datos', 'error');
-    }
-  }
-
   showUserInterface() {
+    console.log('[Popup] Mostrando interfaz de usuario');
+    
     // Ocultar login, mostrar interfaz de usuario
     this.hideElement('loginSection');
     this.showElement('userSection');
@@ -149,15 +149,18 @@ class PopupManager {
     const userPlan = document.getElementById('userPlan');
     
     if (userName && this.currentUser) {
-      userName.textContent = this.currentUser.name || this.currentUser.email;
+      userName.textContent = this.currentUser.user_metadata?.name || this.currentUser.email;
     }
     
     if (userPlan && this.currentUser) {
-      userPlan.textContent = `Plan ${this.currentUser.plan || 'Free'}`;
+      const plan = this.currentUser.user_metadata?.plan || 'free';
+      userPlan.textContent = `Plan ${plan.charAt(0).toUpperCase() + plan.slice(1)}`;
     }
   }
 
   showLoginInterface() {
+    console.log('[Popup] Mostrando interfaz de login');
+    
     // Mostrar login, ocultar interfaz de usuario
     this.showElement('loginSection');
     this.hideElement('userSection');
@@ -168,89 +171,96 @@ class PopupManager {
   }
 
   async handleLogin() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-
-    if (!email || !password) {
-      this.showMessage('Por favor completa todos los campos', 'error');
-      return;
-    }
-
-    this.showLoading(true);
-
     try {
-      // Simular login (reemplazar con AuthService real)
-      const response = await this.mockLogin(email, password);
+      this.showLoading(true);
       
-      if (response.success) {
-        this.currentUser = response.user;
-        await this.saveToStorage({ currentUser: this.currentUser });
-        
-        this.showUserInterface();
-        this.showMessage('Sesión iniciada correctamente', 'success');
-        
-        setTimeout(() => this.hideMessage(), 2000);
-      } else {
-        this.showMessage(response.error || 'Error al iniciar sesión', 'error');
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      if (!email || !password) {
+        this.showMessage('Por favor completa todos los campos', 'error');
+        return;
       }
+      
+      console.log('[Popup] Intentando login con:', email);
+      
+      // Simular login exitoso
+      const result = await this.authService.login(email, password);
+      this.currentUser = result.user;
+      
+      this.showUserInterface();
+      this.setOnlineStatus(true);
+      this.showMessage('¡Bienvenido!', 'success');
+      
+      // Cargar datos del usuario
+      await this.loadUserData();
+      
     } catch (error) {
       console.error('[Popup] Error en login:', error);
-      this.showMessage('Error de conexión', 'error');
+      this.showMessage('Error al iniciar sesión', 'error');
     } finally {
       this.showLoading(false);
     }
   }
 
   async handleOfflineMode() {
-    // Configurar modo offline
-    this.currentUser = {
-      id: 'offline_user',
-      email: 'usuario@offline.com',
-      name: 'Usuario Offline',
-      plan: 'free'
-    };
-
-    await this.saveToStorage({ currentUser: this.currentUser });
-    
-    this.showUserInterface();
-    this.showMessage('Modo offline activado', 'success');
-    
-    setTimeout(() => this.hideMessage(), 2000);
-  }
-
-  async handleLogout() {
     try {
       this.showLoading(true);
       
-      // Limpiar datos de usuario
-      this.currentUser = null;
-      await this.removeFromStorage(['currentUser', 'authToken']);
+      console.log('[Popup] Activando modo offline');
       
-      this.showLoginInterface();
-      this.showMessage('Sesión cerrada correctamente', 'success');
+      // Crear usuario temporal
+      this.currentUser = {
+        email: 'usuario@offline.com',
+        user_metadata: { name: 'Usuario Offline', plan: 'free' }
+      };
       
-      setTimeout(() => this.hideMessage(), 2000);
+      this.showUserInterface();
+      this.setOnlineStatus(false);
+      this.showMessage('Modo offline activado', 'info');
+      
+      // Cargar datos locales
+      await this.loadLocalData();
+      
     } catch (error) {
-      console.error('[Popup] Error en logout:', error);
-      this.showMessage('Error cerrando sesión', 'error');
+      console.error('[Popup] Error activando modo offline:', error);
+      this.showMessage('Error activando modo offline', 'error');
     } finally {
       this.showLoading(false);
     }
   }
 
+  async handleLogout() {
+    try {
+      if (this.authService) {
+        await this.authService.logout();
+      }
+      
+      this.currentUser = null;
+      this.showLoginInterface();
+      this.setOnlineStatus(false);
+      this.showMessage('Sesión cerrada', 'info');
+      
+    } catch (error) {
+      console.error('[Popup] Error en logout:', error);
+      this.showMessage('Error cerrando sesión', 'error');
+    }
+  }
+
   async checkWhatsAppStatus() {
     try {
-      // Verificar si hay una tab de WhatsApp Web abierta
+      // Verificar si WhatsApp Web está abierto
       const tabs = await chrome.tabs.query({ url: 'https://web.whatsapp.com/*' });
+      const isWhatsAppOpen = tabs.length > 0;
       
-      if (tabs.length > 0) {
-        this.setOnlineStatus(true);
-      } else {
-        this.setOnlineStatus(false);
+      this.setOnlineStatus(isWhatsAppOpen);
+      
+      if (isWhatsAppOpen) {
+        this.showMessage('WhatsApp Web detectado', 'success');
       }
+      
     } catch (error) {
-      console.error('[Popup] Error verificando estado de WhatsApp:', error);
-      this.setOnlineStatus(false);
+      console.error('[Popup] Error verificando WhatsApp:', error);
     }
   }
 
@@ -260,14 +270,12 @@ class PopupManager {
     const statusIndicator = document.getElementById('statusIndicator');
     const statusText = document.getElementById('statusText');
     
-    if (statusIndicator && statusText) {
-      if (isOnline) {
-        statusIndicator.className = 'status-indicator online';
-        statusText.textContent = 'Conectado a WhatsApp Web';
-      } else {
-        statusIndicator.className = 'status-indicator offline';
-        statusText.textContent = 'WhatsApp Web no detectado';
-      }
+    if (statusIndicator) {
+      statusIndicator.className = `status-indicator ${isOnline ? 'online' : 'offline'}`;
+    }
+    
+    if (statusText) {
+      statusText.textContent = isOnline ? 'Conectado' : 'Desconectado';
     }
   }
 
@@ -283,20 +291,7 @@ class PopupManager {
 
   async openWhatsApp() {
     try {
-      // Verificar si ya hay una tab abierta
-      const tabs = await chrome.tabs.query({ url: 'https://web.whatsapp.com/*' });
-      
-      if (tabs.length > 0) {
-        // Enfocar la tab existente
-        await chrome.tabs.update(tabs[0].id, { active: true });
-        await chrome.windows.update(tabs[0].windowId, { focused: true });
-      } else {
-        // Crear nueva tab
-        await chrome.tabs.create({ url: 'https://web.whatsapp.com' });
-      }
-      
-      // Cerrar popup
-      window.close();
+      await chrome.tabs.create({ url: 'https://web.whatsapp.com' });
     } catch (error) {
       console.error('[Popup] Error abriendo WhatsApp:', error);
       this.showMessage('Error abriendo WhatsApp Web', 'error');
@@ -304,17 +299,17 @@ class PopupManager {
   }
 
   async syncData() {
-    this.showLoading(true);
-    
     try {
+      this.showLoading(true);
+      this.showMessage('Sincronizando datos...', 'info');
+      
       // Simular sincronización
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      this.showMessage('Datos sincronizados correctamente', 'success');
-      setTimeout(() => this.hideMessage(), 2000);
+      this.showMessage('Datos sincronizados', 'success');
     } catch (error) {
       console.error('[Popup] Error sincronizando:', error);
-      this.showMessage('Error en la sincronización', 'error');
+      this.showMessage('Error sincronizando datos', 'error');
     } finally {
       this.showLoading(false);
     }
@@ -322,96 +317,75 @@ class PopupManager {
 
   async exportData() {
     try {
-      const data = await this.getFromStorage(['tags', 'templates', 'userConfig']);
+      this.showLoading(true);
       
-      const exportData = {
-        version: '1.0',
-        exportDate: new Date().toISOString(),
-        user: this.currentUser?.email || 'offline',
-        data: data
+      // Simular exportación
+      const data = {
+        tags: this.stats.tags,
+        templates: this.stats.templates,
+        chats: this.stats.chats,
+        exportedAt: new Date().toISOString()
       };
-
-      // Crear y descargar archivo JSON
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
       const a = document.createElement('a');
       a.href = url;
-      a.download = `whatsapp-crm-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
+      a.download = 'whatsapp-crm-data.json';
       a.click();
-      document.body.removeChild(a);
       
       URL.revokeObjectURL(url);
+      this.showMessage('Datos exportados', 'success');
       
-      this.showMessage('Datos exportados correctamente', 'success');
-      setTimeout(() => this.hideMessage(), 2000);
     } catch (error) {
-      console.error('[Popup] Error exportando datos:', error);
+      console.error('[Popup] Error exportando:', error);
       this.showMessage('Error exportando datos', 'error');
+    } finally {
+      this.showLoading(false);
+    }
+  }
+
+  async loadUserData() {
+    try {
+      // Cargar datos del usuario desde storage
+      const data = await this.getFromStorage(['tags', 'templates']);
+      this.stats.tags = data.tags?.length || 0;
+      this.stats.templates = data.templates?.length || 0;
+      this.updateStats();
+    } catch (error) {
+      console.error('[Popup] Error cargando datos del usuario:', error);
+    }
+  }
+
+  async loadLocalData() {
+    try {
+      // Cargar datos locales
+      const data = await this.getFromStorage(['tags', 'templates']);
+      this.stats.tags = data.tags?.length || 0;
+      this.stats.templates = data.templates?.length || 0;
+      this.updateStats();
+    } catch (error) {
+      console.error('[Popup] Error cargando datos locales:', error);
     }
   }
 
   async updateSetting(key, value) {
     try {
-      const currentConfig = await this.getFromStorage(['userConfig']);
-      const newConfig = { ...currentConfig.userConfig, [key]: value };
-      
-      await this.saveToStorage({ userConfig: newConfig });
-      
-      console.log('[Popup] Configuración actualizada:', key, value);
+      await this.saveToStorage({ [key]: value });
     } catch (error) {
       console.error('[Popup] Error actualizando configuración:', error);
     }
   }
 
-  loadUserConfig(config) {
-    const autoSyncChk = document.getElementById('autoSyncChk');
-    const notificationsChk = document.getElementById('notificationsChk');
-    
-    if (autoSyncChk && config.autoSync !== undefined) {
-      autoSyncChk.checked = config.autoSync;
-    }
-    
-    if (notificationsChk && config.notifications !== undefined) {
-      notificationsChk.checked = config.notifications;
-    }
-  }
-
   openHelp() {
     chrome.tabs.create({ url: 'https://github.com/tu-usuario/whatsapp-crm-extension' });
-    window.close();
   }
 
   openSettings() {
-    // Abrir WhatsApp Web y navegar a configuración del sidebar
-    this.openWhatsApp();
+    chrome.runtime.openOptionsPage();
   }
 
-  // Mock del login (reemplazar con AuthService real)
-  async mockLogin(email, password) {
-    // Simular latencia de red
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    if (password === 'test123') {
-      return {
-        success: true,
-        user: {
-          id: Date.now().toString(),
-          email: email,
-          name: email.split('@')[0],
-          plan: 'pro'
-        }
-      };
-    } else {
-      return {
-        success: false,
-        error: 'Credenciales inválidas. Usa "test123" como contraseña.'
-      };
-    }
-  }
-
-  // Utilidades de UI
   showElement(elementId) {
     const element = document.getElementById(elementId);
     if (element) {
@@ -427,31 +401,35 @@ class PopupManager {
   }
 
   showLoading(show = true) {
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    if (loadingOverlay) {
-      loadingOverlay.style.display = show ? 'flex' : 'none';
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+      overlay.style.display = show ? 'flex' : 'none';
     }
   }
 
   showMessage(text, type = 'info') {
-    const messageContainer = document.getElementById('messageContainer');
+    const container = document.getElementById('messageContainer');
     const messageText = document.getElementById('messageText');
     
-    if (messageContainer && messageText) {
+    if (container && messageText) {
       messageText.textContent = text;
-      messageContainer.className = `message ${type}`;
-      messageContainer.style.display = 'block';
+      container.className = `message ${type}`;
+      container.style.display = 'block';
+      
+      // Ocultar después de 3 segundos
+      setTimeout(() => {
+        this.hideMessage();
+      }, 3000);
     }
   }
 
   hideMessage() {
-    const messageContainer = document.getElementById('messageContainer');
-    if (messageContainer) {
-      messageContainer.style.display = 'none';
+    const container = document.getElementById('messageContainer');
+    if (container) {
+      container.style.display = 'none';
     }
   }
 
-  // Utilidades de storage
   async saveToStorage(data) {
     return new Promise((resolve, reject) => {
       chrome.storage.local.set(data, () => {
@@ -475,28 +453,9 @@ class PopupManager {
       });
     });
   }
-
-  async removeFromStorage(keys) {
-    return new Promise((resolve, reject) => {
-      chrome.storage.local.remove(keys, () => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve();
-        }
-      });
-    });
-  }
 }
 
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
   new PopupManager();
-});
-
-// Actualizar estado cuando el popup se enfoca
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && window.popupManager) {
-    window.popupManager.checkWhatsAppStatus();
-  }
 }); 

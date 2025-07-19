@@ -1,69 +1,106 @@
 /**
- * Templates Service - Gestión de plantillas de mensajes
- * Maneja todas las operaciones relacionadas con plantillas
+ * Templates Service - Gestión de plantillas con Supabase
+ * Compatible con el esquema avanzado del usuario
  */
 
 class TemplatesService {
   constructor() {
-    this.templates = [];
-    this.categories = ['General', 'Ventas', 'Soporte', 'Marketing'];
+    this.supabase = null;
+    this.currentUser = null;
+  }
+
+  async init(supabaseClient, user) {
+    this.supabase = supabaseClient;
+    this.currentUser = user;
+    console.log('[TemplatesService] Inicializado con usuario:', user?.email);
   }
 
   /**
-   * Cargar todas las plantillas desde storage
+   * Obtener todas las plantillas del usuario
    */
-  async loadTemplates() {
+  async getTemplates(category = null) {
     try {
-      const data = await this.getFromStorage(['templates']);
-      this.templates = data.templates || [];
-      return this.templates;
+      let query = this.supabase
+        .from('templates')
+        .select('*')
+        .eq('user_id', this.currentUser.id)
+        .eq('is_active', true)
+        .order('usage_count', { ascending: false });
+
+      if (category && category !== 'all') {
+        query = query.eq('category', category);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
     } catch (error) {
-      console.error('[TemplatesService] Error cargando plantillas:', error);
+      console.error('[TemplatesService] Error obteniendo plantillas:', error);
       return [];
     }
   }
 
   /**
-   * Guardar todas las plantillas en storage
+   * Obtener plantillas compartidas
    */
-  async saveTemplates() {
+  async getSharedTemplates() {
     try {
-      await this.saveToStorage({ templates: this.templates });
-      return true;
+      const { data, error } = await this.supabase
+        .from('templates')
+        .select('*')
+        .eq('is_shared', true)
+        .eq('is_active', true)
+        .order('usage_count', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
-      console.error('[TemplatesService] Error guardando plantillas:', error);
-      return false;
+      console.error('[TemplatesService] Error obteniendo plantillas compartidas:', error);
+      return [];
     }
   }
 
   /**
-   * Crear una nueva plantilla
+   * Crear nueva plantilla
    */
   async createTemplate(templateData) {
     try {
-      const newTemplate = {
-        id: this.generateId(),
-        name: templateData.name.trim(),
-        content: templateData.content.trim(),
-        category: templateData.category || 'General',
-        tags: templateData.tags || [],
-        variables: this.extractVariables(templateData.content),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        usageCount: 0,
-        isActive: true
-      };
-
-      // Validar que no exista una plantilla con el mismo nombre
-      if (this.templates.find(template => template.name.toLowerCase() === newTemplate.name.toLowerCase())) {
-        throw new Error('Ya existe una plantilla con ese nombre');
-      }
-
-      this.templates.push(newTemplate);
-      await this.saveTemplates();
+      const { 
+        name, 
+        content, 
+        category = 'General', 
+        tags = [], 
+        variables = [],
+        is_shared = false 
+      } = templateData;
       
-      console.log('[TemplatesService] Plantilla creada:', newTemplate);
-      return newTemplate;
+      const { data, error } = await this.supabase
+        .from('templates')
+        .insert({
+          user_id: this.currentUser.id,
+          name,
+          content,
+          category,
+          tags,
+          variables,
+          is_shared,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Registrar evento de analytics
+      await this.recordAnalytics('template_created', { 
+        template_id: data.id, 
+        template_name: name,
+        category,
+        has_variables: variables.length > 0
+      });
+
+      console.log('[TemplatesService] Plantilla creada:', data);
+      return data;
     } catch (error) {
       console.error('[TemplatesService] Error creando plantilla:', error);
       throw error;
@@ -71,27 +108,27 @@ class TemplatesService {
   }
 
   /**
-   * Actualizar una plantilla existente
+   * Actualizar plantilla
    */
-  async updateTemplate(templateId, updateData) {
+  async updateTemplate(templateId, updates) {
     try {
-      const templateIndex = this.templates.findIndex(template => template.id === templateId);
-      if (templateIndex === -1) {
-        throw new Error('Plantilla no encontrada');
-      }
+      const { data, error } = await this.supabase
+        .from('templates')
+        .update(updates)
+        .eq('id', templateId)
+        .eq('user_id', this.currentUser.id)
+        .select()
+        .single();
 
-      const updatedTemplate = {
-        ...this.templates[templateIndex],
-        ...updateData,
-        variables: updateData.content ? this.extractVariables(updateData.content) : this.templates[templateIndex].variables,
-        updatedAt: new Date().toISOString()
-      };
+      if (error) throw error;
 
-      this.templates[templateIndex] = updatedTemplate;
-      await this.saveTemplates();
-      
-      console.log('[TemplatesService] Plantilla actualizada:', updatedTemplate);
-      return updatedTemplate;
+      // Registrar evento de analytics
+      await this.recordAnalytics('template_updated', { 
+        template_id: templateId, 
+        updates 
+      });
+
+      return data;
     } catch (error) {
       console.error('[TemplatesService] Error actualizando plantilla:', error);
       throw error;
@@ -99,21 +136,22 @@ class TemplatesService {
   }
 
   /**
-   * Eliminar una plantilla
+   * Eliminar plantilla (soft delete)
    */
   async deleteTemplate(templateId) {
     try {
-      const templateIndex = this.templates.findIndex(template => template.id === templateId);
-      if (templateIndex === -1) {
-        throw new Error('Plantilla no encontrada');
-      }
+      const { error } = await this.supabase
+        .from('templates')
+        .update({ is_active: false })
+        .eq('id', templateId)
+        .eq('user_id', this.currentUser.id);
 
-      const deletedTemplate = this.templates[templateIndex];
-      this.templates.splice(templateIndex, 1);
-      await this.saveTemplates();
-      
-      console.log('[TemplatesService] Plantilla eliminada:', deletedTemplate);
-      return deletedTemplate;
+      if (error) throw error;
+
+      // Registrar evento de analytics
+      await this.recordAnalytics('template_deleted', { template_id: templateId });
+
+      return true;
     } catch (error) {
       console.error('[TemplatesService] Error eliminando plantilla:', error);
       throw error;
@@ -121,66 +159,20 @@ class TemplatesService {
   }
 
   /**
-   * Obtener plantilla por ID
+   * Usar plantilla (incrementar contador de uso)
    */
-  getTemplateById(templateId) {
-    return this.templates.find(template => template.id === templateId);
-  }
-
-  /**
-   * Obtener todas las plantillas
-   */
-  getAllTemplates() {
-    return this.templates.filter(template => template.isActive);
-  }
-
-  /**
-   * Obtener plantillas por categoría
-   */
-  getTemplatesByCategory(category) {
-    return this.templates.filter(template => 
-      template.category === category && template.isActive
-    );
-  }
-
-  /**
-   * Buscar plantillas por nombre o contenido
-   */
-  searchTemplates(query) {
-    const searchTerm = query.toLowerCase().trim();
-    return this.templates.filter(template => 
-      template.isActive && (
-        template.name.toLowerCase().includes(searchTerm) ||
-        template.content.toLowerCase().includes(searchTerm) ||
-        template.category.toLowerCase().includes(searchTerm)
-      )
-    );
-  }
-
-  /**
-   * Usar una plantilla (incrementar contador y procesar variables)
-   */
-  async useTemplate(templateId, variables = {}) {
+  async useTemplate(templateId, chatName = null) {
     try {
-      const template = this.getTemplateById(templateId);
-      if (!template) {
-        throw new Error('Plantilla no encontrada');
-      }
-
       // Incrementar contador de uso
-      template.usageCount = (template.usageCount || 0) + 1;
-      template.lastUsedAt = new Date().toISOString();
-      
-      // Procesar variables en el contenido
-      let processedContent = this.processTemplateVariables(template.content, variables);
-      
-      await this.saveTemplates();
-      
-      console.log('[TemplatesService] Plantilla usada:', template.name);
-      return {
-        template,
-        processedContent
-      };
+      await this.supabase.rpc('increment_template_usage', { template_uuid: templateId });
+
+      // Registrar evento de analytics
+      await this.recordAnalytics('template_used', { 
+        template_id: templateId,
+        chat_name: chatName
+      });
+
+      return true;
     } catch (error) {
       console.error('[TemplatesService] Error usando plantilla:', error);
       throw error;
@@ -188,104 +180,205 @@ class TemplatesService {
   }
 
   /**
-   * Extraer variables de una plantilla (formato {{variable}})
+   * Obtener plantilla por ID
    */
-  extractVariables(content) {
-    const variableRegex = /\{\{([^}]+)\}\}/g;
-    const variables = [];
-    let match;
+  async getTemplateById(templateId) {
+    try {
+      const { data, error } = await this.supabase
+        .from('templates')
+        .select('*')
+        .eq('id', templateId)
+        .eq('is_active', true)
+        .single();
 
-    while ((match = variableRegex.exec(content)) !== null) {
-      const variable = match[1].trim();
-      if (!variables.includes(variable)) {
-        variables.push(variable);
-      }
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('[TemplatesService] Error obteniendo plantilla:', error);
+      return null;
     }
-
-    return variables;
   }
 
   /**
-   * Procesar variables en el contenido de una plantilla
+   * Buscar plantillas por texto
    */
-  processTemplateVariables(content, variables = {}) {
-    let processedContent = content;
+  async searchTemplates(query) {
+    try {
+      const { data, error } = await this.supabase
+        .from('templates')
+        .select('*')
+        .eq('user_id', this.currentUser.id)
+        .eq('is_active', true)
+        .or(`name.ilike.%${query}%,content.ilike.%${query}%`)
+        .order('usage_count', { ascending: false });
 
-    // Reemplazar variables proporcionadas
-    for (const [key, value] of Object.entries(variables)) {
-      const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
-      processedContent = processedContent.replace(regex, value);
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('[TemplatesService] Error buscando plantillas:', error);
+      return [];
     }
+  }
 
-    // Reemplazar variables automáticas
-    const autoVariables = {
-      'fecha': new Date().toLocaleDateString('es-ES'),
-      'hora': new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-      'fecha_hora': new Date().toLocaleString('es-ES'),
-      'dia_semana': new Date().toLocaleDateString('es-ES', { weekday: 'long' }),
-      'mes': new Date().toLocaleDateString('es-ES', { month: 'long' }),
-      'año': new Date().getFullYear().toString()
-    };
+  /**
+   * Obtener categorías disponibles
+   */
+  async getCategories() {
+    try {
+      const { data, error } = await this.supabase
+        .from('templates')
+        .select('category')
+        .eq('user_id', this.currentUser.id)
+        .eq('is_active', true);
 
-    for (const [key, value] of Object.entries(autoVariables)) {
-      const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
-      processedContent = processedContent.replace(regex, value);
+      if (error) throw error;
+
+      // Extraer categorías únicas
+      const categories = [...new Set(data.map(t => t.category))];
+      return categories.sort();
+    } catch (error) {
+      console.error('[TemplatesService] Error obteniendo categorías:', error);
+      return ['General'];
     }
-
-    return processedContent;
   }
 
   /**
    * Obtener estadísticas de plantillas
    */
-  getTemplateStats() {
-    const totalTemplates = this.templates.filter(t => t.isActive).length;
-    const totalUsage = this.templates.reduce((total, template) => total + (template.usageCount || 0), 0);
+  async getTemplateStats() {
+    try {
+      const { data, error } = await this.supabase
+        .from('templates')
+        .select('id, name, category, usage_count, last_used_at, created_at')
+        .eq('user_id', this.currentUser.id)
+        .eq('is_active', true)
+        .order('usage_count', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('[TemplatesService] Error obteniendo estadísticas:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Obtener plantillas por categoría
+   */
+  async getTemplatesByCategory(category) {
+    try {
+      const { data, error } = await this.supabase
+        .from('templates')
+        .select('*')
+        .eq('user_id', this.currentUser.id)
+        .eq('category', category)
+        .eq('is_active', true)
+        .order('usage_count', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('[TemplatesService] Error obteniendo plantillas por categoría:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Obtener plantillas por tags
+   */
+  async getTemplatesByTags(tags) {
+    try {
+      const { data, error } = await this.supabase
+        .from('templates')
+        .select('*')
+        .eq('user_id', this.currentUser.id)
+        .eq('is_active', true)
+        .overlaps('tags', tags)
+        .order('usage_count', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('[TemplatesService] Error obteniendo plantillas por tags:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Procesar variables en plantilla
+   */
+  processTemplateVariables(template, variables = {}) {
+    let processedContent = template.content;
     
-    const mostUsedTemplates = [...this.templates]
-      .filter(t => t.isActive)
-      .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
-      .slice(0, 5);
+    // Reemplazar variables en el contenido
+    for (const [key, value] of Object.entries(variables)) {
+      const placeholder = `{{${key}}}`;
+      processedContent = processedContent.replace(new RegExp(placeholder, 'g'), value);
+    }
+    
+    return processedContent;
+  }
 
-    const templatesByCategory = this.categories.map(category => ({
-      category,
-      count: this.templates.filter(t => t.category === category && t.isActive).length
-    }));
-
+  /**
+   * Validar plantilla
+   */
+  validateTemplate(templateData) {
+    const errors = [];
+    
+    if (!templateData.name || templateData.name.trim().length < 3) {
+      errors.push('El nombre debe tener al menos 3 caracteres');
+    }
+    
+    if (!templateData.content || templateData.content.trim().length < 10) {
+      errors.push('El contenido debe tener al menos 10 caracteres');
+    }
+    
+    if (templateData.name && templateData.name.length > 200) {
+      errors.push('El nombre no puede exceder 200 caracteres');
+    }
+    
     return {
-      totalTemplates,
-      totalUsage,
-      mostUsedTemplates,
-      templatesByCategory,
-      averageUsagePerTemplate: totalUsage / Math.max(totalTemplates, 1)
+      isValid: errors.length === 0,
+      errors
     };
   }
 
   /**
-   * Duplicar una plantilla
+   * Registrar evento de analytics
+   */
+  async recordAnalytics(eventType, eventData = {}) {
+    try {
+      await this.supabase
+        .from('analytics')
+        .insert({
+          user_id: this.currentUser.id,
+          event_type: eventType,
+          event_data: eventData
+        });
+    } catch (error) {
+      console.error('[TemplatesService] Error registrando analytics:', error);
+    }
+  }
+
+  /**
+   * Duplicar plantilla
    */
   async duplicateTemplate(templateId) {
     try {
-      const originalTemplate = this.getTemplateById(templateId);
-      if (!originalTemplate) {
-        throw new Error('Plantilla no encontrada');
-      }
+      const original = await this.getTemplateById(templateId);
+      if (!original) throw new Error('Plantilla no encontrada');
 
-      const duplicatedTemplate = {
-        ...originalTemplate,
-        id: this.generateId(),
-        name: `${originalTemplate.name} (Copia)`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        usageCount: 0,
-        lastUsedAt: undefined
+      const duplicatedData = {
+        name: `${original.name} (Copia)`,
+        content: original.content,
+        category: original.category,
+        tags: original.tags,
+        variables: original.variables,
+        is_shared: false
       };
 
-      this.templates.push(duplicatedTemplate);
-      await this.saveTemplates();
-      
-      console.log('[TemplatesService] Plantilla duplicada:', duplicatedTemplate);
-      return duplicatedTemplate;
+      return await this.createTemplate(duplicatedData);
     } catch (error) {
       console.error('[TemplatesService] Error duplicando plantilla:', error);
       throw error;
@@ -293,176 +386,52 @@ class TemplatesService {
   }
 
   /**
-   * Archivar/desarchivar plantilla
+   * Exportar plantillas
    */
-  async toggleTemplateStatus(templateId) {
+  async exportTemplates() {
     try {
-      const template = this.getTemplateById(templateId);
-      if (!template) {
-        throw new Error('Plantilla no encontrada');
-      }
-
-      template.isActive = !template.isActive;
-      template.updatedAt = new Date().toISOString();
-      
-      await this.saveTemplates();
-      
-      console.log('[TemplatesService] Estado de plantilla cambiado:', template);
-      return template;
+      const templates = await this.getTemplates();
+      return {
+        templates,
+        exportedAt: new Date().toISOString(),
+        version: '1.0',
+        user: this.currentUser.email
+      };
     } catch (error) {
-      console.error('[TemplatesService] Error cambiando estado de plantilla:', error);
+      console.error('[TemplatesService] Error exportando plantillas:', error);
       throw error;
     }
   }
 
   /**
-   * Generar ID único
+   * Importar plantillas
    */
-  generateId() {
-    return `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  /**
-   * Importar plantillas desde JSON
-   */
-  async importTemplates(templatesData) {
+  async importTemplates(importData) {
     try {
-      const importedTemplates = templatesData.map(templateData => ({
-        id: this.generateId(),
-        name: templateData.name,
-        content: templateData.content,
-        category: templateData.category || 'General',
-        tags: templateData.tags || [],
-        variables: this.extractVariables(templateData.content),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        usageCount: 0,
-        isActive: true
-      }));
-
-      this.templates.push(...importedTemplates);
-      await this.saveTemplates();
+      const imported = [];
       
-      console.log('[TemplatesService] Plantillas importadas:', importedTemplates.length);
-      return importedTemplates;
+      for (const template of importData.templates) {
+        const { name, content, category, tags, variables } = template;
+        
+        const newTemplate = await this.createTemplate({
+          name,
+          content,
+          category: category || 'General',
+          tags: tags || [],
+          variables: variables || []
+        });
+        
+        imported.push(newTemplate);
+      }
+
+      return imported;
     } catch (error) {
       console.error('[TemplatesService] Error importando plantillas:', error);
       throw error;
     }
   }
-
-  /**
-   * Exportar plantillas a JSON
-   */
-  exportTemplates() {
-    return {
-      templates: this.templates.filter(t => t.isActive),
-      categories: this.categories,
-      exportedAt: new Date().toISOString(),
-      version: '1.0'
-    };
-  }
-
-  /**
-   * Crear plantillas por defecto
-   */
-  async createDefaultTemplates() {
-    const defaultTemplates = [
-      {
-        name: 'Saludo inicial',
-        content: 'Hola {{nombre}}, ¿cómo estás? Espero que tengas un excelente {{dia_semana}}.',
-        category: 'General'
-      },
-      {
-        name: 'Seguimiento de venta',
-        content: 'Hola {{nombre}}, te contacto para hacer seguimiento a tu interés en {{producto}}. ¿Tienes alguna pregunta?',
-        category: 'Ventas'
-      },
-      {
-        name: 'Soporte técnico',
-        content: 'Hola {{nombre}}, he revisado tu consulta y estaré ayudándote a resolverla. ¿Podrías proporcionarme más detalles?',
-        category: 'Soporte'
-      },
-      {
-        name: 'Promoción del mes',
-        content: '🎉 ¡Oferta especial de {{mes}}! Tenemos descuentos increíbles. ¿Te interesa conocer más detalles?',
-        category: 'Marketing'
-      }
-    ];
-
-    for (const templateData of defaultTemplates) {
-      try {
-        await this.createTemplate(templateData);
-      } catch (error) {
-        // Ignorar errores si ya existe
-        console.log('[TemplatesService] Plantilla por defecto ya existe:', templateData.name);
-      }
-    }
-  }
-
-  /**
-   * Obtener plantillas sugeridas basadas en el contexto
-   */
-  getSuggestedTemplates(context = {}) {
-    const { chatName, lastMessages, timeOfDay } = context;
-    let suggestions = [];
-
-    // Sugerir por hora del día
-    if (timeOfDay === 'morning') {
-      suggestions.push(...this.templates.filter(t => 
-        t.content.toLowerCase().includes('buenos días') || 
-        t.content.toLowerCase().includes('buen día')
-      ));
-    }
-
-    // Sugerir por palabras clave en mensajes recientes
-    if (lastMessages && lastMessages.length > 0) {
-      const lastMessage = lastMessages[0].toLowerCase();
-      
-      if (lastMessage.includes('precio') || lastMessage.includes('costo')) {
-        suggestions.push(...this.getTemplatesByCategory('Ventas'));
-      } else if (lastMessage.includes('problema') || lastMessage.includes('error')) {
-        suggestions.push(...this.getTemplatesByCategory('Soporte'));
-      }
-    }
-
-    // Limitar a 3 sugerencias y evitar duplicados
-    return [...new Set(suggestions)].slice(0, 3);
-  }
-
-  /**
-   * Utilidades de storage
-   */
-  async saveToStorage(data) {
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({
-        action: 'saveData',
-        data: data
-      }, (response) => {
-        if (response?.success) {
-          resolve(response);
-        } else {
-          reject(new Error(response?.error || 'Error desconocido'));
-        }
-      });
-    });
-  }
-
-  async getFromStorage(keys) {
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({
-        action: 'loadData',
-        key: keys
-      }, (response) => {
-        if (response?.success) {
-          resolve(response.data);
-        } else {
-          reject(new Error(response?.error || 'Error desconocido'));
-        }
-      });
-    });
-  }
 }
 
-// Exportar para uso global
-window.TemplatesService = TemplatesService; 
+// Exportar instancia singleton
+const templatesService = new TemplatesService();
+export default templatesService; 

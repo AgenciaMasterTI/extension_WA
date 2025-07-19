@@ -1,5 +1,5 @@
 /**
- * Auth Service - Gestión de autenticación
+ * Auth Service - Gestión de autenticación con Supabase
  * Maneja login, logout y gestión de sesiones
  */
 
@@ -8,7 +8,7 @@ class AuthService {
     this.currentUser = null;
     this.authToken = null;
     this.isAuthenticated = false;
-    this.apiBaseUrl = 'https://api.whatsapp-crm.com'; // Placeholder
+    this.supabase = null;
   }
 
   /**
@@ -16,27 +16,57 @@ class AuthService {
    */
   async init() {
     try {
-      // Verificar si hay una sesión guardada
-      const savedAuth = await this.getFromStorage(['authToken', 'currentUser']);
+      console.log('[AuthService] Inicializando con Supabase...');
       
-      if (savedAuth.authToken && savedAuth.currentUser) {
-        this.authToken = savedAuth.authToken;
-        this.currentUser = savedAuth.currentUser;
+      // Inicializar Supabase
+      await this.initSupabase();
+      
+      // Verificar si hay una sesión guardada
+      const { data: { session } } = await this.supabase.auth.getSession();
+      
+      if (session) {
+        this.authToken = session.access_token;
+        this.currentUser = session.user;
+        this.isAuthenticated = true;
         
-        // Verificar si el token sigue siendo válido
-        const isValid = await this.validateToken();
-        if (isValid) {
-          this.isAuthenticated = true;
-          console.log('[AuthService] Sesión restaurada para usuario:', this.currentUser.email);
-        } else {
-          await this.logout();
-        }
+        console.log('[AuthService] Sesión restaurada para usuario:', this.currentUser.email);
       }
+      
+      // Escuchar cambios de autenticación
+      this.supabase.auth.onAuthStateChange((event, session) => {
+        console.log('[AuthService] Auth state changed:', event, session?.user?.email);
+        
+        if (event === 'SIGNED_IN' && session) {
+          this.authToken = session.access_token;
+          this.currentUser = session.user;
+          this.isAuthenticated = true;
+        } else if (event === 'SIGNED_OUT') {
+          this.authToken = null;
+          this.currentUser = null;
+          this.isAuthenticated = false;
+        }
+      });
       
       return this.isAuthenticated;
     } catch (error) {
       console.error('[AuthService] Error inicializando auth service:', error);
       return false;
+    }
+  }
+
+  /**
+   * Inicializar cliente de Supabase
+   */
+  async initSupabase() {
+    try {
+      if (window.SupabaseConfig) {
+        this.supabase = await window.SupabaseConfig.getClient();
+      } else {
+        throw new Error('Supabase no está configurado');
+      }
+    } catch (error) {
+      console.error('[AuthService] Error inicializando Supabase:', error);
+      throw error;
     }
   }
 
@@ -47,28 +77,28 @@ class AuthService {
     try {
       console.log('[AuthService] Intentando login para:', email);
       
-      // TODO: Reemplazar con llamada real a la API
-      const response = await this.mockApiCall('login', {
+      if (!this.supabase) {
+        await this.initSupabase();
+      }
+
+      const { data, error } = await this.supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password: password
       });
 
-      if (response.success) {
-        this.authToken = response.token;
-        this.currentUser = response.user;
-        this.isAuthenticated = true;
+      if (error) {
+        throw new Error(error.message);
+      }
 
-        // Guardar sesión
-        await this.saveToStorage({
-          authToken: this.authToken,
-          currentUser: this.currentUser,
-          loginTime: new Date().toISOString()
-        });
+      if (data.user && data.session) {
+        this.authToken = data.session.access_token;
+        this.currentUser = data.user;
+        this.isAuthenticated = true;
 
         console.log('[AuthService] Login exitoso:', this.currentUser.email);
         return { success: true, user: this.currentUser };
       } else {
-        throw new Error(response.message || 'Credenciales inválidas');
+        throw new Error('No se pudo iniciar sesión');
       }
     } catch (error) {
       console.error('[AuthService] Error en login:', error);
@@ -83,21 +113,38 @@ class AuthService {
     try {
       console.log('[AuthService] Intentando registro para:', userData.email);
       
-      // TODO: Reemplazar con llamada real a la API
-      const response = await this.mockApiCall('register', {
+      if (!this.supabase) {
+        await this.initSupabase();
+      }
+
+      const { data, error } = await this.supabase.auth.signUp({
         email: userData.email.trim().toLowerCase(),
         password: userData.password,
-        name: userData.name?.trim(),
-        plan: userData.plan || 'free'
+        options: {
+          data: {
+            name: userData.name?.trim(),
+            plan: userData.plan || 'free'
+          }
+        }
       });
 
-      if (response.success) {
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.user) {
         console.log('[AuthService] Registro exitoso:', userData.email);
         
-        // Hacer login automático después del registro
-        return await this.login(userData.email, userData.password);
+        // Si el usuario está confirmado automáticamente, hacer login
+        if (data.session) {
+          this.authToken = data.session.access_token;
+          this.currentUser = data.user;
+          this.isAuthenticated = true;
+        }
+        
+        return { success: true, user: data.user };
       } else {
-        throw new Error(response.message || 'Error en el registro');
+        throw new Error('No se pudo registrar el usuario');
       }
     } catch (error) {
       console.error('[AuthService] Error en registro:', error);
@@ -112,13 +159,20 @@ class AuthService {
     try {
       console.log('[AuthService] Cerrando sesión...');
       
+      if (!this.supabase) {
+        await this.initSupabase();
+      }
+
+      const { error } = await this.supabase.auth.signOut();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
       // Limpiar datos locales
       this.authToken = null;
       this.currentUser = null;
       this.isAuthenticated = false;
-
-      // Limpiar storage
-      await this.removeFromStorage(['authToken', 'currentUser', 'loginTime']);
 
       console.log('[AuthService] Sesión cerrada exitosamente');
       return { success: true };
@@ -156,12 +210,17 @@ class AuthService {
     try {
       if (!this.authToken) return false;
 
-      // TODO: Reemplazar con llamada real a la API
-      const response = await this.mockApiCall('validate', {
-        token: this.authToken
-      });
+      if (!this.supabase) {
+        await this.initSupabase();
+      }
 
-      return response.success && response.valid;
+      const { data: { user }, error } = await this.supabase.auth.getUser();
+
+      if (error) {
+        return false;
+      }
+
+      return !!user;
     } catch (error) {
       console.error('[AuthService] Error validando token:', error);
       return false;
@@ -173,27 +232,24 @@ class AuthService {
    */
   async refreshToken() {
     try {
-      if (!this.authToken) {
-        throw new Error('No hay token para renovar');
+      if (!this.supabase) {
+        await this.initSupabase();
       }
 
-      // TODO: Reemplazar con llamada real a la API
-      const response = await this.mockApiCall('refresh', {
-        token: this.authToken
-      });
+      const { data, error } = await this.supabase.auth.refreshSession();
 
-      if (response.success) {
-        this.authToken = response.token;
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.session) {
+        this.authToken = data.session.access_token;
+        this.currentUser = data.user;
         
-        await this.saveToStorage({
-          authToken: this.authToken,
-          currentUser: this.currentUser
-        });
-
         console.log('[AuthService] Token renovado exitosamente');
         return { success: true, token: this.authToken };
       } else {
-        throw new Error(response.message || 'Error renovando token');
+        throw new Error('No se pudo renovar el token');
       }
     } catch (error) {
       console.error('[AuthService] Error renovando token:', error);
@@ -206,23 +262,20 @@ class AuthService {
    */
   async changePassword(currentPassword, newPassword) {
     try {
-      if (!this.isAuthenticated) {
-        throw new Error('Usuario no autenticado');
+      if (!this.supabase) {
+        await this.initSupabase();
       }
 
-      // TODO: Reemplazar con llamada real a la API
-      const response = await this.mockApiCall('changePassword', {
-        token: this.authToken,
-        currentPassword,
-        newPassword
+      const { error } = await this.supabase.auth.updateUser({
+        password: newPassword
       });
 
-      if (response.success) {
-        console.log('[AuthService] Contraseña cambiada exitosamente');
-        return { success: true };
-      } else {
-        throw new Error(response.message || 'Error cambiando contraseña');
+      if (error) {
+        throw new Error(error.message);
       }
+
+      console.log('[AuthService] Contraseña cambiada exitosamente');
+      return { success: true };
     } catch (error) {
       console.error('[AuthService] Error cambiando contraseña:', error);
       return { success: false, error: error.message };
@@ -234,17 +287,20 @@ class AuthService {
    */
   async requestPasswordReset(email) {
     try {
-      // TODO: Reemplazar con llamada real a la API
-      const response = await this.mockApiCall('requestPasswordReset', {
-        email: email.trim().toLowerCase()
+      if (!this.supabase) {
+        await this.initSupabase();
+      }
+
+      const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: chrome.runtime.getURL('popup/popup.html')
       });
 
-      if (response.success) {
-        console.log('[AuthService] Solicitud de recuperación enviada');
-        return { success: true };
-      } else {
-        throw new Error(response.message || 'Error enviando solicitud');
+      if (error) {
+        throw new Error(error.message);
       }
+
+      console.log('[AuthService] Solicitud de recuperación enviada');
+      return { success: true };
     } catch (error) {
       console.error('[AuthService] Error solicitando recuperación:', error);
       return { success: false, error: error.message };
@@ -255,9 +311,12 @@ class AuthService {
    * Verificar permisos del usuario según su plan
    */
   hasPermission(feature) {
-    if (!this.currentUser || !this.currentUser.plan) {
+    if (!this.currentUser) {
       return false;
     }
+
+    // Obtener plan del usuario desde metadata de Supabase
+    const userPlan = this.currentUser.user_metadata?.plan || 'free';
 
     const permissions = {
       free: ['basic_tags', 'basic_templates'],
@@ -266,7 +325,7 @@ class AuthService {
       enterprise: ['*'] // Todos los permisos
     };
 
-    const userPermissions = permissions[this.currentUser.plan] || [];
+    const userPermissions = permissions[userPlan] || [];
     
     return userPermissions.includes('*') || userPermissions.includes(feature);
   }
@@ -275,7 +334,7 @@ class AuthService {
    * Obtener información del plan del usuario
    */
   getUserPlan() {
-    return this.currentUser?.plan || 'free';
+    return this.currentUser?.user_metadata?.plan || 'free';
   }
 
   /**
@@ -309,116 +368,10 @@ class AuthService {
   }
 
   /**
-   * Mock de llamadas a la API (reemplazar con implementación real)
+   * Obtener cliente de Supabase para operaciones de base de datos
    */
-  async mockApiCall(endpoint, data) {
-    // Simular latencia de red
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    switch (endpoint) {
-      case 'login':
-        // Mock login - aceptar cualquier email con password 'test123'
-        if (data.password === 'test123') {
-          return {
-            success: true,
-            token: `mock_token_${Date.now()}`,
-            user: {
-              id: Date.now().toString(),
-              email: data.email,
-              name: data.email.split('@')[0],
-              plan: 'pro',
-              createdAt: new Date().toISOString()
-            }
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Credenciales inválidas'
-          };
-        }
-
-      case 'register':
-        return {
-          success: true,
-          message: 'Usuario registrado exitosamente'
-        };
-
-      case 'validate':
-        // Mock validation - tokens válidos por 1 hora
-        const tokenTimestamp = parseInt(data.token.split('_')[2]);
-        const isValid = Date.now() - tokenTimestamp < 3600000; // 1 hora
-        return {
-          success: true,
-          valid: isValid
-        };
-
-      case 'refresh':
-        return {
-          success: true,
-          token: `mock_token_${Date.now()}`
-        };
-
-      case 'changePassword':
-        return {
-          success: true,
-          message: 'Contraseña cambiada exitosamente'
-        };
-
-      case 'requestPasswordReset':
-        return {
-          success: true,
-          message: 'Email de recuperación enviado'
-        };
-
-      default:
-        return {
-          success: false,
-          message: 'Endpoint no implementado'
-        };
-    }
-  }
-
-  /**
-   * Utilidades de storage
-   */
-  async saveToStorage(data) {
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({
-        action: 'saveData',
-        data: data
-      }, (response) => {
-        if (response?.success) {
-          resolve(response);
-        } else {
-          reject(new Error(response?.error || 'Error desconocido'));
-        }
-      });
-    });
-  }
-
-  async getFromStorage(keys) {
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({
-        action: 'loadData',
-        key: keys
-      }, (response) => {
-        if (response?.success) {
-          resolve(response.data);
-        } else {
-          reject(new Error(response?.error || 'Error desconocido'));
-        }
-      });
-    });
-  }
-
-  async removeFromStorage(keys) {
-    // Implementar eliminación de claves específicas
-    const data = {};
-    keys.forEach(key => {
-      data[key] = undefined;
-    });
-    
-    return this.saveToStorage(data);
+  getSupabaseClient() {
+    return this.supabase;
   }
 }
 
