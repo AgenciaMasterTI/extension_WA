@@ -1454,6 +1454,30 @@
   font-size: 14px !important;
 }
 
+.auth-error-content {
+  text-align: center !important;
+  padding: var(--spacing-xl) !important;
+}
+
+.auth-error-icon {
+  font-size: 48px !important;
+  margin-bottom: var(--spacing-md) !important;
+}
+
+.auth-error-content h3 {
+  color: var(--text-primary) !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  margin-bottom: var(--spacing-sm) !important;
+}
+
+.auth-error-content p {
+  color: var(--text-secondary) !important;
+  font-size: 14px !important;
+  margin-bottom: var(--spacing-lg) !important;
+  line-height: 1.5 !important;
+}
+
 @keyframes slideInUp {
   from {
     opacity: 0;

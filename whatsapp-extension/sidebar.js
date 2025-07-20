@@ -1,4 +1,3 @@
-
 // Importar servicios de autenticación
 import { AuthService } from './services/authService.js';
 
@@ -134,8 +133,14 @@ class WhatsAppCRM {
         try {
             console.log('🔐 Inicializando autenticación...');
             
+            // Mostrar estado de carga
+            this.showAuthLoading();
+            
             // Inicializar el servicio de autenticación
             const isAuthenticated = await this.authService.init();
+            
+            // Ocultar estado de carga
+            this.hideAuthLoading();
             
             if (isAuthenticated) {
                 this.isAuthenticated = true;
@@ -153,7 +158,73 @@ class WhatsAppCRM {
             
         } catch (error) {
             console.error('❌ Error inicializando autenticación:', error);
-            this.showNotification('Error de conexión con el servidor', 'error');
+            // Ocultar estado de carga en caso de error
+            this.hideAuthLoading();
+            this.showConnectionError();
+        }
+    }
+
+    showAuthLoading() {
+        this.hideAllAuthForms();
+        const authLoading = document.getElementById('authLoading');
+        if (authLoading) {
+            authLoading.style.display = 'flex';
+        }
+    }
+
+    hideAuthLoading() {
+        const authLoading = document.getElementById('authLoading');
+        if (authLoading) {
+            authLoading.style.display = 'none';
+        }
+    }
+
+    showConnectionError() {
+        this.hideAllAuthForms();
+        
+        // Crear elemento de error si no existe
+        let errorElement = document.getElementById('authConnectionError');
+        if (!errorElement) {
+            errorElement = document.createElement('div');
+            errorElement.id = 'authConnectionError';
+            errorElement.className = 'auth-error';
+            errorElement.innerHTML = `
+                <div class="auth-error-content">
+                    <div class="auth-error-icon">⚠️</div>
+                    <h3>Error de Conexión</h3>
+                    <p>No se pudo conectar con el servidor. Verifica tu conexión a internet.</p>
+                    <button class="btn-primary btn-full" id="retryConnectionBtn">
+                        <span class="btn-text">Reintentar Conexión</span>
+                    </button>
+                </div>
+            `;
+            
+            const authContainer = document.getElementById('authContainer');
+            if (authContainer) {
+                authContainer.appendChild(errorElement);
+            }
+        }
+        
+        errorElement.style.display = 'block';
+        
+        // Vincular evento de reintento
+        const retryBtn = document.getElementById('retryConnectionBtn');
+        if (retryBtn) {
+            retryBtn.onclick = () => {
+                this.retryConnection();
+            };
+        }
+    }
+
+    async retryConnection() {
+        console.log('🔄 Reintentando conexión...');
+        this.showAuthLoading();
+        
+        try {
+            await this.initAuthentication();
+        } catch (error) {
+            console.error('❌ Error en reintento:', error);
+            this.showConnectionError();
         }
     }
 
@@ -192,7 +263,8 @@ class WhatsAppCRM {
             authSection.style.display = 'block';
         }
         
-        // Mostrar formulario de login por defecto
+        // Ocultar estado de carga y mostrar formulario de login
+        this.hideAuthLoading();
         this.showLoginForm();
         
         // Vincular eventos de autenticación
@@ -253,7 +325,8 @@ class WhatsAppCRM {
             'authLoading',
             'authLoginForm',
             'authRegisterForm',
-            'authUser'
+            'authUser',
+            'authConnectionError'
         ];
         
         forms.forEach(formId => {
