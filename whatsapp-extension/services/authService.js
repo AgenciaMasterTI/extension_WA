@@ -23,19 +23,26 @@ class AuthService {
       
       // Verificar configuración de Supabase
       if (!isSupabaseConfigured()) {
-        throw new Error('Supabase no está configurado correctamente');
+        console.error('[AuthService] Error: Supabase no está configurado');
+        throw new Error('Supabase no está configurado correctamente. Verifica las credenciales en config/supabase.js');
       }
       
       // Probar conexión
       const isConnected = await testSupabaseConnection();
       if (!isConnected) {
-        throw new Error('No se pudo conectar con Supabase');
+        console.error('[AuthService] Error: No se pudo conectar con Supabase');
+        throw new Error('No se pudo establecer conexión con Supabase. Verifica tu conexión a internet');
       }
       
       this.supabase = supabase;
       
       // Verificar si hay una sesión guardada
-      const { data: { session } } = await this.supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('[AuthService] Error recuperando sesión:', sessionError);
+        throw new Error('Error al recuperar la sesión');
+      }
       
       if (session) {
         this.authToken = session.access_token;
@@ -43,6 +50,8 @@ class AuthService {
         this.isAuthenticated = true;
         
         console.log('[AuthService] Sesión restaurada para usuario:', this.currentUser.email);
+      } else {
+        console.log('[AuthService] No hay sesión activa');
       }
       
       // Escuchar cambios de autenticación
@@ -53,10 +62,10 @@ class AuthService {
           this.authToken = session.access_token;
           this.currentUser = session.user;
           this.isAuthenticated = true;
-        } else if (event === 'SIGNED_OUT') {
-          this.authToken = null;
-          this.currentUser = null;
-          this.isAuthenticated = false;
+        } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          this.authToken = session?.access_token || null;
+          this.currentUser = session?.user || null;
+          this.isAuthenticated = !!session;
         }
         
         // Notificar al callback si existe
@@ -68,7 +77,7 @@ class AuthService {
       return this.isAuthenticated;
     } catch (error) {
       console.error('[AuthService] Error inicializando auth service:', error);
-      return false;
+      throw error; // Re-throw para manejo superior
     }
   }
 
@@ -86,32 +95,56 @@ class AuthService {
     try {
       console.log('[AuthService] Intentando login para:', email);
       
+      // Verificar inicialización de Supabase
       if (!this.supabase) {
-        throw new Error('Supabase no está inicializado');
+        await this.init(); // Intentar inicializar si no está listo
+        if (!this.supabase) {
+          throw new Error('No se pudo inicializar Supabase');
+        }
       }
 
+      // Verificar conexión
+      const isConnected = await testSupabaseConnection();
+      if (!isConnected) {
+        throw new Error('No hay conexión con Supabase');
+      }
+
+      // Intentar login
       const { data, error } = await this.supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password: password
       });
 
       if (error) {
+        console.error('[AuthService] Error de Supabase:', error);
+        // Traducir errores comunes de Supabase
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('Email o contraseña incorrectos');
+        } else if (error.message.includes('Email not confirmed')) {
+          throw new Error('Email no confirmado. Por favor revisa tu correo');
+        }
         throw new Error(error.message);
       }
 
-      if (data.user && data.session) {
-        this.authToken = data.session.access_token;
-        this.currentUser = data.user;
-        this.isAuthenticated = true;
-
-        console.log('[AuthService] Login exitoso:', this.currentUser.email);
-        return { success: true, user: this.currentUser };
-      } else {
-        throw new Error('No se pudo iniciar sesión');
+      if (!data?.user || !data?.session) {
+        throw new Error('Respuesta inválida del servidor');
       }
+
+      // Login exitoso
+      this.authToken = data.session.access_token;
+      this.currentUser = data.user;
+      this.isAuthenticated = true;
+
+      console.log('[AuthService] Login exitoso:', this.currentUser.email);
+      return { success: true, user: this.currentUser };
+
     } catch (error) {
       console.error('[AuthService] Error en login:', error);
-      return { success: false, error: error.message };
+      return { 
+        success: false, 
+        error: error.message || 'Error de autenticación',
+        details: error // Incluir detalles completos para debugging
+      };
     }
   }
 

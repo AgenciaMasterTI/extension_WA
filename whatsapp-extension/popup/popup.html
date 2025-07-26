@@ -11,43 +11,33 @@
         <!-- Header -->
         <div class="popup-header">
             <div class="logo">
-                <span class="logo-icon">💬</span>
+                <span class="logo-icon">📱</span>
                 <span class="logo-text">WhatsApp CRM</span>
             </div>
-            <div class="version">v2.0.0</div>
+            <div class="version">v1.0.0</div>
         </div>
 
         <!-- Contenido principal -->
         <div class="popup-content">
             <!-- Estado de conexión -->
             <div class="connection-status" id="connectionStatus">
-                <div class="status-indicator online" id="statusIndicator"></div>
-                <span class="status-text" id="statusText">Conectado a WhatsApp</span>
+                <div class="status-indicator offline" id="statusIndicator"></div>
+                <span class="status-text" id="statusText">Desconectado</span>
             </div>
 
             <!-- Información del usuario -->
-            <div class="user-section" id="userSection">
+            <div class="user-section" id="userSection" style="display: none;">
                 <div class="user-info">
-                    <div class="user-avatar" id="userAvatar">👤</div>
+                    <div class="user-avatar">👤</div>
                     <div class="user-details">
-                        <div class="user-name" id="userName">Usuario Demo</div>
+                        <div class="user-name" id="userName">Usuario</div>
                         <div class="user-plan" id="userPlan">Plan Free</div>
                     </div>
                 </div>
-                <div class="user-actions">
-                    <button class="btn-secondary" id="accountInfoBtn" title="Ver información de cuenta">
-                        <span>👤</span>
-                        <span>Mi Cuenta</span>
-                    </button>
-                    <button class="btn-secondary" id="logoutBtn" title="Cerrar sesión">
-                        <span>🚪</span>
-                        <span>Cerrar Sesión</span>
-                    </button>
-                </div>
             </div>
 
-            <!-- Sección de login (oculta cuando está autenticado) -->
-            <div class="login-section" id="loginSection" style="display: none;">
+            <!-- Sección de login -->
+            <div class="login-section" id="loginSection">
                 <form id="loginForm">
                     <div class="form-group">
                         <label for="email">Email:</label>
@@ -58,28 +48,19 @@
                         <input type="password" id="password" required placeholder="********">
                         <small class="form-hint">Usa 'test123' para el demo</small>
                     </div>
-                    <button type="submit" class="btn-primary" id="loginBtn">
-                        <span>🔐</span>
-                        <span>Iniciar Sesión</span>
-                    </button>
+                    <button type="submit" class="btn-primary" id="loginBtn">Iniciar Sesión</button>
                 </form>
                 
                 <div class="divider">
                     <span>o</span>
                 </div>
                 
-                <button class="btn-secondary" id="offlineModeBtn">
-                    <span>🔄</span>
-                    <span>Usar sin cuenta</span>
-                </button>
+                <button class="btn-secondary" id="offlineModeBtn">Usar sin cuenta</button>
             </div>
 
             <!-- Estadísticas rápidas -->
-            <div class="stats-section" id="statsSection">
-                <h3>
-                    <span>📊</span>
-                    <span>Estadísticas</span>
-                </h3>
+            <div class="stats-section" id="statsSection" style="display: none;">
+                <h3>Estadísticas</h3>
                 <div class="stats-grid">
                     <div class="stat-item">
                         <span class="stat-number" id="totalTags">0</span>
@@ -97,11 +78,8 @@
             </div>
 
             <!-- Acciones rápidas -->
-            <div class="actions-section" id="actionsSection">
-                <h3>
-                    <span>⚡</span>
-                    <span>Acciones Rápidas</span>
-                </h3>
+            <div class="actions-section" id="actionsSection" style="display: none;">
+                <h3>Acciones Rápidas</h3>
                 <div class="action-buttons">
                     <button class="action-btn" id="openWhatsAppBtn">
                         <span class="action-icon">🌐</span>
@@ -109,25 +87,18 @@
                     </button>
                     <button class="action-btn" id="syncDataBtn">
                         <span class="action-icon">🔄</span>
-                        <span>Sincronizar Datos</span>
+                        <span>Sincronizar</span>
                     </button>
                     <button class="action-btn" id="exportDataBtn">
                         <span class="action-icon">📥</span>
                         <span>Exportar Datos</span>
                     </button>
-                    <button class="action-btn" id="openCRMPanelBtn">
-                        <span class="action-icon">💬</span>
-                        <span>Abrir Panel CRM</span>
-                    </button>
                 </div>
             </div>
 
             <!-- Configuración rápida -->
-            <div class="settings-section" id="settingsSection">
-                <h3>
-                    <span>⚙️</span>
-                    <span>Configuración</span>
-                </h3>
+            <div class="settings-section" id="settingsSection" style="display: none;">
+                <h3>Configuración</h3>
                 <div class="setting-item">
                     <label>
                         <input type="checkbox" id="autoSyncChk">
@@ -138,12 +109,6 @@
                     <label>
                         <input type="checkbox" id="notificationsChk">
                         <span>Mostrar notificaciones</span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <label>
-                        <input type="checkbox" id="floatingBtnChk" checked>
-                        <span>Mostrar botón flotante</span>
                     </label>
                 </div>
             </div>
@@ -159,10 +124,10 @@
             <div class="footer-links">
                 <button class="link-btn" id="helpBtn">Ayuda</button>
                 <button class="link-btn" id="settingsBtn">Configuración</button>
-                <button class="link-btn" id="aboutBtn">Acerca de</button>
+                <button class="link-btn" id="logoutBtn" style="display: none;">Cerrar Sesión</button>
             </div>
             <div class="footer-text">
-                <small>© 2024 WhatsApp CRM Extension v2.0</small>
+                <small>© 2024 WhatsApp CRM Extension</small>
             </div>
         </div>
     </div>
@@ -171,54 +136,6 @@
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="loading-spinner"></div>
         <div class="loading-text">Cargando...</div>
-    </div>
-
-    <!-- Modal de información de cuenta -->
-    <div id="accountModal" style="display: none;" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>👤 Información de Cuenta</h3>
-                <button class="modal-close" id="closeAccountModal">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="account-info">
-                    <div class="account-avatar" id="modalUserAvatar">👤</div>
-                    <div class="account-details">
-                        <p><strong>Nombre:</strong> <span id="modalUserName">Usuario Demo</span></p>
-                        <p><strong>Email:</strong> <span id="modalUserEmail">demo@example.com</span></p>
-                        <p><strong>Plan:</strong> <span id="modalUserPlan">Plan Free</span></p>
-                        <p><strong>Miembro desde:</strong> <span id="modalUserDate">Enero 2024</span></p>
-                    </div>
-                </div>
-                <div class="account-stats">
-                    <h4>📊 Estadísticas de Uso</h4>
-                    <div class="account-stats-grid">
-                        <div class="account-stat">
-                            <span class="account-stat-number" id="modalTagsCount">0</span>
-                            <span class="account-stat-label">Etiquetas Creadas</span>
-                        </div>
-                        <div class="account-stat">
-                            <span class="account-stat-number" id="modalTemplatesCount">0</span>
-                            <span class="account-stat-label">Plantillas Creadas</span>
-                        </div>
-                        <div class="account-stat">
-                            <span class="account-stat-number" id="modalChatsCount">0</span>
-                            <span class="account-stat-label">Chats Gestionados</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="account-actions">
-                    <button class="btn-secondary" id="upgradePlanBtn">
-                        <span>🚀</span>
-                        <span>Actualizar Plan</span>
-                    </button>
-                    <button class="btn-secondary" id="changePasswordBtn">
-                        <span>🔒</span>
-                        <span>Cambiar Contraseña</span>
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script src="popup.js"></script>

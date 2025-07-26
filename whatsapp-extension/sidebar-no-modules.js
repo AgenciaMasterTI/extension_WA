@@ -71,13 +71,21 @@ class SupabaseClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': this.anonKey
+          'apikey': this.anonKey,
+          'Authorization': `Bearer ${this.anonKey}`
         },
         body: JSON.stringify({
           email: credentials.email,
-          password: credentials.password
+          password: credentials.password,
+          gotrue_meta_security: {}
         })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Auth error response:', errorData);
+        throw new Error(errorData.error_description || errorData.msg || 'Error de autenticación');
+      }
 
       const data = await response.json();
       
@@ -96,7 +104,7 @@ class SupabaseClient {
         
         return { data: { user: data.user, session } };
       } else {
-        throw new Error(data.error_description || 'Error de autenticación');
+        throw new Error('Respuesta inválida del servidor');
       }
     } catch (error) {
       console.error('Sign in error:', error);
@@ -503,6 +511,9 @@ class WhatsAppCRM {
             // Cargar contenido inicial
             this.loadInitialData();
             
+            // Restaurar estado del sidebar
+            this.restoreSidebarState();
+            
             // Iniciar sincronización automática
             this.startPeriodicSync();
             
@@ -837,6 +848,11 @@ class WhatsAppCRM {
             this.showNotification('Por favor completa todos los campos', 'error');
             return;
         }
+
+        if (!email.includes('@')) {
+            this.showNotification('Por favor ingresa un email válido', 'error');
+            return;
+        }
         
         // Mostrar estado de carga
         this.setButtonLoading(loginBtn, true);
@@ -853,11 +869,23 @@ class WhatsAppCRM {
                 // Reinicializar la aplicación
                 this.init();
             } else {
-                this.showNotification(result.error || 'Error al iniciar sesión', 'error');
+                // Traducir errores comunes
+                let errorMessage = result.error;
+                if (errorMessage.includes('Invalid login credentials')) {
+                    errorMessage = 'Email o contraseña incorrectos';
+                } else if (errorMessage.includes('Email not confirmed')) {
+                    errorMessage = 'Email no confirmado. Por favor revisa tu correo';
+                } else if (errorMessage.includes('Invalid email')) {
+                    errorMessage = 'Email inválido';
+                } else if (errorMessage.includes('Password is too short')) {
+                    errorMessage = 'La contraseña debe tener al menos 6 caracteres';
+                }
+                
+                this.showNotification(errorMessage, 'error');
             }
         } catch (error) {
             console.error('Error en login:', error);
-            this.showNotification('Error al conectar con el servidor', 'error');
+            this.showNotification('Error al conectar con el servidor. Por favor intenta más tarde.', 'error');
         } finally {
             this.setButtonLoading(loginBtn, false);
         }
@@ -1184,9 +1212,29 @@ class WhatsAppCRM {
         const cancelContactBtn = document.getElementById('cancelContactBtn');
         const saveContactBtn = document.getElementById('saveContactBtn');
         
-        if (closeContactModal) closeContactModal.addEventListener('click', () => this.closeContactModal());
-        if (cancelContactBtn) cancelContactBtn.addEventListener('click', () => this.closeContactModal());
-        if (saveContactBtn) saveContactBtn.addEventListener('click', () => this.saveContact());
+        // Guardar referencia a this
+        const self = this;
+        
+        if (closeContactModal) {
+            closeContactModal.addEventListener('click', () => {
+                console.log('[bindModalEvents] Cerrando modal de contacto');
+                self.closeContactModal();
+            });
+        }
+        
+        if (cancelContactBtn) {
+            cancelContactBtn.addEventListener('click', () => {
+                console.log('[bindModalEvents] Cancelando modal de contacto');
+                self.closeContactModal();
+            });
+        }
+        
+        if (saveContactBtn) {
+            saveContactBtn.addEventListener('click', () => {
+                console.log('[bindModalEvents] Guardando contacto');
+                self.saveContact();
+            });
+        }
     }
 
     loadInitialData() {
@@ -1240,31 +1288,56 @@ class WhatsAppCRM {
     }
 
     loadSectionData(section) {
-        switch (section) {
-            case 'dashboard':
-                this.updateDashboard();
-                break;
-            case 'kanban':
-                this.loadKanban();
-                break;
-            case 'contacts':
-                this.loadContacts();
-                break;
-            case 'tags':
-                this.loadTags();
-                break;
-            case 'templates':
-                this.loadTemplates();
-                break;
-            case 'analytics':
-                this.loadAnalytics();
-                break;
-            case 'automations':
-                this.loadAutomations();
-                break;
-            case 'settings':
-                this.loadSettings();
-                break;
+        try {
+            console.log(`📊 Cargando datos para sección: ${section}`);
+            
+            switch (section) {
+                case 'dashboard':
+                    this.refreshDashboard();
+                    break;
+                case 'kanban':
+                    this.loadKanban();
+                    break;
+                case 'contacts':
+                    this.loadContacts();
+                    this.ensureAddContactBtnContacts();
+                    break;
+                case 'tags':
+                    this.loadTags();
+                    break;
+                case 'templates':
+                    this.loadTemplates();
+                    break;
+            }
+        } catch (error) {
+            console.error('[loadSectionData] Error:', error);
+        }
+    }
+
+    // Garantiza que el botón "Nuevo" exista en la cabecera de la sección contactos
+    ensureAddContactBtnContacts() {
+        try {
+            let addBtn = document.getElementById('addContactBtnContacts');
+            const importBtn = document.getElementById('importContactsBtn');
+            const header = document.querySelector('#contacts .section-header');
+            if (!header || addBtn) return;
+
+            addBtn = document.createElement('button');
+            addBtn.id = 'addContactBtnContacts';
+            addBtn.className = 'btn-primary';
+            addBtn.textContent = '➕ Nuevo';
+
+            header.insertBefore(addBtn, importBtn || null);
+
+            // Guardar referencia a this
+            const self = this;
+            addBtn.addEventListener('click', () => {
+                console.log('[ensureAddContactBtnContacts] Click en botón Nuevo');
+                self.showContactModal();
+            });
+            console.log('[ensureAddContactBtnContacts] Botón Nuevo creado y evento vinculado');
+        } catch (error) {
+            console.error('[ensureAddContactBtnContacts] Error:', error);
         }
     }
 
@@ -1349,14 +1422,127 @@ class WhatsAppCRM {
     // MÉTODOS DEL KANBAN
     // ===========================================
 
+    /*
+     * Abre el kanban en modo pantalla completa (overlay independiente)
+     */
     expandKanban() {
-        const fullscreen = document.getElementById('kanbanFullscreen');
-        if (fullscreen) {
-            fullscreen.style.display = 'flex';
-            this.loadKanban();
+        this.openKanbanFull();
+    }
+
+    /*
+     * Crea (si no existe) y muestra un overlay de pantalla completa con el kanban
+     */
+    openKanbanFull() {
+        try {
+            // Ocultar WhatsApp y sidebar
+            const whatsappApp = document.querySelector('#app');
+            const sidebar = document.getElementById('whatsapp-crm-sidebar') || document.querySelector('.wa-crm-sidebar');
+
+            if (whatsappApp) whatsappApp.style.display = 'none';
+            if (sidebar) sidebar.style.display = 'none';
+
+            // Crear o regenerar overlay
+            let overlay = document.getElementById('kanbanOverlay');
+            const overlayHTML = `
+                <div class="kanban-overlay-header">
+                    <button id="kanbanBackBtn" class="kanban-back-btn">← Volver</button>
+                    <h1 class="kanban-overlay-title">📋 CRM Kanban</h1>
+                    <button id="kanbanCloseBtn" class="kanban-close-btn">✕</button>
+                </div>
+                <div class="kanban-overlay-content" id="kanbanOverlayContent"></div>
+            `;
+
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'kanbanOverlay';
+                document.body.appendChild(overlay);
+            }
+
+            // Siempre actualizar contenido HTML para evitar versiones vacías
+            overlay.innerHTML = overlayHTML;
+
+            // (Re)vincular eventos de cierre
+            overlay.querySelector('#kanbanBackBtn').onclick = () => this.closeKanbanFull();
+            overlay.querySelector('#kanbanCloseBtn').onclick = () => this.closeKanbanFull();
+
+            // Esc para cerrar
+            if (!this.__kanbanEscListener) {
+                this.__kanbanEscListener = (e) => { if (e.key === 'Escape') this.closeKanbanFull(); };
+                document.addEventListener('keydown', this.__kanbanEscListener);
+            }
+            
+            overlay.style.display = 'flex';
+            
+            // Renderizar contenido
+            this.renderKanbanFull();
+
+        } catch (error) {
+            console.error('[openKanbanFull] Error:', error);
         }
     }
 
+    /*
+     * Cierra el kanban fullscreen y restaura WhatsApp + sidebar
+     */
+    closeKanbanFull() {
+        const overlay = document.getElementById('kanbanOverlay');
+        if (overlay) overlay.style.display = 'none';
+
+        const whatsappApp = document.querySelector('#app');
+        const sidebar = document.getElementById('whatsapp-crm-sidebar') || document.querySelector('.wa-crm-sidebar');
+
+        if (whatsappApp) whatsappApp.style.display = '';
+        if (sidebar) sidebar.style.display = '';
+    }
+
+    /*
+     * Genera las columnas y tarjetas dentro del overlay a pantalla completa
+     */
+    renderKanbanFull() {
+        const container = document.getElementById('kanbanOverlayContent');
+        if (!container) return;
+
+        console.log('[renderKanbanFull] Renderizando kanban fullscreen...');
+        console.log('[renderKanbanFull] Tags:', this.tags.length, this.tags.map(t=>t.name));
+        console.log('[renderKanbanFull] Contacts:', this.contacts.length);
+
+        // Columnas: una por etiqueta + sin etiqueta
+        const columns = [];
+        // Columna sin etiqueta
+        columns.push({ tagId: null, name: 'Sin Etiqueta', color: '#6B7280' });
+        this.tags.forEach(tag => columns.push({ tagId: tag.id, name: tag.name, color: tag.color }));
+
+        if (columns.length === 0) {
+            container.innerHTML = `<div style="margin:auto; color:#8b949e; text-align:center; font-size:16px;">No hay datos para mostrar</div>`;
+            return;
+        }
+
+        container.innerHTML = columns.map(col => {
+            const contacts = col.tagId ? this.getContactsByTag(col.tagId) : this.contacts.filter(c => !c.tags || c.tags.length === 0);
+            return `
+                <div class="kanban-overlay-column" style="border:2px solid ${col.color};">
+                    <div class="kanban-overlay-column-header" style="background:${col.color};">
+                        <span>${this.escapeHtml(col.name)}</span>
+                        <span class="kanban-overlay-count">${contacts.length}</span>
+                    </div>
+                    <div class="kanban-overlay-cards">
+                        ${contacts.map(ct => `
+                            <div class="kanban-overlay-card">
+                                <div class="ko-card-avatar">${this.getUserInitials(ct.name)}</div>
+                                <div class="ko-card-info">
+                                    <div class="ko-card-name">${this.escapeHtml(ct.name)}</div>
+                                    <div class="ko-card-phone">${ct.phone}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        console.log('[renderKanbanFull] Columnas renderizadas:', columns.length);
+    }
+ 
     refreshKanban() {
         this.showNotification('Actualizando kanban...', 'info');
         this.loadKanban();
@@ -1453,12 +1639,28 @@ class WhatsAppCRM {
     }
 
     showContactModal(contactId = null) {
+        console.log('[showContactModal] Abriendo modal de contacto, contactId:', contactId);
+        
         const modal = document.getElementById('contactModal');
         const title = document.getElementById('contactModalTitle');
         const nameInput = document.getElementById('contactName');
         const phoneInput = document.getElementById('contactPhone');
         const tagSelect = document.getElementById('contactTag');
         const notesInput = document.getElementById('contactNotes');
+        
+        // Verificar que todos los elementos existen
+        if (!modal || !title || !nameInput || !phoneInput || !tagSelect || !notesInput) {
+            console.error('[showContactModal] Elementos del modal no encontrados:', {
+                modal: !!modal,
+                title: !!title,
+                nameInput: !!nameInput,
+                phoneInput: !!phoneInput,
+                tagSelect: !!tagSelect,
+                notesInput: !!notesInput
+            });
+            this.showNotification('Error al abrir el formulario de contacto', 'error');
+            return;
+        }
         
         if (contactId) {
             const contact = this.contacts.find(c => c.id === contactId);
@@ -1481,27 +1683,60 @@ class WhatsAppCRM {
         tagSelect.innerHTML = '<option value="">Sin etiqueta</option>' + 
             this.tags.map(tag => `<option value="${tag.id}">${tag.name}</option>`).join('');
         
+        // Mover el modal al body si no está ahí
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+        
+        // Mostrar el modal usando la clase active
         modal.style.display = 'flex';
+        requestAnimationFrame(() => {
+            modal.classList.add('active');
+        });
+        
+        // Enfocar el primer campo después de mostrar el modal
+        setTimeout(() => {
+            nameInput.focus();
+        }, 300);
+        
+        console.log('[showContactModal] Modal de contacto mostrado exitosamente');
     }
 
     closeContactModal() {
         const modal = document.getElementById('contactModal');
-        modal.style.display = 'none';
+        if (!modal) return;
+        
+        modal.classList.remove('active');
+        // Esperar a que termine la animación antes de ocultar
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
     }
 
     saveContact() {
+        console.log('[saveContact] Guardando contacto...');
+        
         const nameInput = document.getElementById('contactName');
         const phoneInput = document.getElementById('contactPhone');
         const tagSelect = document.getElementById('contactTag');
         const notesInput = document.getElementById('contactNotes');
+        
+        if (!nameInput || !phoneInput || !tagSelect || !notesInput) {
+            console.error('[saveContact] Elementos del formulario no encontrados');
+            this.showNotification('Error al obtener datos del formulario', 'error');
+            return;
+        }
         
         const contactData = {
             name: nameInput.value.trim(),
             phone: phoneInput.value.trim(),
             tags: tagSelect.value ? [tagSelect.value] : [],
             notes: notesInput.value.trim(),
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            lastChat: new Date().toISOString()
         };
+        
+        console.log('[saveContact] Datos del contacto:', contactData);
         
         if (!contactData.name || !contactData.phone) {
             this.showNotification('Nombre y teléfono son requeridos', 'error');
@@ -1514,10 +1749,17 @@ class WhatsAppCRM {
         this.contacts.push(contactData);
         this.saveData('contacts', this.contacts);
         
+        console.log('[saveContact] Contacto guardado localmente, sincronizando con Supabase...');
+        
+        // Sincronizar con Supabase
+        this.syncContactRemote(contactData);
+
         this.closeContactModal();
         this.showNotification('Contacto guardado exitosamente', 'success');
         this.loadContacts();
         this.updateDashboard();
+        
+        console.log('[saveContact] Proceso completado');
     }
 
     // ===========================================
@@ -1560,7 +1802,17 @@ class WhatsAppCRM {
         const nameInput = document.getElementById('tagName');
         const colorInput = document.getElementById('tagColor');
         const descriptionInput = document.getElementById('tagDescription');
-        
+
+        // Mover modal al body para que no herede restricciones de ancho
+        if (modal && modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+
+        if (!modal || !title || !nameInput || !colorInput || !descriptionInput) {
+            console.error('[showTagModal] Elementos del modal no encontrados');
+            return;
+        }
+
         if (tagId) {
             const tag = this.tags.find(t => t.id === tagId);
             if (tag) {
@@ -1575,13 +1827,24 @@ class WhatsAppCRM {
             colorInput.value = '#00a884';
             descriptionInput.value = '';
         }
-        
+
+        // Mostrar modal
         modal.style.display = 'flex';
+        requestAnimationFrame(() => modal.classList.add('active'));
+
+        // Enfocar el input de nombre tras la animación
+        setTimeout(() => nameInput.focus(), 300);
     }
 
     closeTagModal() {
         const modal = document.getElementById('tagModal');
-        modal.style.display = 'none';
+        if (!modal) return;
+
+        modal.classList.remove('active');
+        // Esperar transición antes de ocultar
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
     }
 
     saveTag() {
@@ -1889,9 +2152,88 @@ class WhatsAppCRM {
     }
 
     toggleSidebar() {
-        const container = document.querySelector('.wa-crm-sidebar-container');
-        if (container) {
-            container.classList.toggle('collapsed');
+        try {
+            // El contenedor principal del sidebar tiene clase 'wa-crm-sidebar'
+            const sidebar = document.getElementById('whatsapp-crm-sidebar') || document.querySelector('.wa-crm-sidebar');
+            const whatsappApp = document.getElementById('app');
+
+            if (!sidebar) {
+                console.error('[toggleSidebar] Sidebar element not found');
+                return;
+            }
+
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            
+            // Ajustar el ancho del sidebar y WhatsApp
+            if (isCollapsed) {
+                // Sidebar contraído
+                sidebar.style.width = '60px';
+                if (whatsappApp) {
+                    whatsappApp.style.marginLeft = '60px';
+                    whatsappApp.style.width = 'calc(100vw - 60px)';
+                }
+            } else {
+                // Sidebar expandido
+                sidebar.style.width = '380px';
+                if (whatsappApp) {
+                    whatsappApp.style.marginLeft = '380px';
+                    whatsappApp.style.width = 'calc(100vw - 380px)';
+                }
+            }
+
+            // Actualizar el icono
+            const toggleIcon = document.querySelector('#sidebarToggle .toggle-icon');
+            if (toggleIcon) {
+                toggleIcon.textContent = isCollapsed ? '⟩' : '⟨';
+                toggleIcon.classList.add('rotate');
+                setTimeout(() => toggleIcon.classList.remove('rotate'), 300);
+            }
+
+            // Guardar estado para futuras sesiones
+            try {
+                localStorage.setItem('sidebarCollapsed', isCollapsed ? '1' : '0');
+            } catch (storageError) {
+                // Ignorar errores de almacenamiento en modo incógnito
+            }
+
+            // Desencadenar un evento de resize para que WhatsApp Web se reacomode
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 300);
+            
+            console.log(`📐 Sidebar ${isCollapsed ? 'contraído' : 'expandido'} - Ancho: ${isCollapsed ? '60px' : '380px'}`);
+            
+        } catch (error) {
+            console.error('[toggleSidebar] Error:', error);
+        }
+    }
+
+    restoreSidebarState() {
+        try {
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === '1';
+            const sidebar = document.getElementById('whatsapp-crm-sidebar') || document.querySelector('.wa-crm-sidebar');
+            const whatsappApp = document.getElementById('app');
+            
+            if (sidebar && isCollapsed) {
+                sidebar.classList.add('collapsed');
+                sidebar.style.width = '60px';
+                
+                if (whatsappApp) {
+                    whatsappApp.style.marginLeft = '60px';
+                    whatsappApp.style.width = 'calc(100vw - 60px)';
+                }
+                
+                const toggleIcon = document.querySelector('#sidebarToggle .toggle-icon');
+                if (toggleIcon) {
+                    toggleIcon.textContent = '⟩';
+                }
+                
+                console.log('📐 Estado del sidebar restaurado: contraído (60px)');
+            } else if (sidebar) {
+                console.log('📐 Estado del sidebar restaurado: expandido (380px)');
+            }
+        } catch (error) {
+            console.error('[restoreSidebarState] Error:', error);
         }
     }
 
@@ -1941,6 +2283,145 @@ class WhatsAppCRM {
                 }
             ];
             this.saveData('templates', this.templates);
+        }
+    }
+
+    escapeHtml(unsafe) {
+        return unsafe
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
+    }
+
+    // ===============================
+    // SUPABASE SYNC (CONTACTOS)
+    // ===============================
+
+    async syncContactRemote(contact) {
+        try {
+            if (!this.isAuthenticated) return; // Solo usuarios logueados
+
+            const token = this.authService.getAuthToken();
+            if (!token) return;
+
+            const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/contacts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_CONFIG.anonKey,
+                    'Authorization': `Bearer ${token}`,
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({
+                    whatsapp_id: contact.phone,
+                    name: contact.name,
+                    phone: contact.phone,
+                    notes: contact.notes || null,
+                    tags: contact.tags && contact.tags.length ? contact.tags : null
+                })
+            });
+
+            if (!response.ok) {
+                const err = await response.text();
+                console.error('[syncContactRemote] Error al insertar en Supabase:', err);
+            } else {
+                console.log('[syncContactRemote] Contacto insertado en Supabase');
+            }
+        } catch (error) {
+            console.error('[syncContactRemote] Excepción:', error);
+        }
+    }
+
+    async syncDownContacts() {
+        try {
+            if (!this.isAuthenticated) return;
+            const token = this.authService.getAuthToken();
+            if (!token) return;
+
+            const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/contacts?select=id,name,phone,tags,notes,created_at,updated_at,whatsapp_id`, {
+                headers: {
+                    'apikey': SUPABASE_CONFIG.anonKey,
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                console.error('[syncDownContacts] Error HTTP', response.status);
+                return;
+            }
+
+            const remoteContacts = await response.json();
+            console.log('[syncDownContacts] Descargados', remoteContacts.length, 'contactos');
+
+            // Merge con locales (por whatsapp_id)
+            remoteContacts.forEach(rc => {
+                const exists = this.contacts.find(c => c.phone === rc.phone);
+                if (!exists) {
+                    this.contacts.push({
+                        id: rc.id,
+                        name: rc.name,
+                        phone: rc.phone,
+                        tags: rc.tags || [],
+                        notes: rc.notes || '',
+                        createdAt: rc.created_at,
+                        updatedAt: rc.updated_at
+                    });
+                }
+            });
+
+            this.saveData('contacts', this.contacts);
+        } catch (error) {
+            console.error('[syncDownContacts] Excepción:', error);
+        }
+    }
+
+    bindContactEvents() {
+        try {
+            const addContactBtn = document.getElementById('addContactBtn');
+            const importContactsBtn = document.getElementById('importContactsBtn');
+
+            // Asegurar botón "Nuevo" en cabecera de sección Contactos
+            let addContactBtnContacts = document.getElementById('addContactBtnContacts');
+            if (!addContactBtnContacts) {
+                const header = document.querySelector('#contacts .section-header');
+                if (header) {
+                    addContactBtnContacts = document.createElement('button');
+                    addContactBtnContacts.className = 'btn-primary';
+                    addContactBtnContacts.id = 'addContactBtnContacts';
+                    addContactBtnContacts.textContent = '➕ Nuevo';
+                    // Insertar antes del botón importar
+                    header.insertBefore(addContactBtnContacts, importContactsBtn || null);
+                    console.log('[bindContactEvents] Botón Nuevo (sección contactos) creado');
+                }
+            }
+            
+            if (addContactBtn) {
+                addContactBtn.addEventListener('click', () => {
+                    console.log('👥 Abriendo modal de nuevo contacto...');
+                    this.showContactModal();
+                });
+                this.debugStats.eventsbound++;
+            }
+
+            if (addContactBtnContacts) {
+                addContactBtnContacts.addEventListener('click', () => {
+                    console.log('👥 Abriendo modal de nuevo contacto (desde sección)');
+                    this.showContactModal();
+                });
+                this.debugStats.eventsbound++;
+            }
+
+            if (importContactsBtn) {
+                importContactsBtn.addEventListener('click', () => {
+                    console.log('📥 Importando contactos...');
+                    this.importContacts();
+                });
+                this.debugStats.eventsbound++;
+            }
+        } catch (error) {
+            console.error('[bindContactEvents] Error:', error);
         }
     }
 }

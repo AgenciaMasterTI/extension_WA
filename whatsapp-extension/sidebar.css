@@ -57,17 +57,14 @@
   box-sizing: border-box !important;
 }
 
-/* Contenedor principal */
+/* Contenedor principal integrado */
 .wa-crm-sidebar {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
+  position: relative !important;
   width: 380px !important;
   height: 100vh !important;
   background: var(--background-color) !important;
   border-right: 1px solid var(--border-color) !important;
-  box-shadow: var(--shadow-xl) !important;
-  z-index: 999999 !important;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif !important;
   font-size: 14px !important;
   line-height: 1.5 !important;
@@ -75,7 +72,89 @@
   transition: var(--transition-normal) !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  backdrop-filter: blur(20px) !important;
+  flex-shrink: 0 !important;
+}
+
+/* Estilos para integración directa con WhatsApp Web */
+body:has(.wa-crm-sidebar) {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+/* WhatsApp Web ajustado para trabajar junto al sidebar */
+body:has(.wa-crm-sidebar) #app {
+  flex: 1 !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+}
+
+/* Ajustes para contenedores hijos de app */
+body:has(.wa-crm-sidebar) #app > div:first-child {
+  flex: 1 !important;
+  height: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Fallback para navegadores que no soportan :has() */
+body.whatsapp-crm-active {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+body.whatsapp-crm-active #app {
+  flex: 1 !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+}
+
+body.whatsapp-crm-active #app > div:first-child {
+  flex: 1 !important;
+  height: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Responsive: ocultar sidebar en pantallas pequeñas */
+@media (max-width: 1200px) {
+  .wa-crm-sidebar {
+    width: 320px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .wa-crm-sidebar {
+    width: 280px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .wa-crm-sidebar.collapsed {
+    width: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+  }
+  
+  .wa-crm-sidebar:not(.collapsed) {
+    width: 100vw !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 999999 !important;
+    background: var(--background-color) !important;
+  }
 }
 
 .wa-crm-sidebar.collapsed {
@@ -166,11 +245,34 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+  position: relative !important;
+  z-index: 9999 !important;
 }
 
 .toggle-btn:hover {
   background: rgba(255,255,255,0.25) !important;
-  transform: scale(1.05) !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+.toggle-btn:active {
+  transform: scale(0.95) !important;
+}
+
+.toggle-icon {
+  font-size: 18px !important;
+  font-weight: bold !important;
+  transition: transform 0.3s ease !important;
+}
+
+.toggle-icon.rotate {
+  animation: rotateIcon 0.3s ease !important;
+}
+
+@keyframes rotateIcon {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(180deg); }
 }
 
 /* Pestañas tipo WhatsApp - Sistema dinámico */
@@ -1525,42 +1627,132 @@
   transform: scale(1.1) !important;
 }
 
-.modal-body {
-  padding: var(--spacing-2xl) !important;
+/* Cuerpo del modal de contacto mejorado */
+#contactModal .modal-body {
+  padding: 32px !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: var(--spacing-lg) !important;
+  gap: 24px !important;
+  background: var(--card-background) !important;
 }
 
-.modal-body input,
-.modal-body textarea,
-.modal-body select {
-  padding: var(--spacing-lg) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-lg) !important;
-  background: var(--card-background) !important;
+/* Grupo de campos mejorado */
+#contactModal .form-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+#contactModal .form-group label {
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  font-size: 14px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  opacity: 0.9 !important;
+}
+
+#contactModal .modal-body input,
+#contactModal .modal-body textarea,
+#contactModal .modal-body select {
+  padding: 16px 20px !important;
+  border: 2px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  background: var(--surface-color) !important;
   color: var(--text-primary) !important;
   font-size: 16px !important;
   font-family: inherit !important;
-  transition: var(--transition-fast) !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
   resize: vertical !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1) !important;
 }
 
-.modal-body input:focus,
-.modal-body textarea:focus,
-.modal-body select:focus {
+#contactModal .modal-body input:focus,
+#contactModal .modal-body textarea:focus,
+#contactModal .modal-body select:focus {
   outline: none !important;
   border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.1) !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(0,0,0,0.1),
+    0 0 0 4px rgba(0, 168, 132, 0.15),
+    0 8px 20px rgba(0, 168, 132, 0.1) !important;
+  transform: translateY(-2px) !important;
+  background: var(--card-background) !important;
 }
 
-.modal-footer {
+#contactModal .modal-body input::placeholder,
+#contactModal .modal-body textarea::placeholder {
+  color: var(--text-tertiary) !important;
+  opacity: 0.7 !important;
+}
+
+/* Footer del modal de contacto mejorado */
+#contactModal .modal-footer {
   display: flex !important;
-  gap: var(--spacing-md) !important;
+  gap: 16px !important;
   justify-content: flex-end !important;
-  padding: var(--spacing-2xl) !important;
+  padding: 28px 32px !important;
   border-top: 1px solid var(--border-light) !important;
+  background: linear-gradient(180deg, var(--surface-color) 0%, var(--card-background) 100%) !important;
+}
+
+#contactModal .modal-footer .btn-secondary {
   background: var(--surface-color) !important;
+  color: var(--text-secondary) !important;
+  border: 2px solid var(--border-color) !important;
+  padding: 14px 28px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  cursor: pointer !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+#contactModal .modal-footer .btn-secondary:hover {
+  background: var(--border-color) !important;
+  color: var(--text-primary) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2) !important;
+}
+
+#contactModal .modal-footer .btn-primary {
+  background: linear-gradient(135deg, #00a884 0%, #25d366 100%) !important;
+  color: white !important;
+  border: 2px solid transparent !important;
+  padding: 14px 32px !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  cursor: pointer !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  box-shadow: 0 4px 12px rgba(0, 168, 132, 0.3) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+#contactModal .modal-footer .btn-primary::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent) !important;
+  transition: all 0.5s ease !important;
+}
+
+#contactModal .modal-footer .btn-primary:hover::before {
+  left: 100% !important;
+}
+
+#contactModal .modal-footer .btn-primary:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 12px 28px rgba(0, 168, 132, 0.4) !important;
+  background: linear-gradient(135deg, #00bf9f 0%, #25d366 100%) !important;
 }
 
 /* Scrollbar personalizado */
@@ -1835,9 +2027,9 @@
   left: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  background: rgba(0, 0, 0, 0.85) !important;
+  background: rgba(0, 0, 0, 0.88) !important;
   z-index: 999999999 !important;
-  backdrop-filter: blur(15px) !important;
+  backdrop-filter: blur(20px) !important;
   align-items: center !important;
   justify-content: center !important;
   padding: 20px !important;
@@ -1850,65 +2042,100 @@
 
 #contactModal .modal-content {
   background: var(--card-background) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6) !important;
-  width: 500px !important;
+  border-radius: 20px !important;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  width: 520px !important;
   max-width: 95vw !important;
   max-height: 90vh !important;
   overflow: hidden !important;
   border: 1px solid var(--border-color) !important;
-  animation: modalFadeIn 0.3s ease-out !important;
+  animation: modalSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
   position: relative !important;
 }
 
-@keyframes modalFadeIn {
+@keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(50px) scale(0.9);
+    transform: translateY(-30px) scale(0.95);
+    filter: blur(10px);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 
-/* Asegurar que el modal esté por encima de WhatsApp Web */
-#contactModal {
-  z-index: 999999999 !important;
+/* Header del modal de contacto mejorado */
+#contactModal .modal-header {
+  background: linear-gradient(135deg, #00a884 0%, #00bf9f 50%, #25d366 100%) !important;
+  color: white !important;
+  padding: 28px 32px !important;
+  border-bottom: none !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
-/* Header del modal de contacto */
-#contactModal .modal-header {
-  background: var(--gradient-primary) !important;
-  color: white !important;
-  padding: 24px !important;
-  border-bottom: none !important;
+#contactModal .modal-header::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%) !important;
+  animation: shimmer 3s infinite !important;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 #contactModal .modal-header h3 {
   color: white !important;
-  font-size: 22px !important;
-  font-weight: 700 !important;
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+  position: relative !important;
+  z-index: 1 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+#contactModal .modal-header h3::before {
+  content: '👤' !important;
+  font-size: 28px !important;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) !important;
 }
 
 #contactModal .modal-close {
-  background: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
   color: white !important;
-  border: none !important;
-  width: 40px !important;
-  height: 40px !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  width: 44px !important;
+  height: 44px !important;
   border-radius: 50% !important;
   cursor: pointer !important;
-  font-size: 20px !important;
+  font-size: 22px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  transition: all 0.2s ease !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  position: relative !important;
+  z-index: 2 !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 #contactModal .modal-close:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
-  transform: scale(1.1) !important;
+  background: rgba(248, 113, 113, 0.9) !important;
+  border-color: rgba(248, 113, 113, 1) !important;
+  transform: scale(1.15) rotate(90deg) !important;
+  box-shadow: 0 8px 20px rgba(248, 113, 113, 0.4) !important;
 }
 
 /* MODAL DE ETIQUETAS - POPUP CENTRADO PERFECTO */
@@ -1919,41 +2146,31 @@
   left: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  background: rgba(0, 0, 0, 0.9) !important;
-  z-index: 9999999999 !important;
-  backdrop-filter: blur(15px) !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  z-index: 999999999 !important;
+  backdrop-filter: blur(10px) !important;
   align-items: center !important;
   justify-content: center !important;
   padding: 20px !important;
   box-sizing: border-box !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
 }
 
 #tagModal.active {
   display: flex !important;
+  opacity: 1 !important;
 }
 
 #tagModal .modal-content {
-  background: var(--card-background) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6) !important;
-  width: 500px !important;
-  max-width: 95vw !important;
-  max-height: 90vh !important;
-  overflow: hidden !important;
-  border: 1px solid var(--border-color) !important;
-  animation: tagModalFadeIn 0.3s ease-out !important;
-  position: relative !important;
+  transform: scale(0.95) translateY(20px) !important;
+  transition: transform 0.3s ease !important;
+  opacity: 0 !important;
 }
 
-@keyframes tagModalFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(50px) scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+#tagModal.active .modal-content {
+  transform: scale(1) translateY(0) !important;
+  opacity: 1 !important;
 }
 
 /* Header del modal de etiquetas */
@@ -2607,3 +2824,159 @@ body.kanban-fullscreen-mode {
     opacity: 1;
   }
 }
+
+/* =====================================
+   KANBAN OVERLAY FULLSCREEN (no-modules)
+   ===================================== */
+#kanbanOverlay {
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #0d1117 !important;
+  z-index: 999999999 !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.kanban-overlay-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 20px 32px !important;
+  background: #161b22 !important;
+  border-bottom: 1px solid #21262d !important;
+  flex-shrink: 0 !important;
+}
+
+.kanban-overlay-title {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #e6edf3 !important;
+  margin: 0 !important;
+}
+
+.kanban-back-btn,
+.kanban-close-btn {
+  background: #00a884 !important;
+  border: none !important;
+  color: #ffffff !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  transition: transform 0.2s ease, opacity 0.2s ease !important;
+}
+
+.kanban-close-btn {
+  background: rgba(255,255,255,0.1) !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 18px !important;
+}
+
+.kanban-back-btn:hover,
+.kanban-close-btn:hover {
+  transform: scale(1.05) !important;
+  opacity: 0.9 !important;
+}
+
+.kanban-overlay-content {
+  flex: 1 !important;
+  display: flex !important;
+  gap: 24px !important;
+  overflow-x: auto !important;
+  padding: 24px !important;
+}
+
+.kanban-overlay-column {
+  min-width: 320px !important;
+  max-width: 380px !important;
+  background: #161b22 !important;
+  border: 1px solid #21262d !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: calc(100vh - 160px) !important;
+}
+
+.kanban-overlay-column-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 16px 20px !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.kanban-overlay-count {
+  background: rgba(255, 255, 255, 0.2) !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+}
+
+.kanban-overlay-cards {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  padding: 16px !important;
+}
+
+.kanban-overlay-card {
+  background: #21262d !important;
+  border: 1px solid #30363d !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+  transition: transform 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.kanban-overlay-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: #00a884 !important;
+}
+
+.ko-card-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  background: #00a884 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+.ko-card-info {
+  flex: 1 !important;
+  overflow: hidden !important;
+}
+
+.ko-card-name {
+  font-weight: 600 !important;
+  color: #e6edf3 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.ko-card-phone {
+  font-size: 12px !important;
+  color: #8b949e !important;
+}
+
+/* ===================================== */
+/* ===================================== */
