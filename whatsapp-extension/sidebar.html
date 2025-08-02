@@ -6,6 +6,11 @@
     <title>WhatsApp CRM Sidebar</title>
 </head>
 <body>
+    <!-- Botón flotante para expandir sidebar colapsado -->
+    <button class="sidebar-expand-btn" id="sidebarExpandBtn" title="Expandir CRM" style="display: none;">
+        <span class="expand-icon">💬</span>
+    </button>
+    
     <div class="wa-crm-sidebar-container">
         <!-- Header Profesional -->
         <div class="sidebar-header">
@@ -105,23 +110,33 @@
             </div>
         </div>
 
-        <!-- Sección de Pestañas Dinámicas tipo WhatsApp -->
-        <div class="tabs-section" id="tabsSection">
+        <!-- Top Bar de Etiquetas tipo WhatsApp Business -->
+        <div class="topbar-section" id="topbarSection">
             <div class="search-row">
                 <input type="text" 
                        class="search-input" 
                        id="searchInput" 
                        placeholder="🔍 Buscar contactos...">
             </div>
-            <div class="tabs-container" id="tabsContainer">
-                <div class="tabs-scroll" id="tabsScroll">
-                    <!-- Las pestañas se generan dinámicamente -->
-                    <button class="tab-item active" data-filter="all">
-                        <span class="tab-text">Todos</span>
-                        <span class="tab-count">0</span>
+            <div class="topbar-container" id="topbarContainer">
+                <div class="topbar-scroll" id="topbarScroll">
+                    <!-- Las etiquetas se generan dinámicamente desde Supabase -->
+                    <button class="topbar-item active" data-filter="all" data-tag-id="all">
+                        <div class="topbar-item-content">
+                            <div class="topbar-icon">👥</div>
+                            <span class="topbar-text">Todos</span>
+                            <span class="topbar-count">0</span>
+                        </div>
+                    </button>
+                    <button class="topbar-item" data-filter="unread" data-tag-id="unread">
+                        <div class="topbar-item-content">
+                            <div class="topbar-icon">📬</div>
+                            <span class="topbar-text">No leídos</span>
+                            <span class="topbar-count">0</span>
+                        </div>
                     </button>
                 </div>
-                <button class="tab-add-btn" id="addTabBtn" title="Nueva etiqueta">
+                <button class="topbar-add-btn" id="addTopbarBtn" title="Nueva etiqueta">
                     <span>+</span>
                 </button>
             </div>

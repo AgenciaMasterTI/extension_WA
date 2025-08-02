@@ -426,6 +426,1001 @@ class AuthService {
   }
 }
 
+// ===========================================
+// MÓDULO DE GESTIÓN DE ETIQUETAS
+// ===========================================
+
+class TagsManager {
+    constructor(authService) {
+        this.authService = authService;
+        this.tags = [];
+        this.currentFilter = 'all';
+        this.isLoading = false;
+        this.lastSync = null;
+    }
+
+    async init() {
+        console.log('[TagsManager] Inicializando...');
+        await this.loadTagsFromLocal();
+        await this.syncWithSupabase();
+        this.updateTopbar();
+    }
+
+    async loadTagsFromLocal() {
+        try {
+            const storedTags = localStorage.getItem('wa_crm_tags');
+            this.tags = storedTags ? JSON.parse(storedTags) : [];
+            console.log('[TagsManager] Tags locales cargados:', this.tags.length);
+        } catch (error) {
+            console.error('[TagsManager] Error cargando tags locales:', error);
+            this.tags = [];
+        }
+    }
+
+    async syncWithSupabase() {
+        if (!this.authService.isUserAuthenticated()) {
+            console.log('[TagsManager] Usuario no autenticado, saltando sincronización');
+            return;
+        }
+
+        try {
+            this.isLoading = true;
+            const token = this.authService.getAuthToken();
+            
+            // Obtener etiquetas de Supabase
+            const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/tags?select=*`, {
+                headers: {
+                    'apikey': SUPABASE_CONFIG.anonKey,
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const remoteTags = await response.json();
+                console.log('[TagsManager] Tags remotos obtenidos:', remoteTags.length);
+                
+                // Merge con tags locales
+                this.mergeTags(remoteTags);
+                this.saveTagsToLocal();
+                this.lastSync = new Date();
+            } else {
+                console.error('[TagsManager] Error obteniendo tags remotos:', response.status);
+            }
+        } catch (error) {
+            console.error('[TagsManager] Error en sincronización:', error);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    mergeTags(remoteTags) {
+        // Crear mapa de tags locales por ID
+        const localTagsMap = new Map(this.tags.map(tag => [tag.id, tag]));
+        
+        // Procesar tags remotos
+        remoteTags.forEach(remoteTag => {
+            if (localTagsMap.has(remoteTag.id)) {
+                // Actualizar tag existente
+                const localTag = localTagsMap.get(remoteTag.id);
+                Object.assign(localTag, remoteTag);
+            } else {
+                // Agregar nuevo tag
+                this.tags.push(remoteTag);
+            }
+        });
+
+        console.log('[TagsManager] Tags fusionados:', this.tags.length);
+    }
+
+    saveTagsToLocal() {
+        try {
+            localStorage.setItem('wa_crm_tags', JSON.stringify(this.tags));
+        } catch (error) {
+            console.error('[TagsManager] Error guardando tags locales:', error);
+        }
+    }
+
+    async createTag(tagData) {
+        if (!this.authService.isUserAuthenticated()) {
+            console.error('[TagsManager] Usuario no autenticado para crear tag');
+            return null;
+        }
+
+        try {
+            const token = this.authService.getAuthToken();
+            const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/tags`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_CONFIG.anonKey,
+                    'Authorization': `Bearer ${token}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(tagData)
+            });
+
+            if (response.ok) {
+                const newTag = await response.json();
+                this.tags.push(newTag[0]);
+                this.saveTagsToLocal();
+                this.updateTopbar();
+                console.log('[TagsManager] Tag creado:', newTag[0]);
+                return newTag[0];
+            } else {
+                console.error('[TagsManager] Error creando tag:', response.status);
+                return null;
+            }
+        } catch (error) {
+            console.error('[TagsManager] Error creando tag:', error);
+            return null;
+        }
+    }
+
+    getTags() {
+        return this.tags;
+    }
+
+    getTagById(id) {
+        return this.tags.find(tag => tag.id === id);
+    }
+
+    getTagCount(tagId) {
+        // Este método se implementará cuando se conecte con el sistema de contactos
+        return Math.floor(Math.random() * 50) + 1; // Simulación temporal
+    }
+
+    setCurrentFilter(filter) {
+        this.currentFilter = filter;
+        this.updateTopbar();
+    }
+
+    getCurrentFilter() {
+        return this.currentFilter;
+    }
+
+    updateTopbar() {
+        // Buscar el topbar tanto en el sidebar como en el topbar independiente
+        let topbarScroll = document.getElementById('topbarScroll');
+        
+        // Si no se encuentra en el sidebar, buscar en el topbar independiente
+        if (!topbarScroll) {
+            const standaloneTopbar = document.getElementById('whatsapp-crm-topbar');
+            if (standaloneTopbar) {
+                topbarScroll = standaloneTopbar.querySelector('#topbarScroll');
+            }
+        }
+        
+        if (!topbarScroll) {
+            console.log('[TagsManager] No se encontró el topbar');
+            return;
+        }
+
+        // Etiquetas predefinidas
+        const predefinedTags = [
+            { id: 'all', name: 'Todos', icon: '👥', filter: 'all' },
+            { id: 'unread', name: 'No leídos', icon: '📬', filter: 'unread' },
+            { id: 'groups', name: 'Grupos', icon: '👥', filter: 'groups' }
+        ];
+
+        // Generar HTML para etiquetas predefinidas
+        const predefinedHTML = predefinedTags.map(tag => `
+            <button class="topbar-item ${this.currentFilter === tag.filter ? 'active' : ''}" 
+                    data-filter="${tag.filter}" data-tag-id="${tag.id}">
+                <div class="topbar-item-content">
+                    <div class="topbar-icon">${tag.icon}</div>
+                    <span class="topbar-text">${tag.name}</span>
+                    <span class="topbar-count">${this.getTagCount(tag.id)}</span>
+                </div>
+            </button>
+        `).join('');
+
+        // Generar HTML para etiquetas personalizadas
+        const customTagsHTML = this.tags.map(tag => `
+            <button class="topbar-item ${this.currentFilter === tag.id ? 'active' : ''}" 
+                    data-filter="${tag.id}" data-tag-id="${tag.id}">
+                <div class="topbar-item-content">
+                    <div class="topbar-icon" style="color: ${tag.color}">🏷️</div>
+                    <span class="topbar-text">${tag.name}</span>
+                    <span class="topbar-count">${this.getTagCount(tag.id)}</span>
+                </div>
+            </button>
+        `).join('');
+
+        topbarScroll.innerHTML = predefinedHTML + customTagsHTML;
+
+        // Vincular eventos
+        this.bindTopbarEvents();
+    }
+
+    bindTopbarEvents() {
+        const topbarItems = document.querySelectorAll('.topbar-item');
+        topbarItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                const filter = e.currentTarget.dataset.filter;
+                const tagId = e.currentTarget.dataset.tagId;
+                
+                // Remover clase active de todos los items
+                topbarItems.forEach(i => i.classList.remove('active'));
+                
+                // Agregar clase active al item clickeado
+                e.currentTarget.classList.add('active');
+                
+                // Actualizar filtro actual
+                this.setCurrentFilter(filter);
+                
+                // Disparar evento personalizado para notificar al CRM
+                const event = new CustomEvent('topbarFilterChanged', {
+                    detail: { filter, tagId }
+                });
+                document.dispatchEvent(event);
+                
+                // Hacer click en la etiqueta correspondiente de WhatsApp Business
+                if (window.whatsappCRM && window.whatsappCRM.whatsappIntegration) {
+                    window.whatsappCRM.whatsappIntegration.clickWhatsAppLabel(filter === 'all' ? 'Todos' : 
+                        filter === 'unread' ? 'No leídos' : 
+                        filter === 'groups' ? 'Grupos' : 
+                        this.tags.find(t => t.id === filter)?.name || filter);
+                }
+                
+                console.log('[TagsManager] Filtro cambiado:', filter, tagId);
+            });
+        });
+
+        // Botón de agregar nueva etiqueta
+        const addBtn = document.getElementById('addTopbarBtn');
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                this.showCreateTagModal();
+            });
+        }
+    }
+
+    showCreateTagModal() {
+        // Reutilizar el modal existente de etiquetas
+        const event = new CustomEvent('showTagModal');
+        document.dispatchEvent(event);
+    }
+}
+
+// ===========================================
+// MÓDULO DE FILTRADO
+// ===========================================
+
+class FilterManager {
+    constructor(tagsManager, crm = null) {
+        this.tagsManager = tagsManager;
+        this.crm = crm;
+        this.currentFilter = 'all';
+        this.filteredContacts = [];
+        this.searchQuery = '';
+    }
+
+    init() {
+        console.log('[FilterManager] Inicializando...');
+        this.bindEvents();
+    }
+
+    bindEvents() {
+        // Escuchar cambios de filtro en la topbar
+        document.addEventListener('topbarFilterChanged', (e) => {
+            this.setFilter(e.detail.filter);
+        });
+
+        // Escuchar búsqueda
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.setSearchQuery(e.target.value);
+            });
+        }
+    }
+
+    setFilter(filter) {
+        this.currentFilter = filter;
+        this.applyFilters();
+    }
+
+    setSearchQuery(query) {
+        this.searchQuery = query.toLowerCase();
+        this.applyFilters();
+    }
+
+    applyFilters() {
+        // Obtener contactos del CRM
+        const contacts = this.crm ? this.crm.contacts : [];
+        
+        let filtered = contacts;
+
+        // Aplicar filtro por etiqueta
+        if (this.currentFilter !== 'all') {
+            if (this.currentFilter === 'unread') {
+                filtered = filtered.filter(contact => contact.unread);
+            } else if (this.currentFilter === 'groups') {
+                filtered = filtered.filter(contact => contact.isGroup);
+            } else {
+                // Filtro por etiqueta personalizada
+                filtered = filtered.filter(contact => 
+                    contact.tags && contact.tags.includes(this.currentFilter)
+                );
+            }
+        }
+
+        // Aplicar búsqueda
+        if (this.searchQuery) {
+            filtered = filtered.filter(contact =>
+                contact.name.toLowerCase().includes(this.searchQuery) ||
+                contact.phone.includes(this.searchQuery)
+            );
+        }
+
+        this.filteredContacts = filtered;
+        
+        // Disparar evento para notificar al CRM
+        const event = new CustomEvent('contactsFiltered', {
+            detail: { contacts: this.filteredContacts, filter: this.currentFilter }
+        });
+        document.dispatchEvent(event);
+        
+        console.log('[FilterManager] Filtros aplicados:', {
+            filter: this.currentFilter,
+            search: this.searchQuery,
+            results: this.filteredContacts.length
+        });
+    }
+
+    getFilteredContacts() {
+        return this.filteredContacts;
+    }
+
+    getCurrentFilter() {
+        return this.currentFilter;
+    }
+}
+
+// Integración con WhatsApp Business nativo
+class WhatsAppBusinessIntegration {
+    constructor() {
+        this.whatsappLabels = new Map(); // Map de etiquetas de WhatsApp Business
+        this.labelMapping = new Map(); // Mapeo entre etiquetas CRM y WhatsApp Business
+        this.lastSync = 0;
+        this.syncInterval = 5000; // Sincronizar cada 5 segundos
+        
+        this.init();
+    }
+    
+    async init() {
+        console.log('[WhatsAppBusiness] Inicializando integración...');
+        
+        // Detectar etiquetas de WhatsApp Business al cargar
+        await this.detectWhatsAppLabels();
+        
+        // Sincronización periódica
+        setInterval(() => {
+            this.detectWhatsAppLabels();
+        }, this.syncInterval);
+        
+        // Observer para detectar cambios en el DOM de WhatsApp
+        this.setupDOMObserver();
+    }
+    
+    async detectWhatsAppLabels() {
+        try {
+            // Primero intentar detectar filtros nativos de WhatsApp Business
+            console.log('[WhatsAppBusiness] 🔍 Detectando filtros nativos de WhatsApp Business...');
+            const foundLabels = new Map();
+            
+            // Método 1: Detectar filtros nativos específicos
+            await this.detectNativeWhatsAppFilters(foundLabels);
+            
+            // Método 2: Detectar por selectores genéricos
+            const labelSelectors = [
+                '[data-testid*="filter"]',
+                '[data-testid*="label"]',
+                '[aria-label*="filter"]',
+                '[aria-label*="filtro"]',
+                'button[aria-label*="label"]',
+                'div[role="button"][aria-label*="label"]'
+            ];
+            
+            for (const selector of labelSelectors) {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(element => {
+                    const labelInfo = this.extractLabelInfo(element);
+                    if (labelInfo) {
+                        foundLabels.set(labelInfo.name.toLowerCase(), labelInfo);
+                    }
+                });
+            }
+            
+            // Método 3: Búsqueda en el sidebar de WhatsApp
+            this.detectSidebarLabels(foundLabels);
+            
+            if (foundLabels.size > 0) {
+                console.log('[WhatsAppBusiness] ✅ Etiquetas detectadas:', foundLabels);
+                this.whatsappLabels = foundLabels;
+                this.updateLabelMapping();
+            } else {
+                console.log('[WhatsAppBusiness] ⚠️ No se detectaron etiquetas, reintentando en 3 segundos...');
+                setTimeout(() => this.detectWhatsAppLabels(), 3000);
+            }
+        } catch (error) {
+            console.error('[WhatsAppBusiness] Error detectando etiquetas:', error);
+        }
+    }
+    
+    async detectNativeWhatsAppFilters(foundLabels) {
+        // Detectar filtros específicos de WhatsApp Business
+        const nativeFilters = [
+            { name: 'Todos', selectors: ['[aria-label*="Todos"]', '[aria-label*="All"]', 'button:contains("Todos")'] },
+            { name: 'No leídos', selectors: ['[aria-label*="No leídos"]', '[aria-label*="Unread"]', 'button:contains("No leídos")'] },
+            { name: 'Favoritos', selectors: ['[aria-label*="Favoritos"]', '[aria-label*="Starred"]', 'button:contains("Favoritos")'] },
+            { name: 'Grupos', selectors: ['[aria-label*="Grupos"]', '[aria-label*="Groups"]', 'button:contains("Grupos")'] }
+        ];
+        
+        for (const filter of nativeFilters) {
+            for (const selector of filter.selectors) {
+                try {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(element => {
+                        if (this.isClickableLabel(element) || this.findClickableParent(element)) {
+                            const clickableElement = this.isClickableLabel(element) ? element : this.findClickableParent(element);
+                            if (clickableElement) {
+                                foundLabels.set(filter.name.toLowerCase(), {
+                                    name: filter.name,
+                                    element: clickableElement,
+                                    count: this.extractCount(clickableElement),
+                                    selector: this.generateSelector(clickableElement)
+                                });
+                                console.log(`[WhatsAppBusiness] 🎯 Filtro nativo detectado: ${filter.name}`, clickableElement);
+                            }
+                        }
+                    });
+                } catch (e) {
+                    // Selector no válido, continuar
+                }
+            }
+        }
+        
+        // También buscar elementos que contengan texto de filtros conocidos
+        this.searchByTextContent(foundLabels);
+    }
+    
+    searchByTextContent(foundLabels) {
+        const filterTexts = ['Todos', 'No leídos', 'Favoritos', 'Grupos', 'Archivadas'];
+        
+        filterTexts.forEach(text => {
+            // Buscar todos los elementos que contengan este texto
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: function(node) {
+                        return node.textContent.trim() === text ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+                    }
+                }
+            );
+            
+            let textNode;
+            while (textNode = walker.nextNode()) {
+                // Buscar el elemento clickeable que contiene este texto
+                let current = textNode.parentElement;
+                let attempts = 0;
+                
+                while (current && attempts < 5) {
+                    if (this.isClickableLabel(current)) {
+                        foundLabels.set(text.toLowerCase(), {
+                            name: text,
+                            element: current,
+                            count: this.extractCount(current),
+                            selector: this.generateSelector(current)
+                        });
+                        console.log(`[WhatsAppBusiness] 📝 Filtro por texto detectado: ${text}`, current);
+                        break;
+                    }
+                    current = current.parentElement;
+                    attempts++;
+                }
+            }
+        });
+    }
+    
+    detectSidebarLabels(foundLabels) {
+        // Detectar etiquetas en el sidebar de filtros
+        const sidebarSelectors = [
+            'div[data-testid="filter-button"]',
+            'div[role="button"]',
+            '[aria-label*="filtro"]',
+            '.filter-button',
+            '.label-filter'
+        ];
+        
+        // Buscar por texto común de etiquetas
+        const commonLabels = ['Workshop', 'Venta', 'Soporte', 'No Aplica1', 'Todos', 'No leídos', 'Favoritos'];
+        
+        commonLabels.forEach(labelName => {
+            // Buscar elementos que contengan el texto de la etiqueta usando múltiples métodos
+            const elements = this.findElementsByText(labelName);
+            
+            elements.forEach(element => {
+                if (this.isClickableLabel(element)) {
+                    foundLabels.set(labelName.toLowerCase(), {
+                        name: labelName,
+                        element: element,
+                        count: this.extractCount(element),
+                        selector: this.generateSelector(element)
+                    });
+                }
+            });
+        });
+    }
+    
+    findElementsByText(text) {
+        const elements = [];
+        
+        // Método 1: XPath
+        try {
+            const xpath = `//button[contains(text(), '${text}')] | //div[@role='button' and contains(text(), '${text}')] | //*[contains(@aria-label, '${text}')]`;
+            const xpathElements = this.getElementsByXPath(xpath);
+            elements.push(...xpathElements);
+        } catch (e) {
+            console.log('[WhatsAppBusiness] XPath no soportado, usando métodos alternativos');
+        }
+        
+        // Método 2: querySelector con selectores específicos
+        const selectors = [
+            `button:contains("${text}")`,
+            `div[role="button"]:contains("${text}")`,
+            `[aria-label*="${text}"]`,
+            `[title*="${text}"]`
+        ];
+        
+        selectors.forEach(selector => {
+            try {
+                const found = document.querySelectorAll(selector);
+                elements.push(...Array.from(found));
+            } catch (e) {
+                // Selector no válido, continuar
+            }
+        });
+        
+        // Método 3: Búsqueda manual por textContent
+        const allElements = document.querySelectorAll('button, div[role="button"], span, div');
+        allElements.forEach(element => {
+            if (element.textContent && element.textContent.includes(text)) {
+                elements.push(element);
+            }
+        });
+        
+        // Eliminar duplicados
+        return [...new Set(elements)];
+    }
+    
+    getElementsByXPath(xpath) {
+        const result = [];
+        const iterator = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+        let node = iterator.iterateNext();
+        while (node) {
+            result.push(node);
+            node = iterator.iterateNext();
+        }
+        return result;
+    }
+    
+    extractLabelInfo(element) {
+        try {
+            // Extraer nombre de la etiqueta
+            let name = element.textContent?.trim() || 
+                      element.getAttribute('aria-label') || 
+                      element.getAttribute('title') || 
+                      element.getAttribute('data-label');
+            
+            if (!name || name.length < 2) return null;
+            
+            // Buscar el elemento clickeable (botón o div con role="button")
+            let clickableElement = element;
+            
+            // Si el elemento actual no es clickeable, buscar hacia arriba en el DOM
+            if (!this.isClickableLabel(element)) {
+                clickableElement = this.findClickableParent(element);
+            }
+            
+            // Si no se encuentra elemento clickeable, salir
+            if (!clickableElement) return null;
+            
+            // Extraer contador si existe
+            const count = this.extractCount(clickableElement);
+            
+            console.log(`[WhatsAppBusiness] 🔍 Etiqueta detectada: "${name}" - Elemento clickeable:`, clickableElement);
+            
+            return {
+                name: name,
+                element: clickableElement, // Usar el elemento clickeable, no el texto
+                count: count,
+                selector: this.generateSelector(clickableElement)
+            };
+        } catch (error) {
+            return null;
+        }
+    }
+    
+    findClickableParent(element) {
+        let current = element;
+        let maxLevels = 5; // Limitar búsqueda hacia arriba
+        
+        while (current && current.parentElement && maxLevels > 0) {
+            current = current.parentElement;
+            
+            // Verificar si este elemento es clickeable
+            if (this.isClickableLabel(current)) {
+                console.log(`[WhatsAppBusiness] 🎯 Elemento clickeable encontrado:`, current);
+                return current;
+            }
+            
+            maxLevels--;
+        }
+        
+        console.log(`[WhatsAppBusiness] ❌ No se encontró elemento clickeable para:`, element);
+        return null;
+    }
+    
+    extractCount(element) {
+        // Buscar números que pueden ser contadores
+        const text = element.textContent || '';
+        const countMatch = text.match(/\((\d+)\)|\s(\d+)$|\d+/);
+        return countMatch ? parseInt(countMatch[1] || countMatch[2] || countMatch[0]) : 0;
+    }
+    
+    generateSelector(element) {
+        // Generar un selector único para el elemento
+        let selector = element.tagName.toLowerCase();
+        
+        if (element.id) {
+            selector += `#${element.id}`;
+        } else if (element.className) {
+            selector += `.${element.className.split(' ')[0]}`;
+        }
+        
+        // Agregar selectores de data attributes únicos
+        ['data-testid', 'data-label', 'aria-label'].forEach(attr => {
+            const value = element.getAttribute(attr);
+            if (value) {
+                selector += `[${attr}="${value}"]`;
+            }
+        });
+        
+        return selector;
+    }
+    
+    isClickableLabel(element) {
+        // Verificar si el elemento es clickeable y parece ser una etiqueta
+        const isButton = element.tagName === 'BUTTON';
+        const hasButtonRole = element.role === 'button' || element.getAttribute('role') === 'button';
+        const hasClickHandler = element.onclick !== null;
+        const isTabIndexed = element.getAttribute('tabindex') === '0' || element.tabIndex >= 0;
+        const hasPointerCursor = window.getComputedStyle(element).cursor === 'pointer';
+        const hasDataTestId = element.getAttribute('data-testid') !== null;
+        
+        // Verificaciones específicas para WhatsApp Business
+        const hasWhatsAppClasses = element.className && (
+            element.className.includes('filter') ||
+            element.className.includes('button') ||
+            element.className.includes('label') ||
+            element.className.includes('tab') ||
+            element.className.includes('item')
+        );
+        
+        // Verificar si está en área de filtros de WhatsApp Business
+        const isInFilterArea = this.isInWhatsAppFilterArea(element);
+        
+        const isClickable = isButton || hasButtonRole || hasClickHandler || isTabIndexed || hasPointerCursor;
+        const seemsLikeLabel = hasDataTestId || hasWhatsAppClasses || isInFilterArea;
+        
+        const result = isClickable && (seemsLikeLabel || isInFilterArea);
+        
+        if (result) {
+            console.log(`[WhatsAppBusiness] ✅ Elemento clickeable detectado:`, {
+                element: element,
+                tagName: element.tagName,
+                role: element.getAttribute('role'),
+                className: element.className,
+                textContent: element.textContent?.trim()?.substring(0, 50),
+                isButton,
+                hasButtonRole,
+                hasPointerCursor,
+                isInFilterArea
+            });
+        }
+        
+        return result;
+    }
+    
+    isInWhatsAppFilterArea(element) {
+        // Verificar si el elemento está en el área de filtros de WhatsApp Business
+        let current = element;
+        let maxLevels = 10;
+        
+        while (current && maxLevels > 0) {
+            // Buscar contenedores típicos de WhatsApp Business
+            if (current.getAttribute && (
+                current.getAttribute('data-testid')?.includes('filter') ||
+                current.getAttribute('data-testid')?.includes('label') ||
+                current.getAttribute('data-testid')?.includes('chat-list') ||
+                current.getAttribute('data-testid')?.includes('side') ||
+                current.className?.includes('filter') ||
+                current.className?.includes('sidebar') ||
+                current.className?.includes('label') ||
+                current.className?.includes('chat-list')
+            )) {
+                return true;
+            }
+            
+            current = current.parentElement;
+            maxLevels--;
+        }
+        
+        return false;
+    }
+    
+    updateLabelMapping() {
+        // Mapear etiquetas del CRM con las de WhatsApp Business
+        this.labelMapping.clear();
+        
+        // Mapeo automático por nombre similar
+        this.whatsappLabels.forEach((whatsappLabel, key) => {
+            this.labelMapping.set(key, whatsappLabel);
+        });
+        
+        console.log('[WhatsAppBusiness] Mapeo actualizado:', this.labelMapping);
+    }
+    
+    async clickWhatsAppLabel(labelName) {
+        try {
+            const normalizedName = labelName.toLowerCase();
+            const whatsappLabel = this.labelMapping.get(normalizedName);
+            
+            if (!whatsappLabel) {
+                console.log(`[WhatsAppBusiness] ❌ Etiqueta "${labelName}" no encontrada en WhatsApp Business`);
+                console.log('[WhatsAppBusiness] 📋 Etiquetas disponibles:', Array.from(this.labelMapping.keys()));
+                return false;
+            }
+            
+            console.log(`[WhatsAppBusiness] 🎯 Intentando hacer click en etiqueta: ${labelName}`);
+            console.log('[WhatsAppBusiness] 🔍 Elemento encontrado:', whatsappLabel.element);
+            console.log('[WhatsAppBusiness] 📏 Elemento conectado:', whatsappLabel.element?.isConnected);
+            console.log('[WhatsAppBusiness] 🏷️ Tag name:', whatsappLabel.element?.tagName);
+            console.log('[WhatsAppBusiness] 📝 Text content:', whatsappLabel.element?.textContent?.trim());
+            
+            // Intentar hacer click en el elemento
+            if (whatsappLabel.element && whatsappLabel.element.isConnected) {
+                const element = whatsappLabel.element;
+                
+                // Destacar visualmente el elemento que vamos a clickear
+                const originalStyle = element.style.cssText;
+                element.style.cssText += 'border: 3px solid red !important; background: yellow !important;';
+                
+                // Scroll al elemento si es necesario
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                console.log('[WhatsAppBusiness] 📜 Scroll realizado al elemento');
+                
+                // Esperar un poco para el scroll
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Intentar múltiples métodos de click
+                console.log('[WhatsAppBusiness] 🖱️ Intentando método 1: MouseEvent click');
+                const success1 = await this.tryMouseEventClick(element);
+                
+                if (!success1) {
+                    console.log('[WhatsAppBusiness] 🖱️ Intentando método 2: Click directo');
+                    const success2 = await this.tryDirectClick(element);
+                    
+                    if (!success2) {
+                        console.log('[WhatsAppBusiness] 🖱️ Intentando método 3: Focus + Enter');
+                        const success3 = await this.tryKeyboardClick(element);
+                        
+                        if (!success3) {
+                            console.log('[WhatsAppBusiness] 🖱️ Intentando método 4: Dispatch múltiples eventos');
+                            await this.tryMultipleEvents(element);
+                        }
+                    }
+                }
+                
+                // Restaurar estilo original después de un momento
+                setTimeout(() => {
+                    element.style.cssText = originalStyle;
+                }, 2000);
+                
+                console.log(`[WhatsAppBusiness] ✅ Todos los métodos de click intentados en "${labelName}"`);
+                return true;
+            } else {
+                console.log('[WhatsAppBusiness] ❌ Elemento no encontrado o desconectado, re-detectando...');
+                await this.detectWhatsAppLabels();
+                return false;
+            }
+        } catch (error) {
+            console.error('[WhatsAppBusiness] ❌ Error haciendo click en etiqueta:', error);
+            return false;
+        }
+    }
+    
+    async tryMouseEventClick(element) {
+        try {
+            console.log('[WhatsAppBusiness] 🖱️ Probando MouseEvent...');
+            
+            // Eventos de mouse completos
+            const events = ['mousedown', 'mouseup', 'click'];
+            
+            for (const eventType of events) {
+                const event = new MouseEvent(eventType, {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    button: 0,
+                    buttons: 1,
+                    clientX: element.getBoundingClientRect().left + element.offsetWidth / 2,
+                    clientY: element.getBoundingClientRect().top + element.offsetHeight / 2
+                });
+                
+                const result = element.dispatchEvent(event);
+                console.log(`[WhatsAppBusiness] 📤 ${eventType} dispatched:`, result);
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('[WhatsAppBusiness] ❌ Error en MouseEvent:', error);
+            return false;
+        }
+    }
+    
+    async tryDirectClick(element) {
+        try {
+            console.log('[WhatsAppBusiness] 🖱️ Probando click directo...');
+            
+            if (element.click && typeof element.click === 'function') {
+                element.click();
+                console.log('[WhatsAppBusiness] ✅ Click directo ejecutado');
+                return true;
+            } else {
+                console.log('[WhatsAppBusiness] ❌ Método click no disponible');
+                return false;
+            }
+        } catch (error) {
+            console.error('[WhatsAppBusiness] ❌ Error en click directo:', error);
+            return false;
+        }
+    }
+    
+    async tryKeyboardClick(element) {
+        try {
+            console.log('[WhatsAppBusiness] ⌨️ Probando focus + Enter...');
+            
+            // Hacer focus
+            element.focus();
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Simular Enter
+            const enterEvent = new KeyboardEvent('keydown', {
+                bubbles: true,
+                cancelable: true,
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13
+            });
+            
+            element.dispatchEvent(enterEvent);
+            console.log('[WhatsAppBusiness] ✅ Enter simulado');
+            
+            // También Space
+            const spaceEvent = new KeyboardEvent('keydown', {
+                bubbles: true,
+                cancelable: true,
+                key: ' ',
+                code: 'Space',
+                keyCode: 32
+            });
+            
+            element.dispatchEvent(spaceEvent);
+            console.log('[WhatsAppBusiness] ✅ Space simulado');
+            
+            return true;
+        } catch (error) {
+            console.error('[WhatsAppBusiness] ❌ Error en keyboard click:', error);
+            return false;
+        }
+    }
+    
+    async tryMultipleEvents(element) {
+        try {
+            console.log('[WhatsAppBusiness] 🎪 Probando múltiples eventos...');
+            
+            const events = [
+                'pointerdown',
+                'pointerup', 
+                'touchstart',
+                'touchend',
+                'mouseenter',
+                'mouseover',
+                'mousedown',
+                'mouseup',
+                'click',
+                'change',
+                'input'
+            ];
+            
+            for (const eventType of events) {
+                try {
+                    let event;
+                    if (eventType.startsWith('pointer')) {
+                        event = new PointerEvent(eventType, { bubbles: true, cancelable: true });
+                    } else if (eventType.startsWith('touch')) {
+                        event = new TouchEvent(eventType, { bubbles: true, cancelable: true });
+                    } else {
+                        event = new Event(eventType, { bubbles: true, cancelable: true });
+                    }
+                    
+                    element.dispatchEvent(event);
+                    console.log(`[WhatsAppBusiness] 📤 ${eventType} enviado`);
+                    await new Promise(resolve => setTimeout(resolve, 25));
+                } catch (e) {
+                    // Evento no soportado, continuar
+                }
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('[WhatsAppBusiness] ❌ Error en múltiples eventos:', error);
+            return false;
+        }
+    }
+    
+    getWhatsAppLabelCount(labelName) {
+        const normalizedName = labelName.toLowerCase();
+        const whatsappLabel = this.labelMapping.get(normalizedName);
+        return whatsappLabel ? whatsappLabel.count : 0;
+    }
+    
+    getAllWhatsAppCounts() {
+        const counts = {};
+        this.labelMapping.forEach((whatsappLabel, crmLabel) => {
+            counts[crmLabel] = whatsappLabel.count;
+        });
+        return counts;
+    }
+    
+    setupDOMObserver() {
+        // Observar cambios en WhatsApp para detectar nuevas etiquetas
+        const observer = new MutationObserver((mutations) => {
+            let shouldRedetect = false;
+            
+            mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) { // Element node
+                        // Si se agregan elementos que pueden contener etiquetas
+                        if (node.querySelector && (
+                            node.querySelector('[data-testid*="label"]') ||
+                            node.querySelector('[data-icon="label"]') ||
+                            node.textContent?.includes('Workshop') ||
+                            node.textContent?.includes('Venta') ||
+                            node.textContent?.includes('Soporte')
+                        )) {
+                            shouldRedetect = true;
+                        }
+                    }
+                });
+            });
+            
+            if (shouldRedetect) {
+                setTimeout(() => this.detectWhatsAppLabels(), 1000);
+            }
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+}
+
 // Clase principal de WhatsApp CRM
 class WhatsAppCRM {
     constructor() {
@@ -435,6 +1430,11 @@ class WhatsAppCRM {
         this.authService = new AuthService();
         this.isAuthenticated = false;
         this.currentUser = null;
+        
+        // Inicializar módulos
+        this.tagsManager = new TagsManager(this.authService);
+        this.filterManager = new FilterManager(this.tagsManager, this);
+        this.whatsappIntegration = new WhatsAppBusinessIntegration();
         
         // Inicializar datos con valores por defecto
         this.contacts = this.loadData('contacts', []);
@@ -498,6 +1498,20 @@ class WhatsAppCRM {
             
             console.log('✅ Usuario autenticado, continuando inicialización...');
             
+            // Inicializar módulos
+            await this.tagsManager.init();
+            this.filterManager.init();
+            
+            // Aplicar filtrado inicial
+            this.filterManager.applyFilters();
+            
+            // Programar actualización periódica de contadores de WhatsApp Business
+            setInterval(() => {
+                if (this.whatsappIntegration) {
+                    this.updateTopbarCounts();
+                }
+            }, 10000); // Cada 10 segundos
+            
             // Crear datos de ejemplo si no existen
             this.createSampleDataIfEmpty();
             this.migrateOldStatusToTags();
@@ -516,6 +1530,9 @@ class WhatsAppCRM {
             
             // Iniciar sincronización automática
             this.startPeriodicSync();
+            
+            // Escuchar eventos de los módulos
+            this.bindModuleEvents();
             
             console.log('✅ CRM Professional iniciado correctamente');
             console.log('📊 Stats:', {
@@ -536,6 +1553,9 @@ class WhatsAppCRM {
     waitForHTMLElements() {
         const criticalElements = [
             'sidebarToggle',
+            'topbarSection',
+            'topbarScroll',
+            'addTopbarBtn',
             'addTagBtn', 
             'tagsContainer',
             'addTemplateBtn',
@@ -554,6 +1574,82 @@ class WhatsAppCRM {
         
         console.log('✅ Todos los elementos críticos encontrados');
         return true;
+    }
+
+    bindModuleEvents() {
+        // Escuchar eventos del módulo de filtrado
+        document.addEventListener('contactsFiltered', (e) => {
+            console.log('[CRM] Contactos filtrados:', e.detail.contacts.length);
+            this.handleContactsFiltered(e.detail);
+        });
+
+        // Escuchar eventos para mostrar modal de etiquetas
+        document.addEventListener('showTagModal', () => {
+            this.showTagModal();
+        });
+    }
+
+    handleContactsFiltered(detail) {
+        // Actualizar la vista según el filtro aplicado
+        const { contacts, filter } = detail;
+        
+        // Actualizar la lista de contactos con los filtrados
+        this.updateContactsList(contacts);
+        
+        // Actualizar contadores en la topbar
+        this.updateTopbarCounts();
+        
+        // Actualizar la vista actual según la sección
+        switch (this.currentSection) {
+            case 'contacts':
+                this.loadContacts(contacts);
+                break;
+            case 'kanban':
+                this.loadKanban();
+                break;
+            case 'dashboard':
+                this.updateDashboard();
+                break;
+        }
+    }
+
+    updateTopbarCounts() {
+        // Actualizar contadores en la topbar
+        const topbarItems = document.querySelectorAll('.topbar-item');
+        topbarItems.forEach(item => {
+            const tagId = item.dataset.tagId;
+            const countElement = item.querySelector('.topbar-count');
+            if (countElement) {
+                const count = this.getTagCount(tagId);
+                countElement.textContent = count;
+            }
+        });
+    }
+
+    getTagCount(tagId) {
+        // Intentar obtener contadores de WhatsApp Business primero
+        if (this.whatsappIntegration) {
+            const labelName = tagId === 'all' ? 'todos' : 
+                             tagId === 'unread' ? 'no leídos' : 
+                             tagId === 'groups' ? 'grupos' : 
+                             this.tags.find(t => t.id === tagId)?.name?.toLowerCase() || tagId;
+            
+            const whatsappCount = this.whatsappIntegration.getWhatsAppLabelCount(labelName);
+            if (whatsappCount > 0) {
+                return whatsappCount;
+            }
+        }
+        
+        // Fallback a contadores del CRM
+        if (tagId === 'all') {
+            return this.contacts.length;
+        } else if (tagId === 'unread') {
+            return this.contacts.filter(c => c.unread).length;
+        } else if (tagId === 'groups') {
+            return this.contacts.filter(c => c.isGroup).length;
+        } else {
+            return this.contacts.filter(c => c.tags && c.tags.includes(tagId)).length;
+        }
     }
 
     // ===========================================
@@ -678,7 +1774,7 @@ class WhatsAppCRM {
     showAuthSection() {
         // Ocultar toda la interfaz principal
         const mainSections = [
-            'tabsSection',
+            'topbarSection',
             'sidebar-nav',
             'sidebar-content'
         ];
@@ -713,7 +1809,7 @@ class WhatsAppCRM {
         
         // Mostrar interfaz principal
         const mainSections = [
-            'tabsSection',
+            'topbarSection',
             'sidebar-nav',
             'sidebar-content'
         ];
@@ -727,6 +1823,11 @@ class WhatsAppCRM {
         
         // Actualizar información del usuario
         this.updateUserInfo();
+        
+        // Inicializar topbar si no se ha hecho
+        if (this.tagsManager) {
+            this.tagsManager.updateTopbar();
+        }
     }
 
     showLoginForm() {
@@ -1186,6 +2287,15 @@ class WhatsAppCRM {
         if (sidebarToggle) {
             sidebarToggle.addEventListener('click', () => this.toggleSidebar());
         }
+
+        // Botón flotante para expandir sidebar colapsado
+        const sidebarExpandBtn = document.getElementById('sidebarExpandBtn');
+        if (sidebarExpandBtn) {
+            sidebarExpandBtn.addEventListener('click', () => this.toggleSidebar());
+        }
+
+        // Topbar events (manejados por TagsManager)
+        console.log('✅ Eventos de topbar vinculados por TagsManager');
     }
 
     bindModalEvents() {
@@ -1247,6 +2357,9 @@ class WhatsAppCRM {
         this.loadSettings();
         this.updateDashboard();
         
+        // Actualizar topbar con contadores reales
+        this.updateTopbarCounts();
+        
         // Crear datos de muestra si está vacío
         this.createSampleDataIfEmpty();
     }
@@ -1301,6 +2414,8 @@ class WhatsAppCRM {
                 case 'contacts':
                     this.loadContacts();
                     this.ensureAddContactBtnContacts();
+                    // Aplicar filtros actuales cuando se carga la sección
+                    this.filterManager.applyFilters();
                     break;
                 case 'tags':
                     this.loadTags();
@@ -1599,11 +2714,14 @@ class WhatsAppCRM {
     // MÉTODOS DE CONTACTOS
     // ===========================================
 
-    loadContacts() {
+    updateContactsList(contactsToShow = null) {
         const contactsList = document.getElementById('contactsList');
         if (!contactsList) return;
         
-        if (this.contacts.length === 0) {
+        // Usar contactos filtrados si se proporcionan, si no, todos los contactos
+        const contacts = contactsToShow || this.contacts;
+        
+        if (contacts.length === 0) {
             contactsList.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon">👥</div>
@@ -1612,7 +2730,7 @@ class WhatsAppCRM {
                 </div>
             `;
         } else {
-            contactsList.innerHTML = this.contacts.map(contact => `
+            contactsList.innerHTML = contacts.map(contact => `
                 <div class="contact-item">
                     <div class="contact-avatar">${this.getUserInitials(contact.name)}</div>
                     <div class="contact-info">
@@ -1632,6 +2750,11 @@ class WhatsAppCRM {
                 </div>
             `).join('');
         }
+    }
+
+    loadContacts() {
+        // Delegar a updateContactsList para mantener consistencia
+        this.updateContactsList();
     }
 
     importContacts() {
@@ -1847,7 +2970,7 @@ class WhatsAppCRM {
         }, 300);
     }
 
-    saveTag() {
+    async saveTag() {
         const nameInput = document.getElementById('tagName');
         const colorInput = document.getElementById('tagColor');
         const descriptionInput = document.getElementById('tagDescription');
@@ -1856,7 +2979,7 @@ class WhatsAppCRM {
             name: nameInput.value.trim(),
             color: colorInput.value,
             description: descriptionInput.value.trim(),
-            createdAt: new Date().toISOString()
+            created_at: new Date().toISOString()
         };
         
         if (!tagData.name) {
@@ -1864,16 +2987,24 @@ class WhatsAppCRM {
             return;
         }
         
-        // Generar ID único
-        tagData.id = 'tag_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        // Usar TagsManager para crear la etiqueta
+        const newTag = await this.tagsManager.createTag(tagData);
         
-        this.tags.push(tagData);
-        this.saveData('tags', this.tags);
-        
-        this.closeTagModal();
-        this.showNotification('Etiqueta guardada exitosamente', 'success');
-        this.loadTags();
-        this.updateDashboard();
+        if (newTag) {
+            this.closeTagModal();
+            this.showNotification('Etiqueta guardada exitosamente', 'success');
+            
+            // Actualizar datos locales
+            this.tags = this.tagsManager.getTags();
+            this.saveData('tags', this.tags);
+            
+            // Actualizar vistas
+            this.loadTags();
+            this.updateDashboard();
+            this.updateTopbarCounts();
+        } else {
+            this.showNotification('Error al guardar la etiqueta', 'error');
+        }
     }
 
     // ===========================================
@@ -2155,7 +3286,6 @@ class WhatsAppCRM {
         try {
             // El contenedor principal del sidebar tiene clase 'wa-crm-sidebar'
             const sidebar = document.getElementById('whatsapp-crm-sidebar') || document.querySelector('.wa-crm-sidebar');
-            const whatsappApp = document.getElementById('app');
 
             if (!sidebar) {
                 console.error('[toggleSidebar] Sidebar element not found');
@@ -2164,24 +3294,7 @@ class WhatsAppCRM {
 
             const isCollapsed = sidebar.classList.toggle('collapsed');
             
-            // Ajustar el ancho del sidebar y WhatsApp
-            if (isCollapsed) {
-                // Sidebar contraído
-                sidebar.style.width = '60px';
-                if (whatsappApp) {
-                    whatsappApp.style.marginLeft = '60px';
-                    whatsappApp.style.width = 'calc(100vw - 60px)';
-                }
-            } else {
-                // Sidebar expandido
-                sidebar.style.width = '380px';
-                if (whatsappApp) {
-                    whatsappApp.style.marginLeft = '380px';
-                    whatsappApp.style.width = 'calc(100vw - 380px)';
-                }
-            }
-
-            // Actualizar el icono
+            // Actualizar el icono del botón toggle
             const toggleIcon = document.querySelector('#sidebarToggle .toggle-icon');
             if (toggleIcon) {
                 toggleIcon.textContent = isCollapsed ? '⟩' : '⟨';
@@ -2201,7 +3314,7 @@ class WhatsAppCRM {
                 window.dispatchEvent(new Event('resize'));
             }, 300);
             
-            console.log(`📐 Sidebar ${isCollapsed ? 'contraído' : 'expandido'} - Ancho: ${isCollapsed ? '60px' : '380px'}`);
+            console.log(`📐 Sidebar ${isCollapsed ? 'contraído' : 'expandido'}`);
             
         } catch (error) {
             console.error('[toggleSidebar] Error:', error);
@@ -2212,25 +3325,18 @@ class WhatsAppCRM {
         try {
             const isCollapsed = localStorage.getItem('sidebarCollapsed') === '1';
             const sidebar = document.getElementById('whatsapp-crm-sidebar') || document.querySelector('.wa-crm-sidebar');
-            const whatsappApp = document.getElementById('app');
             
             if (sidebar && isCollapsed) {
                 sidebar.classList.add('collapsed');
-                sidebar.style.width = '60px';
-                
-                if (whatsappApp) {
-                    whatsappApp.style.marginLeft = '60px';
-                    whatsappApp.style.width = 'calc(100vw - 60px)';
-                }
                 
                 const toggleIcon = document.querySelector('#sidebarToggle .toggle-icon');
                 if (toggleIcon) {
                     toggleIcon.textContent = '⟩';
                 }
                 
-                console.log('📐 Estado del sidebar restaurado: contraído (60px)');
+                console.log('📐 Estado del sidebar restaurado: contraído');
             } else if (sidebar) {
-                console.log('📐 Estado del sidebar restaurado: expandido (380px)');
+                console.log('📐 Estado del sidebar restaurado: expandido');
             }
         } catch (error) {
             console.error('[restoreSidebarState] Error:', error);
@@ -2430,12 +3536,163 @@ class WhatsAppCRM {
 function initWhatsAppCRM() {
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            new WhatsAppCRM();
+            window.whatsappCRM = new WhatsAppCRM();
+            console.log('[WhatsApp CRM] Instancia global creada:', !!window.whatsappCRM);
         });
     } else {
-        new WhatsAppCRM();
+        window.whatsappCRM = new WhatsAppCRM();
+        console.log('[WhatsApp CRM] Instancia global creada:', !!window.whatsappCRM);
     }
 }
 
+// Hacer función disponible globalmente para debugging
+window.initWhatsAppCRM = initWhatsAppCRM;
+
 // Inicializar automáticamente
 initWhatsAppCRM(); 
+
+// Funciones de debug para probar la integración
+window.debugWhatsAppIntegration = function() {
+    console.log('=== DEBUG WHATSAPP BUSINESS INTEGRATION ===');
+    
+    if (!window.whatsappCRM) {
+        console.log('❌ CRM no está inicializado');
+        return;
+    }
+    
+    const integration = window.whatsappCRM.whatsappIntegration;
+    if (!integration) {
+        console.log('❌ Integración de WhatsApp Business no está inicializada');
+        return;
+    }
+    
+    console.log('✅ Integración inicializada');
+    console.log('📊 Etiquetas detectadas en WhatsApp Business:', integration.whatsappLabels);
+    console.log('🔗 Mapeo de etiquetas:', integration.labelMapping);
+    console.log('📈 Contadores de WhatsApp Business:', integration.getAllWhatsAppCounts());
+    
+    // Detectar etiquetas manualmente
+    console.log('🔍 Re-detectando etiquetas...');
+    integration.detectWhatsAppLabels();
+    
+    // Mostrar elementos detectados con más detalle
+    console.log('🔍 Análisis detallado de elementos:');
+    integration.labelMapping.forEach((label, key) => {
+        const element = label.element;
+        console.log(`\n🏷️ ${key.toUpperCase()}:`, {
+            element: element,
+            tagName: element?.tagName,
+            className: element?.className,
+            role: element?.getAttribute('role'),
+            ariaLabel: element?.getAttribute('aria-label'),
+            dataTestId: element?.getAttribute('data-testid'),
+            textContent: element?.textContent?.trim(),
+            isConnected: element?.isConnected,
+            isVisible: element?.offsetWidth > 0 && element?.offsetHeight > 0,
+            hasClickHandler: element?.onclick !== null,
+            cursor: element ? window.getComputedStyle(element).cursor : 'unknown',
+            boundingRect: element?.getBoundingClientRect(),
+            isClickable: integration.isClickableLabel(element)
+        });
+        
+        // Mostrar jerarquía de elementos padre
+        if (element) {
+            console.log(`🌳 Jerarquía de ${key}:`);
+            let current = element;
+            let level = 0;
+            while (current && level < 3) {
+                console.log(`  ${'  '.repeat(level)}${current.tagName}${current.className ? '.' + current.className.split(' ')[0] : ''}${current.id ? '#' + current.id : ''}`);
+                current = current.parentElement;
+                level++;
+            }
+        }
+    });
+};
+
+window.testWhatsAppLabelClick = function(labelName) {
+    console.log(`\n🧪 === PRUEBA DE CLICK: ${labelName.toUpperCase()} ===`);
+    
+    if (!window.whatsappCRM?.whatsappIntegration) {
+        console.log('❌ Integración no disponible');
+        return;
+    }
+    
+    const integration = window.whatsappCRM.whatsappIntegration;
+    const normalizedName = labelName.toLowerCase();
+    const whatsappLabel = integration.labelMapping.get(normalizedName);
+    
+    if (!whatsappLabel) {
+        console.log('❌ Etiqueta no encontrada en el mapeo');
+        console.log('📋 Etiquetas disponibles:', Array.from(integration.labelMapping.keys()));
+        return;
+    }
+    
+    console.log('🎯 Información del objetivo:');
+    console.log('  - Elemento:', whatsappLabel.element);
+    console.log('  - Es clickeable:', integration.isClickableLabel(whatsappLabel.element));
+    console.log('  - Está conectado:', whatsappLabel.element?.isConnected);
+    console.log('  - Es visible:', whatsappLabel.element?.offsetWidth > 0 && whatsappLabel.element?.offsetHeight > 0);
+    
+    // Ejecutar el click
+    window.whatsappCRM.whatsappIntegration.clickWhatsAppLabel(labelName);
+};
+
+// Función para buscar específicamente en WhatsApp Business
+window.scanWhatsAppElements = function() {
+    console.log('🔍 === ESCANEO COMPLETO DE WHATSAPP BUSINESS ===');
+    
+    // Buscar elementos por diferentes criterios
+    const searches = [
+        {
+            name: 'Botones con aria-label',
+            selector: 'button[aria-label]',
+            filter: el => el.getAttribute('aria-label').toLowerCase().includes('todos') || 
+                         el.getAttribute('aria-label').toLowerCase().includes('no leídos') ||
+                         el.getAttribute('aria-label').toLowerCase().includes('favoritos')
+        },
+        {
+            name: 'Divs con role="button"',
+            selector: 'div[role="button"]',
+            filter: el => el.textContent.includes('Todos') || el.textContent.includes('No leídos')
+        },
+        {
+            name: 'Elementos con data-testid de filtro',
+            selector: '[data-testid*="filter"], [data-testid*="label"]',
+            filter: () => true
+        },
+        {
+            name: 'Elementos que contienen texto de filtros',
+            selector: '*',
+            filter: el => {
+                const text = el.textContent?.trim();
+                return text === 'Todos' || text === 'No leídos' || text === 'Favoritos' || text === 'Grupos';
+            }
+        }
+    ];
+    
+    searches.forEach(search => {
+        console.log(`\n📋 ${search.name}:`);
+        try {
+            const elements = Array.from(document.querySelectorAll(search.selector)).filter(search.filter);
+            elements.slice(0, 5).forEach((el, index) => {
+                console.log(`  ${index + 1}.`, {
+                    element: el,
+                    tagName: el.tagName,
+                    className: el.className,
+                    textContent: el.textContent?.trim()?.substring(0, 30),
+                    ariaLabel: el.getAttribute('aria-label'),
+                    isClickable: el.onclick !== null || el.getAttribute('role') === 'button' || el.tagName === 'BUTTON',
+                    cursor: window.getComputedStyle(el).cursor
+                });
+            });
+            console.log(`  Total encontrados: ${elements.length}`);
+        } catch (e) {
+            console.log(`  Error: ${e.message}`);
+        }
+    });
+};
+
+console.log('🛠️ Funciones de debug mejoradas disponibles:');
+console.log('- debugWhatsAppIntegration() - Análisis completo de la integración');
+console.log('- testWhatsAppLabelClick("nombreEtiqueta") - Prueba detallada de click');
+console.log('- scanWhatsAppElements() - Escaneo completo de elementos de WhatsApp Business');

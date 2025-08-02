@@ -1,78 +1,59 @@
 /**
- * Popup JavaScript - WhatsApp CRM Extension
- * Maneja la lógica del popup de la extensión
+ * Popup Control Center - WhatsApp CRM Extension
+ * Interfaz minimalista que se conecta al CRM principal del sidebar
  */
 
-class PopupManager {
+class PopupControlCenter {
   constructor() {
-    this.isOnline = false;
-    this.currentUser = null;
-    this.stats = { tags: 0, templates: 0, chats: 0 };
-    this.authService = null;
+    this.sidebarState = null;
+    this.refreshInterval = null;
     
     this.init();
   }
 
   async init() {
-    console.log('[Popup] Iniciando Popup Manager...');
+    console.log('[Popup Control Center] Iniciando...');
     
-    // Configurar event listeners primero
+    // Configurar event listeners
     this.setupEventListeners();
     
-    // Mostrar interfaz de login por defecto
-    this.showLoginInterface();
+    // Verificar estado inicial
+    await this.checkSidebarState();
     
-    // Verificar estado de WhatsApp Web
-    this.checkWhatsAppStatus();
-    
-    // Intentar inicializar AuthService (opcional)
-    this.initAuthService();
-  }
-
-  async initAuthService() {
-    try {
-      // Modo demo simple
-      this.authService = {
-        isUserAuthenticated: () => false,
-        getCurrentUser: () => null,
-        login: async (email, password) => {
-          return { success: true, user: { email, user_metadata: { name: email.split('@')[0] } } };
-        },
-        logout: async () => {
-          this.currentUser = null;
-          this.showLoginInterface();
-        }
-      };
-      
-      console.log('[Popup] AuthService inicializado (modo demo)');
-    } catch (error) {
-      console.error('[Popup] Error inicializando AuthService:', error);
-    }
+    // Configurar refresco automático cada 5 segundos
+    this.startAutoRefresh();
   }
 
   setupEventListeners() {
-    // Formulario de login
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-      loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        this.handleLogin();
-      });
-    }
-
-    // Modo offline
-    const offlineModeBtn = document.getElementById('offlineModeBtn');
-    if (offlineModeBtn) {
-      offlineModeBtn.addEventListener('click', () => {
-        this.handleOfflineMode();
-      });
-    }
-
     // Abrir WhatsApp Web
     const openWhatsAppBtn = document.getElementById('openWhatsAppBtn');
     if (openWhatsAppBtn) {
       openWhatsAppBtn.addEventListener('click', () => {
         this.openWhatsApp();
+      });
+    }
+
+    // Abrir/mostrar CRM
+    const showCrmBtn = document.getElementById('showCrmBtn');
+    if (showCrmBtn) {
+      showCrmBtn.addEventListener('click', () => {
+        this.showCRM();
+      });
+    }
+
+    // Toggle CRM principal
+    const toggleCrmBtn = document.getElementById('toggleCrmBtn');
+    if (toggleCrmBtn) {
+      toggleCrmBtn.addEventListener('click', () => {
+        this.toggleCRM();
+      });
+    }
+
+    // Ir a WhatsApp Web
+    const focusWhatsAppBtn = document.getElementById('focusWhatsAppBtn');
+    if (focusWhatsAppBtn) {
+      focusWhatsAppBtn.addEventListener('click', () => {
+        this.focusWhatsApp();
       });
     }
 
@@ -83,311 +64,267 @@ class PopupManager {
         this.syncData();
       });
     }
+  }
 
-    // Exportar datos
-    const exportDataBtn = document.getElementById('exportDataBtn');
-    if (exportDataBtn) {
-      exportDataBtn.addEventListener('click', () => {
-        this.exportData();
-      });
-    }
-
-    // Cerrar sesión
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
-        this.handleLogout();
-      });
-    }
-
-    // Configuraciones
-    const autoSyncChk = document.getElementById('autoSyncChk');
-    if (autoSyncChk) {
-      autoSyncChk.addEventListener('change', (e) => {
-        this.updateSetting('autoSync', e.target.checked);
-      });
-    }
-
-    const notificationsChk = document.getElementById('notificationsChk');
-    if (notificationsChk) {
-      notificationsChk.addEventListener('change', (e) => {
-        this.updateSetting('notifications', e.target.checked);
-      });
-    }
-
-    // Enlaces del footer
-    const helpBtn = document.getElementById('helpBtn');
-    if (helpBtn) {
-      helpBtn.addEventListener('click', () => {
-        this.openHelp();
-      });
-    }
-
-    const settingsBtn = document.getElementById('settingsBtn');
-    if (settingsBtn) {
-      settingsBtn.addEventListener('click', () => {
-        this.openSettings();
-      });
+  async checkSidebarState() {
+    try {
+      this.showLoading(true);
+      this.updateConnectionStatus('loading', 'Verificando...', 'Conectando con WhatsApp Web');
+      
+      console.log('[Popup] === DEBUGGING POPUP STATE CHECK ===');
+      console.log('[Popup] Enviando mensaje getSidebarState...');
+      
+      const response = await this.sendMessage({ action: 'getSidebarState' });
+      console.log('[Popup] Respuesta completa recibida:', JSON.stringify(response, null, 2));
+      
+      this.sidebarState = response;
+      
+      console.log('[Popup] Estado almacenado:', this.sidebarState);
+      console.log('[Popup] whatsappOpen:', this.sidebarState?.whatsappOpen);
+      console.log('[Popup] isAuthenticated:', this.sidebarState?.isAuthenticated);
+      console.log('[Popup] currentUser:', this.sidebarState?.currentUser);
+      
+      this.updateInterface();
+      
+    } catch (error) {
+      console.error('[Popup] Error verificando estado:', error);
+      this.showConnectionError();
+    } finally {
+      this.showLoading(false);
     }
   }
 
-  showUserInterface() {
-    console.log('[Popup] Mostrando interfaz de usuario');
-    
-    // Ocultar login, mostrar interfaz de usuario
-    this.hideElement('loginSection');
-    this.showElement('userSection');
-    this.showElement('statsSection');
-    this.showElement('actionsSection');
-    this.showElement('settingsSection');
-    this.showElement('logoutBtn');
+  updateInterface() {
+    if (!this.sidebarState || !this.sidebarState.success) {
+      this.showConnectionError();
+      return;
+    }
 
+    // WhatsApp Web no está abierto
+    if (this.sidebarState.whatsappOpen === false) {
+      this.showWhatsAppNeeded();
+      return;
+    }
+
+    // WhatsApp abierto pero CRM no autenticado
+    if (!this.sidebarState.isAuthenticated) {
+      this.showAuthNeeded();
+      return;
+    }
+
+    // Todo funcionando - mostrar interfaz completa
+    this.showCRMActive();
+  }
+
+  showWhatsAppNeeded() {
+    this.updateConnectionStatus('offline', 'WhatsApp Web cerrado', 'Necesitas abrir WhatsApp Web');
+    this.hideAllSections();
+    this.showElement('whatsappNeeded');
+  }
+
+  showAuthNeeded() {
+    this.updateConnectionStatus('loading', 'WhatsApp Web abierto', 'Inicia sesión en el CRM');
+    this.hideAllSections();
+    this.showElement('authNeeded');
+  }
+
+  showCRMActive() {
+    this.updateConnectionStatus('online', 'CRM conectado', 'Todo funcionando correctamente');
+    this.hideAllSections();
+    this.showElement('crmActive');
+    
     // Actualizar información del usuario
-    const userName = document.getElementById('userName');
-    const userPlan = document.getElementById('userPlan');
+    this.updateUserInfo();
     
-    if (userName && this.currentUser) {
-      userName.textContent = this.currentUser.user_metadata?.name || this.currentUser.email;
-    }
+    // Actualizar estadísticas
+    this.updateStats();
     
-    if (userPlan && this.currentUser) {
-      const plan = this.currentUser.user_metadata?.plan || 'free';
-      userPlan.textContent = `Plan ${plan.charAt(0).toUpperCase() + plan.slice(1)}`;
-    }
+    // Actualizar texto del botón toggle
+    this.updateToggleButton();
   }
 
-  showLoginInterface() {
-    console.log('[Popup] Mostrando interfaz de login');
-    
-    // Mostrar login, ocultar interfaz de usuario
-    this.showElement('loginSection');
-    this.hideElement('userSection');
-    this.hideElement('statsSection');
-    this.hideElement('actionsSection');
-    this.hideElement('settingsSection');
-    this.hideElement('logoutBtn');
+  showConnectionError() {
+    this.updateConnectionStatus('offline', 'Error de conexión', 'No se puede conectar con WhatsApp Web');
+    this.hideAllSections();
+    this.showElement('whatsappNeeded');
   }
 
-  async handleLogin() {
-    try {
-      this.showLoading(true);
-      
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      
-      if (!email || !password) {
-        this.showMessage('Por favor completa todos los campos', 'error');
-        return;
-      }
-      
-      console.log('[Popup] Intentando login con:', email);
-      
-      // Intentar login real o demo
-      const result = await this.authService.login(email, password);
-      
-      if (result.success) {
-        this.currentUser = result.user;
-        this.showUserInterface();
-        this.setOnlineStatus(true);
-        this.showMessage('¡Bienvenido!', 'success');
-        
-        // Cargar datos del usuario
-        await this.loadUserData();
-      } else {
-        this.showMessage(result.error || 'Error al iniciar sesión', 'error');
-      }
-      
-    } catch (error) {
-      console.error('[Popup] Error en login:', error);
-      this.showMessage('Error al iniciar sesión', 'error');
-    } finally {
-      this.showLoading(false);
-    }
-  }
-
-  async handleOfflineMode() {
-    try {
-      this.showLoading(true);
-      
-      console.log('[Popup] Activando modo offline');
-      
-      // Crear usuario temporal
-      this.currentUser = {
-        email: 'usuario@offline.com',
-        user_metadata: { name: 'Usuario Offline', plan: 'free' }
-      };
-      
-      this.showUserInterface();
-      this.setOnlineStatus(false);
-      this.showMessage('Modo offline activado', 'info');
-      
-      // Cargar datos locales
-      await this.loadLocalData();
-      
-    } catch (error) {
-      console.error('[Popup] Error activando modo offline:', error);
-      this.showMessage('Error activando modo offline', 'error');
-    } finally {
-      this.showLoading(false);
-    }
-  }
-
-  async handleLogout() {
-    try {
-      if (this.authService) {
-        await this.authService.logout();
-      }
-      
-      this.currentUser = null;
-      this.showLoginInterface();
-      this.setOnlineStatus(false);
-      this.showMessage('Sesión cerrada', 'info');
-      
-    } catch (error) {
-      console.error('[Popup] Error en logout:', error);
-      this.showMessage('Error cerrando sesión', 'error');
-    }
-  }
-
-  async checkWhatsAppStatus() {
-    try {
-      // Verificar si WhatsApp Web está abierto
-      const tabs = await chrome.tabs.query({ url: 'https://web.whatsapp.com/*' });
-      const isWhatsAppOpen = tabs.length > 0;
-      
-      this.setOnlineStatus(isWhatsAppOpen);
-      
-      if (isWhatsAppOpen) {
-        this.showMessage('WhatsApp Web detectado', 'success');
-      }
-      
-    } catch (error) {
-      console.error('[Popup] Error verificando WhatsApp:', error);
-    }
-  }
-
-  setOnlineStatus(isOnline) {
-    this.isOnline = isOnline;
-    
-    const statusIndicator = document.getElementById('statusIndicator');
+  updateConnectionStatus(status, text, detail) {
+    const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
+    const statusDetail = document.getElementById('statusDetail');
     
-    if (statusIndicator) {
-      statusIndicator.className = `status-indicator ${isOnline ? 'online' : 'offline'}`;
+    if (statusDot) {
+      statusDot.className = `status-dot ${status}`;
     }
     
     if (statusText) {
-      statusText.textContent = isOnline ? 'Conectado' : 'Desconectado';
+      statusText.textContent = text;
+    }
+    
+    if (statusDetail) {
+      statusDetail.textContent = detail;
+    }
+  }
+
+  updateUserInfo() {
+    if (!this.sidebarState.currentUser) return;
+    
+    const userName = document.getElementById('userName');
+    const userPlan = document.getElementById('userPlan');
+    const userAvatar = document.getElementById('userAvatar');
+    
+    if (userName) {
+      userName.textContent = this.sidebarState.currentUser.name || this.sidebarState.currentUser.email;
+    }
+    
+    if (userPlan) {
+      const plan = this.sidebarState.currentUser.plan || 'free';
+      userPlan.textContent = `Plan ${plan.charAt(0).toUpperCase() + plan.slice(1)}`;
+    }
+    
+    if (userAvatar) {
+      // Usar iniciales del nombre
+      const name = this.sidebarState.currentUser.name || this.sidebarState.currentUser.email;
+      const initials = this.getInitials(name);
+      userAvatar.textContent = initials;
     }
   }
 
   updateStats() {
+    if (!this.sidebarState.stats) return;
+    
     const totalTags = document.getElementById('totalTags');
     const totalTemplates = document.getElementById('totalTemplates');
-    const totalChats = document.getElementById('totalChats');
+    const totalContacts = document.getElementById('totalContacts');
     
-    if (totalTags) totalTags.textContent = this.stats.tags;
-    if (totalTemplates) totalTemplates.textContent = this.stats.templates;
-    if (totalChats) totalChats.textContent = this.stats.chats;
+    if (totalTags) {
+      totalTags.textContent = this.sidebarState.stats.tags || 0;
+    }
+    
+    if (totalTemplates) {
+      totalTemplates.textContent = this.sidebarState.stats.templates || 0;
+    }
+    
+    if (totalContacts) {
+      totalContacts.textContent = this.sidebarState.stats.contacts || 0;
+    }
+  }
+
+  updateToggleButton() {
+    const toggleBtn = document.getElementById('toggleCrmBtn');
+    const actionText = toggleBtn?.querySelector('.action-text');
+    
+    if (actionText) {
+      if (this.sidebarState.sidebarVisible) {
+        actionText.textContent = 'Ocultar CRM';
+      } else {
+        actionText.textContent = 'Mostrar CRM';
+      }
+    }
+  }
+
+  hideAllSections() {
+    this.hideElement('whatsappNeeded');
+    this.hideElement('authNeeded');
+    this.hideElement('crmActive');
   }
 
   async openWhatsApp() {
     try {
-      await chrome.tabs.create({ url: 'https://web.whatsapp.com' });
+      this.showMessage('Abriendo WhatsApp Web...', 'info');
+      
+      const response = await this.sendMessage({ action: 'openWhatsApp' });
+      
+      if (response.success) {
+        this.showMessage(response.message, 'success');
+        // Refrescar estado después de un momento
+        setTimeout(() => this.checkSidebarState(), 2000);
+      } else {
+        this.showMessage(response.error || 'Error abriendo WhatsApp Web', 'error');
+      }
     } catch (error) {
       console.error('[Popup] Error abriendo WhatsApp:', error);
       this.showMessage('Error abriendo WhatsApp Web', 'error');
     }
   }
 
+  async showCRM() {
+    // Igual que toggle pero asegura que esté visible
+    await this.toggleCRM(true);
+  }
+
+  async focusWhatsApp() {
+    await this.openWhatsApp();
+  }
+
+  async toggleCRM(forceShow = false) {
+    try {
+      this.showMessage('Cambiando vista del CRM...', 'info');
+      
+      const response = await this.sendMessage({ action: 'toggleSidebar' });
+      
+      if (response.success) {
+        this.showMessage('CRM actualizado', 'success');
+        // Refrescar estado
+        await this.checkSidebarState();
+      } else {
+        this.showMessage(response.error || 'Error cambiando vista del CRM', 'error');
+      }
+    } catch (error) {
+      console.error('[Popup] Error toggle CRM:', error);
+      this.showMessage('Error cambiando vista del CRM', 'error');
+    }
+  }
+
   async syncData() {
     try {
-      this.showLoading(true);
       this.showMessage('Sincronizando datos...', 'info');
       
-      // Simular sincronización
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simular sincronización por ahora
+      setTimeout(() => {
+        this.showMessage('Datos sincronizados', 'success');
+        this.checkSidebarState();
+      }, 1500);
       
-      this.showMessage('Datos sincronizados', 'success');
     } catch (error) {
       console.error('[Popup] Error sincronizando:', error);
       this.showMessage('Error sincronizando datos', 'error');
-    } finally {
-      this.showLoading(false);
     }
   }
 
-  async exportData() {
-    try {
-      this.showLoading(true);
-      
-      // Simular exportación
-      const data = {
-        tags: this.stats.tags,
-        templates: this.stats.templates,
-        chats: this.stats.chats,
-        exportedAt: new Date().toISOString()
-      };
-      
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'whatsapp-crm-data.json';
-      a.click();
-      
-      URL.revokeObjectURL(url);
-      this.showMessage('Datos exportados', 'success');
-      
-    } catch (error) {
-      console.error('[Popup] Error exportando:', error);
-      this.showMessage('Error exportando datos', 'error');
-    } finally {
-      this.showLoading(false);
+  startAutoRefresh() {
+    // Refrescar cada 5 segundos
+    this.refreshInterval = setInterval(() => {
+      this.checkSidebarState();
+    }, 5000);
+  }
+
+  stopAutoRefresh() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
     }
   }
 
-  async loadUserData() {
-    try {
-      // Cargar datos del usuario desde storage
-      const data = await this.getFromStorage(['tags', 'templates']);
-      this.stats.tags = data.tags?.length || 0;
-      this.stats.templates = data.templates?.length || 0;
-      this.updateStats();
-    } catch (error) {
-      console.error('[Popup] Error cargando datos del usuario:', error);
-    }
+  // Utilidades de comunicación
+  async sendMessage(message) {
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.runtime.sendMessage(message, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
-  async loadLocalData() {
-    try {
-      // Cargar datos locales
-      const data = await this.getFromStorage(['tags', 'templates']);
-      this.stats.tags = data.tags?.length || 0;
-      this.stats.templates = data.templates?.length || 0;
-      this.updateStats();
-    } catch (error) {
-      console.error('[Popup] Error cargando datos locales:', error);
-    }
-  }
-
-  async updateSetting(key, value) {
-    try {
-      await this.saveToStorage({ [key]: value });
-    } catch (error) {
-      console.error('[Popup] Error actualizando configuración:', error);
-    }
-  }
-
-  openHelp() {
-    chrome.tabs.create({ url: 'https://github.com/tu-usuario/whatsapp-crm-extension' });
-  }
-
-  openSettings() {
-    chrome.runtime.openOptionsPage();
-  }
-
+  // Utilidades de UI
   showElement(elementId) {
     const element = document.getElementById(elementId);
     if (element) {
@@ -432,32 +369,26 @@ class PopupManager {
     }
   }
 
-  async saveToStorage(data) {
-    return new Promise((resolve, reject) => {
-      chrome.storage.local.set(data, () => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve();
-        }
-      });
-    });
-  }
-
-  async getFromStorage(keys) {
-    return new Promise((resolve, reject) => {
-      chrome.storage.local.get(keys, (result) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve(result);
-        }
-      });
-    });
+  getInitials(name) {
+    if (!name) return '👤';
+    
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    } else {
+      return name.substring(0, 2).toUpperCase();
+    }
   }
 }
 
+// Cleanup al cerrar popup
+window.addEventListener('beforeunload', () => {
+  if (window.popupControlCenter) {
+    window.popupControlCenter.stopAutoRefresh();
+  }
+});
+
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
-  new PopupManager();
+  window.popupControlCenter = new PopupControlCenter();
 }); 

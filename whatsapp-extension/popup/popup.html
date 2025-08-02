@@ -14,102 +14,97 @@
                 <span class="logo-icon">📱</span>
                 <span class="logo-text">WhatsApp CRM</span>
             </div>
-            <div class="version">v1.0.0</div>
+            <div class="status-indicator" id="statusIndicator" title="Estado de conexión">
+                <div class="status-dot offline" id="statusDot"></div>
+            </div>
         </div>
 
-        <!-- Contenido principal -->
+        <!-- Estado principal -->
         <div class="popup-content">
-            <!-- Estado de conexión -->
-            <div class="connection-status" id="connectionStatus">
-                <div class="status-indicator offline" id="statusIndicator"></div>
-                <span class="status-text" id="statusText">Desconectado</span>
-            </div>
-
-            <!-- Información del usuario -->
-            <div class="user-section" id="userSection" style="display: none;">
-                <div class="user-info">
-                    <div class="user-avatar">👤</div>
-                    <div class="user-details">
-                        <div class="user-name" id="userName">Usuario</div>
-                        <div class="user-plan" id="userPlan">Plan Free</div>
+            <!-- Estado de WhatsApp -->
+            <div class="connection-section" id="connectionSection">
+                <div class="connection-status" id="connectionStatus">
+                    <div class="status-icon">🌐</div>
+                    <div class="status-info">
+                        <div class="status-text" id="statusText">Verificando...</div>
+                        <div class="status-detail" id="statusDetail">Conectando con WhatsApp Web</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Sección de login -->
-            <div class="login-section" id="loginSection">
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" required placeholder="tu@email.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Contraseña:</label>
-                        <input type="password" id="password" required placeholder="********">
-                        <small class="form-hint">Usa 'test123' para el demo</small>
-                    </div>
-                    <button type="submit" class="btn-primary" id="loginBtn">Iniciar Sesión</button>
-                </form>
-                
-                <div class="divider">
-                    <span>o</span>
-                </div>
-                
-                <button class="btn-secondary" id="offlineModeBtn">Usar sin cuenta</button>
-            </div>
-
-            <!-- Estadísticas rápidas -->
-            <div class="stats-section" id="statsSection" style="display: none;">
-                <h3>Estadísticas</h3>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-number" id="totalTags">0</span>
-                        <span class="stat-label">Etiquetas</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="totalTemplates">0</span>
-                        <span class="stat-label">Plantillas</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="totalChats">0</span>
-                        <span class="stat-label">Chats</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Acciones rápidas -->
-            <div class="actions-section" id="actionsSection" style="display: none;">
-                <h3>Acciones Rápidas</h3>
-                <div class="action-buttons">
-                    <button class="action-btn" id="openWhatsAppBtn">
-                        <span class="action-icon">🌐</span>
-                        <span>Abrir WhatsApp</span>
-                    </button>
-                    <button class="action-btn" id="syncDataBtn">
-                        <span class="action-icon">🔄</span>
-                        <span>Sincronizar</span>
-                    </button>
-                    <button class="action-btn" id="exportDataBtn">
-                        <span class="action-icon">📥</span>
-                        <span>Exportar Datos</span>
+            <!-- WhatsApp no abierto -->
+            <div class="whatsapp-needed" id="whatsappNeeded" style="display: none;">
+                <div class="empty-state">
+                    <div class="empty-icon">📱</div>
+                    <div class="empty-title">Abre WhatsApp Web</div>
+                    <div class="empty-subtitle">Necesitas tener WhatsApp Web abierto para usar el CRM</div>
+                    <button class="btn-primary" id="openWhatsAppBtn">
+                        <span>🌐</span>
+                        Abrir WhatsApp Web
                     </button>
                 </div>
             </div>
 
-            <!-- Configuración rápida -->
-            <div class="settings-section" id="settingsSection" style="display: none;">
-                <h3>Configuración</h3>
-                <div class="setting-item">
-                    <label>
-                        <input type="checkbox" id="autoSyncChk">
-                        <span>Sincronización automática</span>
-                    </label>
+            <!-- CRM no autenticado -->
+            <div class="auth-needed" id="authNeeded" style="display: none;">
+                <div class="empty-state">
+                    <div class="empty-icon">🔐</div>
+                    <div class="empty-title">Inicia sesión en el CRM</div>
+                    <div class="empty-subtitle">Abre el CRM en WhatsApp Web para iniciar sesión</div>
+                    <button class="btn-primary" id="showCrmBtn">
+                        <span>📊</span>
+                        Abrir CRM
+                    </button>
                 </div>
-                <div class="setting-item">
-                    <label>
-                        <input type="checkbox" id="notificationsChk">
-                        <span>Mostrar notificaciones</span>
-                    </label>
+            </div>
+
+            <!-- CRM funcionando -->
+            <div class="crm-active" id="crmActive" style="display: none;">
+                <!-- Usuario info -->
+                <div class="user-section">
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar">👤</div>
+                        <div class="user-details">
+                            <div class="user-name" id="userName">Usuario</div>
+                            <div class="user-plan" id="userPlan">Plan Free</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats rápidas -->
+                <div class="stats-section">
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number" id="totalTags">0</div>
+                            <div class="stat-label">Etiquetas</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="totalTemplates">0</div>
+                            <div class="stat-label">Plantillas</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="totalContacts">0</div>
+                            <div class="stat-label">Contactos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acciones principales -->
+                <div class="actions-section">
+                    <button class="action-btn primary" id="toggleCrmBtn">
+                        <span class="action-icon">📊</span>
+                        <span class="action-text">Abrir CRM</span>
+                        <span class="action-arrow">→</span>
+                    </button>
+                    
+                    <div class="quick-actions">
+                        <button class="quick-btn" id="focusWhatsAppBtn" title="Ir a WhatsApp Web">
+                            <span>🌐</span>
+                        </button>
+                        <button class="quick-btn" id="syncDataBtn" title="Sincronizar datos">
+                            <span>🔄</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -119,16 +114,9 @@
             </div>
         </div>
 
-        <!-- Footer -->
+        <!-- Footer minimalista -->
         <div class="popup-footer">
-            <div class="footer-links">
-                <button class="link-btn" id="helpBtn">Ayuda</button>
-                <button class="link-btn" id="settingsBtn">Configuración</button>
-                <button class="link-btn" id="logoutBtn" style="display: none;">Cerrar Sesión</button>
-            </div>
-            <div class="footer-text">
-                <small>© 2024 WhatsApp CRM Extension</small>
-            </div>
+            <small class="footer-text">© 2024 WhatsApp CRM Extension</small>
         </div>
     </div>
 
