@@ -654,12 +654,14 @@ class TagsManager {
                 });
                 document.dispatchEvent(event);
                 
-                // Hacer click en la etiqueta correspondiente de WhatsApp Business
-                if (window.whatsappCRM && window.whatsappCRM.whatsappIntegration) {
-                    window.whatsappCRM.whatsappIntegration.clickWhatsAppLabel(filter === 'all' ? 'Todos' : 
-                        filter === 'unread' ? 'No leídos' : 
-                        filter === 'groups' ? 'Grupos' : 
-                        this.tags.find(t => t.id === filter)?.name || filter);
+                // Aplicar filtro usando múltiples métodos
+                if (window.whatsappCRM && window.whatsappCRM.whatsappFilterIntegration) {
+                    const filterName = filter === 'all' ? 'Todos' : 
+                                     filter === 'unread' ? 'No leídos' : 
+                                     filter === 'groups' ? 'Grupos' : 
+                                     this.tags.find(t => t.id === filter)?.name || filter;
+                    
+                    window.whatsappCRM.whatsappFilterIntegration.applyFilter(filter, filterName);
                 }
                 
                 console.log('[TagsManager] Filtro cambiado:', filter, tagId);
@@ -777,6 +779,565 @@ class FilterManager {
     }
 }
 
+// ===========================================
+// NUEVA INTEGRACIÓN DE FILTROS ROBUSTA
+// ===========================================
+
+class WhatsAppFilterIntegration {
+    constructor() {
+        this.currentFilter = 'all';
+        this.filterMethods = [];
+        this.lastSuccessfulMethod = null;
+        this.debugMode = true;
+        
+        this.init();
+    }
+    
+    init() {
+        console.log('[FilterIntegration] 🚀 Inicializando integración robusta de filtros...');
+        
+        // Registrar métodos de filtrado en orden de prioridad
+        this.registerFilterMethods();
+        
+        // Detectar la estructura actual de WhatsApp
+        this.analyzeWhatsAppStructure();
+    }
+    
+    registerFilterMethods() {
+        // Método 1: Inyección de script en el contexto de la página
+        this.filterMethods.push({
+            name: 'Script Injection',
+            method: this.scriptInjectionMethod.bind(this),
+            priority: 1
+        });
+        
+        // Método 2: Interceptar eventos de React
+        this.filterMethods.push({
+            name: 'React Events',
+            method: this.reactEventMethod.bind(this),
+            priority: 2
+        });
+        
+        // Método 3: Simulación de navegación por teclado
+        this.filterMethods.push({
+            name: 'Keyboard Navigation',
+            method: this.keyboardNavigationMethod.bind(this),
+            priority: 3
+        });
+        
+        // Método 4: Búsqueda y click avanzado en DOM
+        this.filterMethods.push({
+            name: 'Advanced DOM Click',
+            method: this.advancedDOMClickMethod.bind(this),
+            priority: 4
+        });
+        
+        // Método 5: Manipulación de URL/Hash
+        this.filterMethods.push({
+            name: 'URL Manipulation',
+            method: this.urlManipulationMethod.bind(this),
+            priority: 5
+        });
+        
+        console.log(`[FilterIntegration] ✅ ${this.filterMethods.length} métodos de filtrado registrados`);
+    }
+    
+    async applyFilter(filterId, filterName) {
+        console.log(`[FilterIntegration] 🎯 Aplicando filtro: ${filterId} (${filterName})`);
+        
+        this.currentFilter = filterId;
+        
+        // Si tenemos un método que funcionó la última vez, probarlo primero
+        if (this.lastSuccessfulMethod) {
+            console.log(`[FilterIntegration] 🔄 Probando último método exitoso: ${this.lastSuccessfulMethod.name}`);
+            const success = await this.tryMethod(this.lastSuccessfulMethod, filterId, filterName);
+            if (success) {
+                return true;
+            }
+        }
+        
+        // Probar todos los métodos en orden de prioridad
+        const sortedMethods = this.filterMethods.sort((a, b) => a.priority - b.priority);
+        
+        for (const method of sortedMethods) {
+            console.log(`[FilterIntegration] 🧪 Probando método: ${method.name}`);
+            const success = await this.tryMethod(method, filterId, filterName);
+            
+            if (success) {
+                this.lastSuccessfulMethod = method;
+                console.log(`[FilterIntegration] ✅ Método exitoso: ${method.name}`);
+                return true;
+            }
+            
+            // Esperar un poco antes del siguiente método
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        console.log(`[FilterIntegration] ❌ Ningún método funcionó para ${filterId}`);
+        return false;
+    }
+    
+    async tryMethod(method, filterId, filterName) {
+        try {
+            const result = await method.method(filterId, filterName);
+            return result === true;
+        } catch (error) {
+            console.log(`[FilterIntegration] ⚠️ Error en ${method.name}:`, error.message);
+            return false;
+        }
+    }
+    
+    // MÉTODO 1: Inyección de script en el contexto de la página
+    async scriptInjectionMethod(filterId, filterName) {
+        console.log(`[FilterIntegration] 📜 Script Injection para: ${filterId}`);
+        
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.textContent = `
+                (function() {
+                    try {
+                        // Buscar objetos globales de WhatsApp
+                        const waObjects = [
+                            window.Store,
+                            window.moduleRaid,
+                            window.webpackChunkwhatsapp_web_client,
+                            window.__d,
+                            window.require
+                        ];
+                        
+                        console.log('[ScriptInjection] Objetos WhatsApp disponibles:', waObjects.filter(obj => obj));
+                        
+                        // Intentar encontrar el store de filtros
+                        if (window.Store && window.Store.Chat) {
+                            console.log('[ScriptInjection] Store encontrado, aplicando filtro...');
+                            
+                            // Simular cambio de filtro
+                            const filterEvent = new CustomEvent('whatsapp-filter-change', {
+                                detail: { filter: '${filterId}', name: '${filterName}' }
+                            });
+                            document.dispatchEvent(filterEvent);
+                            
+                            window.postMessage({
+                                type: 'WHATSAPP_FILTER_SUCCESS',
+                                filter: '${filterId}'
+                            }, '*');
+                            return;
+                        }
+                        
+                        // Intentar usar require si está disponible
+                        if (typeof require !== 'undefined') {
+                            console.log('[ScriptInjection] Usando require...');
+                            try {
+                                const modules = require.cache || {};
+                                console.log('[ScriptInjection] Módulos disponibles:', Object.keys(modules).length);
+                            } catch (e) {
+                                console.log('[ScriptInjection] Error con require:', e.message);
+                            }
+                        }
+                        
+                        window.postMessage({
+                            type: 'WHATSAPP_FILTER_FALLBACK',
+                            filter: '${filterId}'
+                        }, '*');
+                        
+                    } catch (error) {
+                        console.error('[ScriptInjection] Error:', error);
+                        window.postMessage({
+                            type: 'WHATSAPP_FILTER_ERROR',
+                            error: error.message
+                        }, '*');
+                    }
+                })();
+            `;
+            
+            let resolved = false;
+            const messageHandler = (event) => {
+                if (event.source !== window) return;
+                
+                if (event.data.type === 'WHATSAPP_FILTER_SUCCESS') {
+                    window.removeEventListener('message', messageHandler);
+                    if (!resolved) {
+                        resolved = true;
+                        resolve(true);
+                    }
+                } else if (event.data.type === 'WHATSAPP_FILTER_FALLBACK') {
+                    window.removeEventListener('message', messageHandler);
+                    if (!resolved) {
+                        resolved = true;
+                        resolve(false);
+                    }
+                } else if (event.data.type === 'WHATSAPP_FILTER_ERROR') {
+                    window.removeEventListener('message', messageHandler);
+                    if (!resolved) {
+                        resolved = true;
+                        resolve(false);
+                    }
+                }
+            };
+            
+            window.addEventListener('message', messageHandler);
+            
+            document.head.appendChild(script);
+            document.head.removeChild(script);
+            
+            // Timeout de seguridad
+            setTimeout(() => {
+                window.removeEventListener('message', messageHandler);
+                if (!resolved) {
+                    resolved = true;
+                    resolve(false);
+                }
+            }, 2000);
+        });
+    }
+    
+    // MÉTODO 2: Eventos de React sintéticos
+    async reactEventMethod(filterId, filterName) {
+        console.log(`[FilterIntegration] ⚛️ React Events para: ${filterId}`);
+        
+        // Buscar elementos que parezcan ser de React
+        const reactElements = document.querySelectorAll('[data-testid], [class*="react"], [class*="React"]');
+        
+        for (const element of reactElements) {
+            const text = element.textContent?.toLowerCase();
+            if (text && (text.includes(filterName.toLowerCase()) || 
+                        text.includes(filterId.toLowerCase()))) {
+                
+                console.log(`[FilterIntegration] 🎯 Elemento React encontrado:`, element);
+                
+                // Crear eventos sintéticos de React
+                const events = ['mousedown', 'mouseup', 'click', 'touchstart', 'touchend'];
+                
+                for (const eventType of events) {
+                    const syntheticEvent = new MouseEvent(eventType, {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window,
+                        detail: 1,
+                        isTrusted: false
+                    });
+                    
+                    // Agregar propiedades específicas de React
+                    Object.defineProperty(syntheticEvent, 'nativeEvent', {
+                        value: syntheticEvent,
+                        writable: false
+                    });
+                    
+                    element.dispatchEvent(syntheticEvent);
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    // MÉTODO 3: Navegación por teclado
+    async keyboardNavigationMethod(filterId, filterName) {
+        console.log(`[FilterIntegration] ⌨️ Keyboard Navigation para: ${filterId}`);
+        
+        // Mapeo de filtros a teclas (si WhatsApp las soporta)
+        const keyMappings = {
+            'all': ['1', 'a'],
+            'unread': ['2', 'u'],
+            'groups': ['3', 'g'],
+            'starred': ['4', 's']
+        };
+        
+        const keys = keyMappings[filterId] || [];
+        
+        for (const key of keys) {
+            // Intentar combinaciones de teclas comunes
+            const combinations = [
+                { key, ctrlKey: true },
+                { key, altKey: true },
+                { key, shiftKey: true },
+                { key }
+            ];
+            
+            for (const combo of combinations) {
+                const keyEvent = new KeyboardEvent('keydown', {
+                    key: combo.key,
+                    code: `Key${combo.key.toUpperCase()}`,
+                    ctrlKey: combo.ctrlKey || false,
+                    altKey: combo.altKey || false,
+                    shiftKey: combo.shiftKey || false,
+                    bubbles: true,
+                    cancelable: true
+                });
+                
+                document.dispatchEvent(keyEvent);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Verificar si el filtro cambió
+                if (this.hasFilterChanged()) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    // MÉTODO 4: Búsqueda avanzada en DOM
+    async advancedDOMClickMethod(filterId, filterName) {
+        console.log(`[FilterIntegration] 🔍 Advanced DOM Click para: ${filterId}`);
+        
+        // Estrategias múltiples de búsqueda
+        const searchStrategies = [
+            () => this.findByAriaLabel(filterName),
+            () => this.findByTextContent(filterName),
+            () => this.findByDataAttributes(filterId),
+            () => this.findByClassPatterns(filterId),
+            () => this.findByPosition(filterId)
+        ];
+        
+        for (const strategy of searchStrategies) {
+            const elements = strategy();
+            
+            for (const element of elements) {
+                console.log(`[FilterIntegration] 🎯 Probando elemento:`, element);
+                
+                const success = await this.performAdvancedClick(element);
+                if (success) {
+                    return true;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
+        return false;
+    }
+    
+    // MÉTODO 5: Manipulación de URL
+    async urlManipulationMethod(filterId, filterName) {
+        console.log(`[FilterIntegration] 🌐 URL Manipulation para: ${filterId}`);
+        
+        const currentUrl = window.location.href;
+        const baseUrl = currentUrl.split('#')[0];
+        
+        // Intentar diferentes formatos de URL
+        const urlFormats = [
+            `${baseUrl}#filter=${filterId}`,
+            `${baseUrl}#/${filterId}`,
+            `${baseUrl}#filter-${filterId}`,
+            `${baseUrl}#chat-filter-${filterId}`
+        ];
+        
+        for (const url of urlFormats) {
+            console.log(`[FilterIntegration] 🔗 Probando URL: ${url}`);
+            
+            // Cambiar URL y disparar eventos de navegación
+            window.history.pushState({}, '', url);
+            
+            // Disparar eventos que WhatsApp podría estar escuchando
+            window.dispatchEvent(new PopStateEvent('popstate'));
+            window.dispatchEvent(new HashChangeEvent('hashchange'));
+            window.dispatchEvent(new Event('locationchange'));
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            if (this.hasFilterChanged()) {
+                return true;
+            }
+        }
+        
+        // Restaurar URL original si no funcionó
+        window.history.pushState({}, '', currentUrl);
+        return false;
+    }
+    
+    // Métodos auxiliares
+    findByAriaLabel(filterName) {
+        return Array.from(document.querySelectorAll(`[aria-label*="${filterName}"]`));
+    }
+    
+    findByTextContent(filterName) {
+        return Array.from(document.querySelectorAll('*')).filter(el => 
+            el.textContent?.trim().toLowerCase() === filterName.toLowerCase()
+        );
+    }
+    
+    findByDataAttributes(filterId) {
+        const selectors = [
+            `[data-testid*="${filterId}"]`,
+            `[data-filter="${filterId}"]`,
+            `[data-tab="${filterId}"]`
+        ];
+        
+        const elements = [];
+        selectors.forEach(selector => {
+            elements.push(...document.querySelectorAll(selector));
+        });
+        
+        return elements;
+    }
+    
+    findByClassPatterns(filterId) {
+        const patterns = [
+            `filter-${filterId}`,
+            `tab-${filterId}`,
+            `${filterId}-filter`,
+            filterId
+        ];
+        
+        const elements = [];
+        patterns.forEach(pattern => {
+            elements.push(...document.querySelectorAll(`[class*="${pattern}"]`));
+        });
+        
+        return elements;
+    }
+    
+    findByPosition(filterId) {
+        // Buscar en posiciones típicas de filtros
+        const containers = [
+            '[data-testid="side"]',
+            '.app-wrapper-web',
+            '#side',
+            '[role="navigation"]'
+        ];
+        
+        const elements = [];
+        containers.forEach(container => {
+            const containerEl = document.querySelector(container);
+            if (containerEl) {
+                // Buscar botones/enlaces en las primeras posiciones
+                const buttons = containerEl.querySelectorAll('button, [role="button"], a');
+                elements.push(...Array.from(buttons).slice(0, 10)); // Primeros 10 elementos
+            }
+        });
+        
+        return elements;
+    }
+    
+    async performAdvancedClick(element) {
+        if (!element) return false;
+        
+        try {
+            // Secuencia completa de eventos
+            const events = [
+                new MouseEvent('mouseenter', { bubbles: true }),
+                new MouseEvent('mouseover', { bubbles: true }),
+                new MouseEvent('mousedown', { bubbles: true, button: 0 }),
+                new MouseEvent('mouseup', { bubbles: true, button: 0 }),
+                new MouseEvent('click', { bubbles: true, button: 0 }),
+                new Event('focus', { bubbles: true }),
+                new MouseEvent('mouseleave', { bubbles: true })
+            ];
+            
+            for (const event of events) {
+                element.dispatchEvent(event);
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+            
+            // También intentar click directo
+            if (element.click) {
+                element.click();
+            }
+            
+            // Verificar si funcionó
+            await new Promise(resolve => setTimeout(resolve, 200));
+            return this.hasFilterChanged();
+            
+        } catch (error) {
+            console.log(`[FilterIntegration] Error en click avanzado:`, error);
+            return false;
+        }
+    }
+    
+    hasFilterChanged() {
+        // Implementar detección real de cambios de filtro
+        try {
+            // Método 1: Verificar cambios en URL/hash
+            const currentUrl = window.location.href;
+            if (this.lastUrl && this.lastUrl !== currentUrl) {
+                console.log('[FilterIntegration] ✅ Cambio detectado en URL');
+                this.lastUrl = currentUrl;
+                return true;
+            }
+            this.lastUrl = currentUrl;
+            
+            // Método 2: Verificar elementos activos/seleccionados
+            const activeElements = document.querySelectorAll([
+                '.active',
+                '[aria-selected="true"]',
+                '[data-active="true"]',
+                '.selected',
+                '[class*="active"]',
+                '[class*="selected"]'
+            ].join(', '));
+            
+            const currentActiveElements = activeElements.length;
+            if (this.lastActiveCount !== undefined && this.lastActiveCount !== currentActiveElements) {
+                console.log('[FilterIntegration] ✅ Cambio detectado en elementos activos');
+                this.lastActiveCount = currentActiveElements;
+                return true;
+            }
+            this.lastActiveCount = currentActiveElements;
+            
+            // Método 3: Verificar cambios en la lista de chats visible
+            const chatList = document.querySelector('[data-testid="chat-list"]');
+            if (chatList) {
+                const chatsCount = chatList.querySelectorAll('[data-testid*="cell"]').length;
+                if (this.lastChatsCount !== undefined && this.lastChatsCount !== chatsCount) {
+                    console.log('[FilterIntegration] ✅ Cambio detectado en lista de chats');
+                    this.lastChatsCount = chatsCount;
+                    return true;
+                }
+                this.lastChatsCount = chatsCount;
+            }
+            
+            // Método 4: Verificar cambios en elementos con texto de filtros
+            const filterTexts = ['Todos', 'No leídos', 'Favoritos', 'Grupos'];
+            let hasActiveFilter = false;
+            
+            filterTexts.forEach(text => {
+                const elements = Array.from(document.querySelectorAll('*')).filter(el => 
+                    el.textContent?.trim() === text && 
+                    (el.classList.contains('active') || el.getAttribute('aria-selected') === 'true')
+                );
+                
+                if (elements.length > 0) {
+                    hasActiveFilter = true;
+                    const currentActiveFilter = text.toLowerCase();
+                    if (this.lastActiveFilter && this.lastActiveFilter !== currentActiveFilter) {
+                        console.log(`[FilterIntegration] ✅ Cambio de filtro detectado: ${this.lastActiveFilter} → ${currentActiveFilter}`);
+                        this.lastActiveFilter = currentActiveFilter;
+                        return true;
+                    }
+                    this.lastActiveFilter = currentActiveFilter;
+                }
+            });
+            
+            // Por ahora, asumir que no hubo cambio detectable
+            return false;
+            
+        } catch (error) {
+            console.log('[FilterIntegration] ⚠️ Error verificando cambios:', error);
+            return false;
+        }
+    }
+    
+    analyzeWhatsAppStructure() {
+        console.log('[FilterIntegration] 🔍 Analizando estructura de WhatsApp...');
+        
+        const analysis = {
+            hasStore: !!window.Store,
+            hasRequire: typeof require !== 'undefined',
+            hasReactElements: document.querySelectorAll('[data-testid]').length,
+            sidebarElements: document.querySelectorAll('[data-testid="side"] *').length,
+            filterElements: document.querySelectorAll('[aria-label*="filter"], [data-testid*="filter"]').length
+        };
+        
+        console.log('[FilterIntegration] 📊 Análisis:', analysis);
+        return analysis;
+    }
+}
+
 // Integración con WhatsApp Business nativo
 class WhatsAppBusinessIntegration {
     constructor() {
@@ -784,12 +1345,17 @@ class WhatsAppBusinessIntegration {
         this.labelMapping = new Map(); // Mapeo entre etiquetas CRM y WhatsApp Business
         this.lastSync = 0;
         this.syncInterval = 5000; // Sincronizar cada 5 segundos
+        this.whatsappVersion = null; // 'web' | 'business' | 'unknown'
+        this.isBusinessAccount = false; // Si la cuenta actual es Business
         
         this.init();
     }
     
     async init() {
         console.log('[WhatsAppBusiness] Inicializando integración...');
+        
+        // Detectar versión de WhatsApp y tipo de cuenta
+        await this.detectWhatsAppVersion();
         
         // Detectar etiquetas de WhatsApp Business al cargar
         await this.detectWhatsAppLabels();
@@ -803,6 +1369,96 @@ class WhatsAppBusinessIntegration {
         this.setupDOMObserver();
     }
     
+    async detectWhatsAppVersion() {
+        try {
+            console.log('[WhatsAppBusiness] 🔍 Detectando versión de WhatsApp...');
+            
+            // Detectar por URL
+            const url = window.location.href;
+            if (url.includes('business.whatsapp.com')) {
+                this.whatsappVersion = 'business';
+                this.isBusinessAccount = true;
+                console.log('[WhatsAppBusiness] ✅ Detectado: WhatsApp Business Web');
+                return;
+            }
+            
+            // Detectar por elementos específicos de Business
+            const businessIndicators = [
+                '[data-testid*="business"]',
+                '[aria-label*="Business"]',
+                '[aria-label*="business"]',
+                '.business-header',
+                '[class*="business"]',
+                '[title*="Business"]',
+                '[title*="business"]'
+            ];
+            
+            let foundBusinessIndicator = false;
+            for (const selector of businessIndicators) {
+                if (document.querySelector(selector)) {
+                    foundBusinessIndicator = true;
+                    console.log(`[WhatsAppBusiness] ✅ Indicador Business encontrado: ${selector}`);
+                    break;
+                }
+            }
+            
+            // Detectar por funciones específicas de Business
+            const businessFeatures = [
+                // Etiquetas de WhatsApp Business
+                '[data-testid="label"]',
+                '[aria-label*="Label"]',
+                '[aria-label*="Etiqueta"]',
+                
+                // Catálogo de productos
+                '[data-testid="catalog"]',
+                '[aria-label*="Catalog"]',
+                '[aria-label*="Catálogo"]',
+                
+                // Mensajes automáticos
+                '[data-testid="away-message"]',
+                '[aria-label*="away"]',
+                
+                // Estadísticas
+                '[data-testid="business-stats"]'
+            ];
+            
+            let foundBusinessFeature = false;
+            for (const selector of businessFeatures) {
+                if (document.querySelector(selector)) {
+                    foundBusinessFeature = true;
+                    console.log(`[WhatsAppBusiness] ✅ Función Business encontrada: ${selector}`);
+                    break;
+                }
+            }
+            
+            // Determinar versión y tipo de cuenta
+            if (foundBusinessIndicator || foundBusinessFeature) {
+                this.isBusinessAccount = true;
+                this.whatsappVersion = 'business';
+                console.log('[WhatsAppBusiness] ✅ Detectado: Cuenta WhatsApp Business en Web');
+            } else {
+                this.isBusinessAccount = false;
+                this.whatsappVersion = 'web';
+                console.log('[WhatsAppBusiness] ✅ Detectado: WhatsApp Web regular');
+            }
+            
+            // Buscar texto específico que indique Business
+            const bodyText = document.body.textContent || '';
+            if (bodyText.includes('WhatsApp Business') || bodyText.includes('Empresa')) {
+                this.isBusinessAccount = true;
+                this.whatsappVersion = 'business';
+                console.log('[WhatsAppBusiness] ✅ Detectado por texto: WhatsApp Business');
+            }
+            
+            console.log(`[WhatsAppBusiness] 📋 Versión detectada: ${this.whatsappVersion}, Business: ${this.isBusinessAccount}`);
+            
+        } catch (error) {
+            console.error('[WhatsAppBusiness] ❌ Error detectando versión:', error);
+            this.whatsappVersion = 'unknown';
+            this.isBusinessAccount = false;
+        }
+    }
+    
     async detectWhatsAppLabels() {
         try {
             // Primero intentar detectar filtros nativos de WhatsApp Business
@@ -812,15 +1468,32 @@ class WhatsAppBusinessIntegration {
             // Método 1: Detectar filtros nativos específicos
             await this.detectNativeWhatsAppFilters(foundLabels);
             
-            // Método 2: Detectar por selectores genéricos
-            const labelSelectors = [
-                '[data-testid*="filter"]',
-                '[data-testid*="label"]',
-                '[aria-label*="filter"]',
-                '[aria-label*="filtro"]',
-                'button[aria-label*="label"]',
-                'div[role="button"][aria-label*="label"]'
-            ];
+                    // Método 2: Detectar por selectores específicos de WhatsApp Web actual
+        const labelSelectors = [
+            // Selectores específicos de WhatsApp Web 2024
+            '[data-testid*="filter"]',
+            '[data-testid*="label"]',
+            '[data-testid="filter-button"]',
+            '[data-testid="chat-list-filter"]',
+            
+            // Selectores de aria-label
+            '[aria-label*="filter"]',
+            '[aria-label*="filtro"]',
+            '[aria-label*="Filter"]',
+            '[aria-label*="Filtro"]',
+            
+            // Selectores de botones con etiquetas
+            'button[aria-label*="label"]',
+            'button[aria-label*="Label"]',
+            'div[role="button"][aria-label*="label"]',
+            'div[role="button"][aria-label*="Label"]',
+            
+            // Selectores específicos de WhatsApp Web
+            'div[role="button"][tabindex="0"]',
+            'button[tabindex="0"]',
+            '[class*="filter"]',
+            '[class*="Filter"]'
+        ];
             
             for (const selector of labelSelectors) {
                 const elements = document.querySelectorAll(selector);
@@ -832,8 +1505,13 @@ class WhatsAppBusinessIntegration {
                 });
             }
             
-            // Método 3: Búsqueda en el sidebar de WhatsApp
-            this.detectSidebarLabels(foundLabels);
+                    // Método 3: Búsqueda en el sidebar de WhatsApp
+        this.detectSidebarLabels(foundLabels);
+        
+        // Método 4: Detectar etiquetas personalizadas de WhatsApp Business
+        if (this.isBusinessAccount) {
+            await this.detectBusinessCustomLabels(foundLabels);
+        }
             
             if (foundLabels.size > 0) {
                 console.log('[WhatsAppBusiness] ✅ Etiquetas detectadas:', foundLabels);
@@ -849,13 +1527,102 @@ class WhatsAppBusinessIntegration {
     }
     
     async detectNativeWhatsAppFilters(foundLabels) {
-        // Detectar filtros específicos de WhatsApp Business
-        const nativeFilters = [
-            { name: 'Todos', selectors: ['[aria-label*="Todos"]', '[aria-label*="All"]', 'button:contains("Todos")'] },
-            { name: 'No leídos', selectors: ['[aria-label*="No leídos"]', '[aria-label*="Unread"]', 'button:contains("No leídos")'] },
-            { name: 'Favoritos', selectors: ['[aria-label*="Favoritos"]', '[aria-label*="Starred"]', 'button:contains("Favoritos")'] },
-            { name: 'Grupos', selectors: ['[aria-label*="Grupos"]', '[aria-label*="Groups"]', 'button:contains("Grupos")'] }
+        console.log('[WhatsAppBusiness] 🔍 Detectando filtros nativos de WhatsApp Web...');
+        
+        // Primero buscar específicamente en chat-list-filters
+        this.detectChatListFilters(foundLabels);
+        
+        // También buscar en el panel lateral de WhatsApp Web
+        this.detectSidebarFilters(foundLabels);
+        
+        // Filtros base para ambas versiones
+        let nativeFilters = [
+            { 
+                name: 'Todos', 
+                selectors: [
+                    '[aria-label*="Todos"]', 
+                    '[aria-label*="All"]', 
+                    '[aria-label*="todos"]',
+                    '[data-testid*="filter-all"]',
+                    'button:contains("Todos")',
+                    '*[role="button"]:contains("Todos")'
+                ] 
+            },
+            { 
+                name: 'No leídos', 
+                selectors: [
+                    '[aria-label*="No leídos"]', 
+                    '[aria-label*="Unread"]', 
+                    '[aria-label*="no leídos"]',
+                    '[data-testid*="filter-unread"]',
+                    'button:contains("No leídos")',
+                    '*[role="button"]:contains("No leídos")'
+                ] 
+            },
+            { 
+                name: 'Favoritos', 
+                selectors: [
+                    '[aria-label*="Favoritos"]', 
+                    '[aria-label*="Starred"]', 
+                    '[aria-label*="favoritos"]',
+                    '[data-testid*="filter-starred"]',
+                    'button:contains("Favoritos")',
+                    '*[role="button"]:contains("Favoritos")'
+                ] 
+            },
+            { 
+                name: 'Grupos', 
+                selectors: [
+                    '[aria-label*="Grupos"]', 
+                    '[aria-label*="Groups"]', 
+                    '[aria-label*="grupos"]',
+                    '[data-testid*="filter-groups"]',
+                    'button:contains("Grupos")',
+                    '*[role="button"]:contains("Grupos")'
+                ] 
+            }
         ];
+        
+        // Filtros adicionales específicos para WhatsApp Business
+        if (this.isBusinessAccount) {
+            const businessFilters = [
+                {
+                    name: 'Etiquetas',
+                    selectors: [
+                        '[data-testid="labels-filter"]',
+                        '[aria-label*="Labels"]',
+                        '[aria-label*="Etiquetas"]',
+                        '[aria-label*="labels"]',
+                        'button:contains("Etiquetas")',
+                        '*[role="button"]:contains("Labels")'
+                    ]
+                },
+                {
+                    name: 'Sin etiqueta',
+                    selectors: [
+                        '[aria-label*="Sin etiqueta"]',
+                        '[aria-label*="No label"]',
+                        '[aria-label*="Unlabeled"]',
+                        'button:contains("Sin etiqueta")',
+                        '*[role="button"]:contains("No label")'
+                    ]
+                },
+                {
+                    name: 'Archivados',
+                    selectors: [
+                        '[aria-label*="Archivados"]',
+                        '[aria-label*="Archived"]',
+                        '[aria-label*="archived"]',
+                        '[data-testid*="archived"]',
+                        'button:contains("Archivados")',
+                        '*[role="button"]:contains("Archived")'
+                    ]
+                }
+            ];
+            
+            nativeFilters = nativeFilters.concat(businessFilters);
+            console.log('[WhatsAppBusiness] ✅ Agregados filtros específicos de WhatsApp Business');
+        }
         
         for (const filter of nativeFilters) {
             for (const selector of filter.selectors) {
@@ -922,6 +1689,238 @@ class WhatsAppBusinessIntegration {
                 }
             }
         });
+    }
+    
+    detectChatListFilters(foundLabels) {
+        console.log(`[WhatsAppBusiness] 🔍 Buscando filtros en chat-list (${this.whatsappVersion}, Business: ${this.isBusinessAccount})...`);
+        
+        // Selectores para WhatsApp Web regular
+        let chatListFiltersSelectors = [
+            '[aria-label="chat-list-filters"]',
+            '[data-testid="chat-list-filters"]',
+            '.chat-list-filters',
+            '[class*="chat-list-filter"]',
+            '[class*="filter-bar"]'
+        ];
+        
+        // Selectores adicionales para WhatsApp Business
+        if (this.isBusinessAccount) {
+            chatListFiltersSelectors = chatListFiltersSelectors.concat([
+                '[data-testid="business-filters"]',
+                '[aria-label*="business-filter"]',
+                '.business-filter-bar',
+                '[class*="business-filter"]',
+                '[data-testid="label-filter"]',
+                '[aria-label*="label-filter"]',
+                '.label-filter-container'
+            ]);
+            console.log('[WhatsAppBusiness] ✅ Usando selectores adicionales para WhatsApp Business');
+        }
+        
+        chatListFiltersSelectors.forEach(selector => {
+            try {
+                const filterContainer = document.querySelector(selector);
+                if (filterContainer) {
+                    console.log(`[WhatsAppBusiness] ✅ Contenedor de filtros encontrado con selector: ${selector}`, filterContainer);
+                    
+                    // Buscar botones de filtro dentro del contenedor
+                    const filterButtons = filterContainer.querySelectorAll('button, [role="button"], [tabindex="0"]');
+                    
+                    filterButtons.forEach(button => {
+                        const text = button.textContent?.trim();
+                        const ariaLabel = button.getAttribute('aria-label');
+                        
+                        if (text || ariaLabel) {
+                            const filterName = text || ariaLabel;
+                            const normalizedName = filterName.toLowerCase();
+                            
+                            // Mapear nombres comunes
+                            let mappedName = normalizedName;
+                            if (normalizedName.includes('all') || normalizedName.includes('todo')) {
+                                mappedName = 'todos';
+                            } else if (normalizedName.includes('unread') || normalizedName.includes('no leído')) {
+                                mappedName = 'no leídos';
+                            } else if (normalizedName.includes('starred') || normalizedName.includes('favorito')) {
+                                mappedName = 'favoritos';
+                            } else if (normalizedName.includes('group') || normalizedName.includes('grupo')) {
+                                mappedName = 'grupos';
+                            }
+                            
+                            foundLabels.set(mappedName, {
+                                name: filterName,
+                                element: button,
+                                count: this.extractCount(button),
+                                selector: this.generateSelector(button)
+                            });
+                            
+                            console.log(`[WhatsAppBusiness] 🎯 Filtro detectado en chat-list-filters: ${filterName}`, button);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log(`[WhatsAppBusiness] ⚠️ Error con selector ${selector}:`, e.message);
+            }
+        });
+    }
+    
+    detectSidebarFilters(foundLabels) {
+        console.log('[WhatsAppBusiness] 🔍 Buscando filtros en sidebar de WhatsApp Web...');
+        
+        // Buscar en el panel lateral izquierdo de WhatsApp Web
+        const sidebarSelectors = [
+            '[data-testid="side"]',
+            '.app-wrapper-web ._2Ts6i',
+            '#side',
+            '.two'
+        ];
+        
+        sidebarSelectors.forEach(sidebarSelector => {
+            try {
+                const sidebar = document.querySelector(sidebarSelector);
+                if (sidebar) {
+                    console.log(`[WhatsAppBusiness] ✅ Sidebar encontrado con selector: ${sidebarSelector}`, sidebar);
+                    
+                    // Buscar elementos de filtro dentro del sidebar
+                    const potentialFilters = sidebar.querySelectorAll([
+                        'button[title*="filtro"]',
+                        'button[title*="filter"]',
+                        '[aria-label*="filtro"]',
+                        '[aria-label*="filter"]',
+                        '[data-testid*="filter"]',
+                        'button[aria-label*="Todos"]',
+                        'button[aria-label*="No leídos"]',
+                        'button[aria-label*="Favoritos"]',
+                        'button[aria-label*="Grupos"]'
+                    ].join(', '));
+                    
+                    potentialFilters.forEach(filter => {
+                        const text = filter.textContent?.trim();
+                        const ariaLabel = filter.getAttribute('aria-label');
+                        const title = filter.getAttribute('title');
+                        
+                        const filterName = text || ariaLabel || title;
+                        if (filterName) {
+                            const normalizedName = filterName.toLowerCase();
+                            
+                            // Mapear nombres comunes
+                            let mappedName = normalizedName;
+                            if (normalizedName.includes('all') || normalizedName.includes('todo')) {
+                                mappedName = 'todos';
+                            } else if (normalizedName.includes('unread') || normalizedName.includes('no leído')) {
+                                mappedName = 'no leídos';
+                            } else if (normalizedName.includes('starred') || normalizedName.includes('favorito')) {
+                                mappedName = 'favoritos';
+                            } else if (normalizedName.includes('group') || normalizedName.includes('grupo')) {
+                                mappedName = 'grupos';
+                            }
+                            
+                            foundLabels.set(mappedName, {
+                                name: filterName,
+                                element: filter,
+                                count: this.extractCount(filter),
+                                selector: this.generateSelector(filter)
+                            });
+                            
+                            console.log(`[WhatsAppBusiness] 🎯 Filtro detectado en sidebar: ${filterName}`, filter);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log(`[WhatsAppBusiness] ⚠️ Error con sidebar selector ${sidebarSelector}:`, e.message);
+            }
+        });
+    }
+    
+    async detectBusinessCustomLabels(foundLabels) {
+        console.log('[WhatsAppBusiness] 🏷️ Detectando etiquetas personalizadas de WhatsApp Business...');
+        
+        // Selectores específicos para etiquetas personalizadas de WhatsApp Business
+        const businessLabelSelectors = [
+            // Selectores principales de etiquetas
+            '[data-testid="label-filter-item"]',
+            '[data-testid="label-item"]',
+            '[data-testid="business-label"]',
+            '.label-item',
+            '.business-label',
+            
+            // Por aria-label
+            '[aria-label*="label"]',
+            '[aria-label*="Label"]',
+            '[aria-label*="etiqueta"]',
+            '[aria-label*="Etiqueta"]',
+            
+            // Por clases comunes de etiquetas
+            '[class*="label"]',
+            '[class*="Label"]',
+            '[class*="tag"]',
+            '[class*="Tag"]'
+        ];
+        
+        const customLabels = new Set();
+        
+        // Buscar etiquetas con colores (indicativo de etiquetas personalizadas)
+        const coloredElements = document.querySelectorAll('[style*="color"], [style*="background"]');
+        coloredElements.forEach(element => {
+            const text = element.textContent?.trim();
+            if (text && text.length > 0 && text.length < 50) { // Filtrar textos que parezcan etiquetas
+                // Verificar si es clickeable o tiene un padre clickeable
+                if (this.isClickableLabel(element) || this.findClickableParent(element)) {
+                    customLabels.add({
+                        name: text,
+                        element: this.isClickableLabel(element) ? element : this.findClickableParent(element)
+                    });
+                }
+            }
+        });
+        
+        // Buscar específicamente por selectores de etiquetas
+        businessLabelSelectors.forEach(selector => {
+            try {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(element => {
+                    const text = element.textContent?.trim();
+                    const ariaLabel = element.getAttribute('aria-label');
+                    const title = element.getAttribute('title');
+                    
+                    const labelName = text || ariaLabel || title;
+                    if (labelName && labelName.length > 0 && labelName.length < 50) {
+                        // Excluir etiquetas estándar que ya fueron detectadas
+                        const standardLabels = ['todos', 'no leídos', 'favoritos', 'grupos', 'archivados'];
+                        const isStandardLabel = standardLabels.some(standard => 
+                            labelName.toLowerCase().includes(standard) || 
+                            standard.includes(labelName.toLowerCase())
+                        );
+                        
+                        if (!isStandardLabel) {
+                            const clickableElement = this.isClickableLabel(element) ? element : this.findClickableParent(element);
+                            if (clickableElement) {
+                                customLabels.add({
+                                    name: labelName,
+                                    element: clickableElement
+                                });
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                // Selector no válido, continuar
+            }
+        });
+        
+        // Agregar etiquetas personalizadas encontradas
+        customLabels.forEach(labelInfo => {
+            const normalizedName = labelInfo.name.toLowerCase();
+            foundLabels.set(normalizedName, {
+                name: labelInfo.name,
+                element: labelInfo.element,
+                count: this.extractCount(labelInfo.element),
+                selector: this.generateSelector(labelInfo.element),
+                isCustom: true // Marcar como etiqueta personalizada
+            });
+            console.log(`[WhatsAppBusiness] 🏷️ Etiqueta personalizada detectada: ${labelInfo.name}`, labelInfo.element);
+        });
+        
+        console.log(`[WhatsAppBusiness] ✅ ${customLabels.size} etiquetas personalizadas detectadas`);
     }
     
     detectSidebarLabels(foundLabels) {
@@ -1165,12 +2164,26 @@ class WhatsAppBusinessIntegration {
         // Mapear etiquetas del CRM con las de WhatsApp Business
         this.labelMapping.clear();
         
+        let standardCount = 0;
+        let customCount = 0;
+        
         // Mapeo automático por nombre similar
         this.whatsappLabels.forEach((whatsappLabel, key) => {
             this.labelMapping.set(key, whatsappLabel);
+            
+            if (whatsappLabel.isCustom) {
+                customCount++;
+            } else {
+                standardCount++;
+            }
         });
         
-        console.log('[WhatsAppBusiness] Mapeo actualizado:', this.labelMapping);
+        console.log(`[WhatsAppBusiness] Mapeo actualizado: ${standardCount} filtros estándar, ${customCount} etiquetas personalizadas`);
+        console.log('[WhatsAppBusiness] Versión:', this.whatsappVersion, 'Business:', this.isBusinessAccount);
+        
+        if (this.isBusinessAccount && customCount > 0) {
+            console.log('[WhatsAppBusiness] ✅ Etiquetas personalizadas de WhatsApp Business detectadas correctamente');
+        }
     }
     
     async clickWhatsAppLabel(labelName) {
@@ -1189,6 +2202,9 @@ class WhatsAppBusinessIntegration {
             console.log('[WhatsAppBusiness] 📏 Elemento conectado:', whatsappLabel.element?.isConnected);
             console.log('[WhatsAppBusiness] 🏷️ Tag name:', whatsappLabel.element?.tagName);
             console.log('[WhatsAppBusiness] 📝 Text content:', whatsappLabel.element?.textContent?.trim());
+            console.log('[WhatsAppBusiness] 🎯 Aria-label:', whatsappLabel.element?.getAttribute('aria-label'));
+            console.log('[WhatsAppBusiness] 🆔 Data-testid:', whatsappLabel.element?.getAttribute('data-testid'));
+            console.log('[WhatsAppBusiness] 📍 Selector:', whatsappLabel.selector);
             
             // Intentar hacer click en el elemento
             if (whatsappLabel.element && whatsappLabel.element.isConnected) {
@@ -1435,6 +2451,9 @@ class WhatsAppCRM {
         this.tagsManager = new TagsManager(this.authService);
         this.filterManager = new FilterManager(this.tagsManager, this);
         this.whatsappIntegration = new WhatsAppBusinessIntegration();
+        
+        // Inicializar nueva integración robusta de filtros
+        this.whatsappFilterIntegration = new WhatsAppFilterIntegration();
         
         // Inicializar datos con valores por defecto
         this.contacts = this.loadData('contacts', []);
@@ -3552,6 +4571,178 @@ window.initWhatsAppCRM = initWhatsAppCRM;
 initWhatsAppCRM(); 
 
 // Funciones de debug para probar la integración
+// Función para debugear la detección de filtros desde la consola
+window.debugFilterDetection = function() {
+    console.log('=== DEBUG DETECCIÓN DE FILTROS ===');
+    
+    if (!window.whatsappCRM?.whatsappIntegration) {
+        console.error('❌ WhatsApp Integration no está disponible');
+        return;
+    }
+    
+    const integration = window.whatsappCRM.whatsappIntegration;
+    
+    // Mostrar información de la versión detectada
+    console.log(`📱 Versión WhatsApp: ${integration.whatsappVersion || 'No detectada'}`);
+    console.log(`🏢 Cuenta Business: ${integration.isBusinessAccount ? 'Sí' : 'No'}`);
+    console.log(`🌐 URL actual: ${window.location.href}`);
+    
+    console.log('\n📋 Filtros actualmente detectados:');
+    if (integration.whatsappLabels.size === 0) {
+        console.log('❌ No hay filtros detectados');
+    } else {
+        let standardCount = 0;
+        let customCount = 0;
+        
+        integration.whatsappLabels.forEach((label, key) => {
+            const type = label.isCustom ? '🏷️ (Personalizada)' : '🎯 (Estándar)';
+            console.log(`${type} ${key}: `, label);
+            
+            if (label.isCustom) {
+                customCount++;
+            } else {
+                standardCount++;
+            }
+        });
+        
+        console.log(`\n📊 Resumen: ${standardCount} filtros estándar, ${customCount} etiquetas personalizadas`);
+    }
+    
+    console.log('\n🔄 Forzando nueva detección...');
+    integration.detectWhatsAppLabels().then(() => {
+        console.log('✅ Detección completada');
+        console.log('📋 Filtros después de la detección:');
+        integration.whatsappLabels.forEach((label, key) => {
+            const type = label.isCustom ? '🏷️ (Personalizada)' : '🎯 (Estándar)';
+            console.log(`${type} ${key}: `, label);
+        });
+    });
+};
+
+// Función para probar clicks en filtros
+window.testFilterClick = function(filterName) {
+    console.log(`=== TESTING CLICK EN FILTRO: ${filterName} ===`);
+    
+    if (!window.whatsappCRM?.whatsappIntegration) {
+        console.error('❌ WhatsApp Integration no está disponible');
+        return;
+    }
+    
+    const integration = window.whatsappCRM.whatsappIntegration;
+    integration.clickWhatsAppLabel(filterName).then(success => {
+        console.log(`${success ? '✅' : '❌'} Click en filtro "${filterName}": ${success ? 'Exitoso' : 'Falló'}`);
+    });
+};
+
+// Función para verificar la versión de WhatsApp
+window.checkWhatsAppVersion = function() {
+    console.log('=== VERIFICACIÓN DE VERSIÓN WHATSAPP ===');
+    
+    if (!window.whatsappCRM?.whatsappIntegration) {
+        console.error('❌ WhatsApp Integration no está disponible');
+        return;
+    }
+    
+    const integration = window.whatsappCRM.whatsappIntegration;
+    
+    console.log('🔍 Información de la aplicación:');
+    console.log(`📱 Versión detectada: ${integration.whatsappVersion || 'No detectada'}`);
+    console.log(`🏢 Es cuenta Business: ${integration.isBusinessAccount ? 'Sí' : 'No'}`);
+    console.log(`🌐 URL actual: ${window.location.href}`);
+    console.log(`📅 Última sincronización: ${new Date(integration.lastSync).toLocaleString()}`);
+    
+    console.log('\n🔄 Ejecutando nueva detección...');
+    integration.detectWhatsAppVersion().then(() => {
+        console.log('✅ Re-detección completada:');
+        console.log(`📱 Versión: ${integration.whatsappVersion}`);
+        console.log(`🏢 Business: ${integration.isBusinessAccount ? 'Sí' : 'No'}`);
+    });
+};
+
+// Función para probar la nueva integración robusta
+window.testNewFilterIntegration = function(filterId = 'all') {
+    console.log(`=== TESTING NUEVA INTEGRACIÓN ROBUSTA: ${filterId} ===`);
+    
+    if (!window.whatsappCRM?.whatsappFilterIntegration) {
+        console.error('❌ Nueva FilterIntegration no está disponible');
+        return;
+    }
+    
+    const integration = window.whatsappCRM.whatsappFilterIntegration;
+    
+    console.log('📊 Estado de la integración:');
+    console.log(`🎯 Filtro actual: ${integration.currentFilter}`);
+    console.log(`✅ Último método exitoso: ${integration.lastSuccessfulMethod?.name || 'Ninguno'}`);
+    console.log(`🔧 Métodos disponibles: ${integration.filterMethods.length}`);
+    
+    // Mostrar métodos disponibles
+    integration.filterMethods.forEach((method, index) => {
+        console.log(`  ${index + 1}. ${method.name} (prioridad: ${method.priority})`);
+    });
+    
+    console.log(`\n🚀 Aplicando filtro: ${filterId}`);
+    integration.applyFilter(filterId, filterId).then(success => {
+        console.log(`${success ? '✅' : '❌'} Resultado: ${success ? 'ÉXITO' : 'FALLÓ'}`);
+        if (success) {
+            console.log(`🎉 Método exitoso: ${integration.lastSuccessfulMethod?.name}`);
+        }
+    });
+};
+
+// Función para analizar la estructura de filtros
+window.analyzeFilterStructure = function() {
+    console.log('=== ANÁLISIS DE ESTRUCTURA DE FILTROS ===');
+    
+    if (!window.whatsappCRM?.whatsappFilterIntegration) {
+        console.error('❌ FilterIntegration no está disponible');
+        return;
+    }
+    
+    const integration = window.whatsappCRM.whatsappFilterIntegration;
+    const analysis = integration.analyzeWhatsAppStructure();
+    
+    console.log('📊 Análisis completo:');
+    console.log('🏪 Store de WhatsApp:', analysis.hasStore ? '✅ Disponible' : '❌ No disponible');
+    console.log('📦 Require:', analysis.hasRequire ? '✅ Disponible' : '❌ No disponible');
+    console.log('⚛️ Elementos React:', analysis.hasReactElements);
+    console.log('📱 Elementos sidebar:', analysis.sidebarElements);
+    console.log('🔍 Elementos de filtro:', analysis.filterElements);
+    
+    // Análisis adicional
+    console.log('\n🔍 Análisis detallado:');
+    
+    // Buscar todos los posibles filtros
+    const possibleFilters = document.querySelectorAll([
+        '[data-testid*="filter"]',
+        '[aria-label*="filter"]',
+        '[aria-label*="filtro"]',
+        '[role="button"]',
+        'button'
+    ].join(', '));
+    
+    console.log(`🎯 Posibles elementos de filtro encontrados: ${possibleFilters.length}`);
+    
+    // Mostrar los primeros 10
+    Array.from(possibleFilters).slice(0, 10).forEach((el, i) => {
+        console.log(`  ${i + 1}. ${el.tagName} - Text: "${el.textContent?.trim().slice(0, 30)}" - Aria: "${el.getAttribute('aria-label')?.slice(0, 30)}"`);
+    });
+    
+    // Buscar el sidebar principal
+    const sidebar = document.querySelector('[data-testid="side"]');
+    if (sidebar) {
+        console.log('\n📱 Análisis del sidebar:');
+        const buttons = sidebar.querySelectorAll('button, [role="button"]');
+        console.log(`🔘 Botones en sidebar: ${buttons.length}`);
+        
+        // Mostrar los primeros 5 botones
+        Array.from(buttons).slice(0, 5).forEach((btn, i) => {
+            console.log(`  ${i + 1}. "${btn.textContent?.trim().slice(0, 40)}" - Aria: "${btn.getAttribute('aria-label')?.slice(0, 30)}"`);
+        });
+    }
+    
+    return analysis;
+};
+
 window.debugWhatsAppIntegration = function() {
     console.log('=== DEBUG WHATSAPP BUSINESS INTEGRATION ===');
     
@@ -3692,7 +4883,12 @@ window.scanWhatsAppElements = function() {
     });
 };
 
-console.log('🛠️ Funciones de debug mejoradas disponibles:');
-console.log('- debugWhatsAppIntegration() - Análisis completo de la integración');
-console.log('- testWhatsAppLabelClick("nombreEtiqueta") - Prueba detallada de click');
-console.log('- scanWhatsAppElements() - Escaneo completo de elementos de WhatsApp Business');
+    console.log('🛠️ Funciones de debug mejoradas disponibles:');
+    console.log('- debugWhatsAppIntegration() - Análisis completo de la integración');
+    console.log('- debugFilterDetection() - Detectar filtros (Web + Business) 🆕');
+    console.log('- testNewFilterIntegration("filterId") - Probar nueva integración robusta 🚀');
+    console.log('- testFilterClick("nombreFiltro") - Probar click en un filtro específico');
+    console.log('- testWhatsAppLabelClick("nombreEtiqueta") - Prueba detallada de click');
+    console.log('- scanWhatsAppElements() - Escaneo completo de elementos de WhatsApp Business');
+    console.log('- checkWhatsAppVersion() - Verificar versión y tipo de cuenta 🆕');
+    console.log('- analyzeFilterStructure() - Analizar estructura de filtros 🔍');
