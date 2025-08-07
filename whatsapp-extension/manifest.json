@@ -46,9 +46,6 @@
         "sidebar.html",
         "services/*",
         "utils/*",
-        "components/*",
-        "integration/*",
-        "initWhatsAppLabels.js",
         "assets/*"
       ],
       "matches": ["https://web.whatsapp.com/*"]
