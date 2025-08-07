@@ -440,321 +440,10 @@ class TagsManager {
     }
 
     async init() {
-        console.log('[TagsManager] 🚀 Inicializando TagsManager...');
-        
-        try {
-            // Esperar a que WhatsApp Business Integration esté disponible
-            console.log('[TagsManager] ⏳ Esperando WhatsApp Business Integration...');
-            await this.waitForWhatsAppIntegration();
-            
-            // Detectar etiquetas nativas de WhatsApp Business
-            console.log('[TagsManager] 🔍 Detectando etiquetas nativas...');
-            await this.loadWhatsAppBusinessLabels();
-            
-            // Fallback: cargar etiquetas de Supabase si no hay nativas
-            if (this.tags.length === 0) {
-                console.log('[TagsManager] ⚠️ No se encontraron etiquetas nativas, cargando desde local/Supabase...');
-                await this.loadTagsFromLocal();
-                await this.syncWithSupabase();
-            } else {
-                console.log(`[TagsManager] ✅ ${this.tags.length} etiquetas nativas cargadas exitosamente`);
-            }
-            
-            console.log('[TagsManager] 🎨 Actualizando topbar inicial...');
-            this.updateTopbar();
-            
-            // Configurar actualización periódica de contadores para etiquetas nativas
-            console.log('[TagsManager] ⏰ Configurando actualizaciones periódicas...');
-            this.startCounterUpdates();
-            
-            console.log('[TagsManager] ✅ Inicialización completada exitosamente');
-            
-        } catch (error) {
-            console.error('[TagsManager] ❌ Error en inicialización:', error);
-            
-            // Intentar fallback a etiquetas locales/Supabase
-            console.log('[TagsManager] 🔄 Intentando fallback a etiquetas locales...');
-            try {
-                await this.loadTagsFromLocal();
-                this.updateTopbar();
-                console.log('[TagsManager] ✅ Fallback exitoso');
-            } catch (fallbackError) {
-                console.error('[TagsManager] ❌ Error en fallback:', fallbackError);
-            }
-        }
-    }
-
-    startCounterUpdates() {
-        // Actualizar contadores cada 10 segundos si hay etiquetas nativas
-        if (this.tags.some(tag => tag.isNative)) {
-            setInterval(() => {
-                this.updateNativeCounts();
-            }, 10000);
-            console.log('[TagsManager] ⏰ Actualización periódica de contadores iniciada');
-        }
-    }
-
-    updateNativeCounts() {
-        let countsUpdated = false;
-        
-        this.tags.forEach(tag => {
-            if (tag.isNative && tag.whatsappLabelName && window.whatsappCRM?.whatsappIntegration) {
-                const newCount = window.whatsappCRM.whatsappIntegration.getWhatsAppLabelCount(tag.whatsappLabelName);
-                if (newCount !== tag.count) {
-                    tag.count = newCount;
-                    countsUpdated = true;
-                }
-            }
-        });
-        
-        // Solo actualizar la topbar si hubo cambios
-        if (countsUpdated) {
-            console.log('[TagsManager] 🔄 Contadores actualizados');
-            this.updateTopbarCounts();
-        }
-    }
-
-    updateTopbarCounts() {
-        // Actualizar solo los contadores sin re-renderizar toda la topbar
-        const topbarItems = document.querySelectorAll('.topbar-item');
-        topbarItems.forEach(item => {
-            const tagId = item.dataset.tagId;
-            const tag = this.tags.find(t => t.id === tagId);
-            const countElement = item.querySelector('.topbar-count');
-            
-            if (countElement && tag) {
-                const newCount = this.getTagCountForNative(tag);
-                if (countElement.textContent !== newCount.toString()) {
-                    countElement.textContent = newCount;
-                }
-            }
-        });
-    }
-
-    async waitForWhatsAppIntegration() {
-        let attempts = 0;
-        const maxAttempts = 20; // Aumentar intentos
-        
-        while (attempts < maxAttempts) {
-            if (window.whatsappCRM && window.whatsappCRM.whatsappIntegration) {
-                console.log('[TagsManager] ✅ WhatsApp Business Integration disponible');
-                // Esperar un poco más para asegurar que esté completamente inicializado
-                await new Promise(resolve => setTimeout(resolve, 500));
-                return;
-            }
-            
-            console.log(`[TagsManager] ⏳ Esperando WhatsApp Integration... ${attempts + 1}/${maxAttempts}`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            attempts++;
-        }
-        
-        console.log('[TagsManager] ⚠️ WhatsApp Integration no disponible después de esperar');
-        console.log('[TagsManager] 🔍 Estado actual:', {
-            hasWindow: !!window.whatsappCRM,
-            hasIntegration: !!window.whatsappCRM?.whatsappIntegration,
-            integration: window.whatsappCRM?.whatsappIntegration
-        });
-    }
-
-    async loadWhatsAppBusinessLabels() {
-        try {
-            console.log('[TagsManager] 🔍 Iniciando detección de etiquetas nativas de WhatsApp Business...');
-            
-            if (!window.whatsappCRM?.whatsappIntegration) {
-                console.log('[TagsManager] ❌ WhatsApp Integration no disponible - saltando detección nativa');
-                return;
-            }
-
-            const integration = window.whatsappCRM.whatsappIntegration;
-            console.log('[TagsManager] ✅ Integration disponible, detectando etiquetas...');
-            
-            // Esperar a que WhatsApp esté completamente cargado
-            await this.waitForWhatsAppReady();
-            
-            // Forzar detección de etiquetas con retry mejorado
-            let detectionAttempts = 0;
-            const maxDetectionAttempts = 5; // Aumentar intentos
-            
-            while (detectionAttempts < maxDetectionAttempts) {
-                console.log(`[TagsManager] 🔄 Intento ${detectionAttempts + 1}/${maxDetectionAttempts} de detección...`);
-                
-                await integration.detectWhatsAppLabels();
-                
-                if (integration.labelMapping.size > 0) {
-                    console.log(`[TagsManager] ✅ Etiquetas detectadas en intento ${detectionAttempts + 1}: ${integration.labelMapping.size}`);
-                    break;
-                }
-                
-                // Esperar más tiempo entre intentos
-                const waitTime = (detectionAttempts + 1) * 3000; // 3s, 6s, 9s, 12s, 15s
-                console.log(`[TagsManager] ⏳ Esperando ${waitTime/1000}s antes del siguiente intento...`);
-                await new Promise(resolve => setTimeout(resolve, waitTime));
-                detectionAttempts++;
-            }
-            
-            console.log(`[TagsManager] 📊 Total etiquetas detectadas por integration: ${integration.labelMapping.size}`);
-            
-            // Si no se detectaron etiquetas, intentar método alternativo
-            if (integration.labelMapping.size === 0) {
-                console.log('[TagsManager] 🔄 Intentando método alternativo de detección...');
-                await this.fallbackDetection();
-            }
-            
-            // Convertir etiquetas detectadas al formato del CRM
-            this.tags = [];
-            let tagIndex = 0;
-            
-            integration.labelMapping.forEach((labelInfo, labelName) => {
-                console.log(`[TagsManager] 🔍 Procesando etiqueta: "${labelName}"`, labelInfo);
-                
-                // Solo incluir etiquetas que no sean filtros estándar
-                const isStandardFilter = ['todos', 'no leídos', 'favoritos', 'grupos', 'archivados'].includes(labelName.toLowerCase());
-                
-                if (!isStandardFilter && labelInfo.element) {
-                    const tag = {
-                        id: `wa_native_${tagIndex++}`,
-                        name: labelInfo.displayName || labelName,
-                        color: labelInfo.isRealLabel ? '#00a884' : '#10b981', // Verde WhatsApp para etiquetas reales
-                        description: labelInfo.isRealLabel ? 'Etiqueta real de WhatsApp Business' : 'Etiqueta nativa de WhatsApp Business',
-                        isNative: true,
-                        isRealLabel: labelInfo.isRealLabel || false,
-                        whatsappLabelName: labelName,
-                        element: labelInfo.element,
-                        count: integration.getWhatsAppLabelCount(labelName) || 0,
-                        createdAt: new Date().toISOString()
-                    };
-                    
-                    // Priorizar etiquetas reales al inicio de la lista
-                    if (labelInfo.isRealLabel) {
-                        this.tags.unshift(tag);
-                        console.log(`[TagsManager] 🏷️ Etiqueta REAL agregada al inicio: "${tag.name}" (count: ${tag.count})`);
-                    } else {
-                        this.tags.push(tag);
-                        console.log(`[TagsManager] ✅ Etiqueta agregada: "${tag.name}" (count: ${tag.count})`);
-                    }
-                }
-            });
-            
-            // Incluir filtros estándar importantes
-            const standardFilters = [
-                { name: 'todos', displayName: 'Todos', icon: '👥' },
-                { name: 'no leídos', displayName: 'No leídos', icon: '📬' },
-                { name: 'favoritos', displayName: 'Favoritos', icon: '⭐' },
-                { name: 'grupos', displayName: 'Grupos', icon: '👥' }
-            ];
-            
-            standardFilters.forEach((filter, index) => {
-                if (integration.labelMapping.has(filter.name)) {
-                    const labelInfo = integration.labelMapping.get(filter.name);
-                    const tag = {
-                        id: `wa_standard_${index}`,
-                        name: filter.displayName,
-                        color: '#6366f1',
-                        description: `Filtro estándar de WhatsApp`,
-                        isNative: true,
-                        isStandard: true,
-                        whatsappLabelName: filter.name,
-                        icon: filter.icon,
-                        element: labelInfo.element,
-                        count: integration.getWhatsAppLabelCount(filter.name) || 0,
-                        createdAt: new Date().toISOString()
-                    };
-                    
-                    this.tags.unshift(tag); // Agregar al inicio
-                    console.log(`[TagsManager] ✅ Filtro estándar agregado: "${tag.name}" (count: ${tag.count})`);
-                }
-            });
-            
-            console.log(`[TagsManager] 🎉 RESUMEN: ${this.tags.length} etiquetas nativas detectadas`);
-            this.tags.forEach((tag, index) => {
-                const type = tag.isStandard ? '🔹 ESTÁNDAR' : '🔗 NATIVA';
-                console.log(`  ${index + 1}. ${type} "${tag.name}" - Contador: ${tag.count}`);
-            });
-            
-        } catch (error) {
-            console.error('[TagsManager] ❌ Error cargando etiquetas de WhatsApp Business:', error);
-        }
-    }
-    
-    async waitForWhatsAppReady() {
-        console.log('[TagsManager] ⏳ Esperando a que WhatsApp esté completamente cargado...');
-        
-        return new Promise((resolve) => {
-            const checkReady = () => {
-                // Verificar que WhatsApp esté completamente cargado
-                const app = document.getElementById('app');
-                const mainPanel = document.querySelector('[data-testid="conversation-panel-body"]') ||
-                                 document.querySelector('div[role="main"]');
-                const sidePanel = document.querySelector('[data-testid="chat-list"]') ||
-                                 document.querySelector('[data-testid="side"]');
-                
-                // Verificar que no hay pantalla de carga
-                const loadingScreen = document.querySelector('[data-testid="startup"]') ||
-                                     document.querySelector('.landing-wrapper');
-                
-                if (app && (mainPanel || sidePanel) && !loadingScreen) {
-                    console.log('[TagsManager] ✅ WhatsApp está listo para detección de etiquetas');
-                    resolve();
-                } else {
-                    console.log('[TagsManager] ⏳ WhatsApp aún cargando, esperando...');
-                    setTimeout(checkReady, 1000);
-                }
-            };
-            checkReady();
-        });
-    }
-    
-    async fallbackDetection() {
-        console.log('[TagsManager] 🔄 Ejecutando detección de respaldo...');
-        
-        try {
-            // Método 1: Buscar directamente en el DOM por elementos que parezcan etiquetas
-            const potentialLabels = document.querySelectorAll('button, [role="button"], div[tabindex="0"]');
-            const foundLabels = new Map();
-            
-            potentialLabels.forEach(element => {
-                const text = element.textContent?.trim();
-                if (text && text.length > 0 && text.length < 30) {
-                    // Verificar si parece una etiqueta de negocio
-                    const hasColor = element.style.color || element.style.backgroundColor || 
-                                    element.querySelector('[style*="color"]') || 
-                                    element.querySelector('[style*="background"]');
-                    
-                    const isClickable = element.tagName === 'BUTTON' || 
-                                       element.getAttribute('role') === 'button' || 
-                                       element.getAttribute('tabindex') === '0';
-                    
-                    if (hasColor && isClickable) {
-                        const standardLabels = ['todos', 'no leídos', 'favoritos', 'grupos', 'archivados', 'cerrar', 'close', 'x'];
-                        const isStandardLabel = standardLabels.some(standard => 
-                            text.toLowerCase().includes(standard)
-                        );
-                        
-                        if (!isStandardLabel && !text.match(/^\d+$/) && !text.match(/^[+\-×÷]$/)) {
-                            foundLabels.set(text.toLowerCase(), {
-                                name: text,
-                                element: element,
-                                count: 0,
-                                isCustom: true,
-                                isRealLabel: true
-                            });
-                            console.log(`[TagsManager] 🏷️ Etiqueta de respaldo detectada: "${text}"`);
-                        }
-                    }
-                }
-            });
-            
-            // Agregar las etiquetas encontradas al mapping de la integración
-            if (foundLabels.size > 0) {
-                foundLabels.forEach((labelInfo, labelName) => {
-                    window.whatsappCRM.whatsappIntegration.labelMapping.set(labelName, labelInfo);
-                });
-                console.log(`[TagsManager] ✅ ${foundLabels.size} etiquetas agregadas por método de respaldo`);
-            }
-            
-        } catch (error) {
-            console.error('[TagsManager] ❌ Error en detección de respaldo:', error);
-        }
+        console.log('[TagsManager] Inicializando...');
+        await this.loadTagsFromLocal();
+        await this.syncWithSupabase();
+        this.updateTopbar();
     }
 
     async loadTagsFromLocal() {
@@ -876,22 +565,8 @@ class TagsManager {
     }
 
     getTagCount(tagId) {
-        // Usar el método del CRM principal si está disponible
-        if (window.whatsappCRM && window.whatsappCRM.getTagCount) {
-            return window.whatsappCRM.getTagCount(tagId);
-        }
-        return 0;
-    }
-
-    getTagCountForNative(tag) {
-        if (tag.isNative && tag.whatsappLabelName && window.whatsappCRM?.whatsappIntegration) {
-            // Para etiquetas nativas, usar contadores reales de WhatsApp Business
-            const realCount = window.whatsappCRM.whatsappIntegration.getWhatsAppLabelCount(tag.whatsappLabelName);
-            return realCount > 0 ? realCount : '•'; // Usar punto si no hay contador
-        }
-        
-        // Para etiquetas de Supabase, usar el método tradicional
-        return this.getTagCount(tag.id);
+        // Este método se implementará cuando se conecte con el sistema de contactos
+        return Math.floor(Math.random() * 50) + 1; // Simulación temporal
     }
 
     setCurrentFilter(filter) {
@@ -904,9 +579,6 @@ class TagsManager {
     }
 
     updateTopbar() {
-        console.log('[TagsManager] 🎨 Actualizando topbar...');
-        console.log(`[TagsManager] 📊 Etiquetas a mostrar: ${this.tags.length}`);
-        
         // Buscar el topbar tanto en el sidebar como en el topbar independiente
         let topbarScroll = document.getElementById('topbarScroll');
         
@@ -915,74 +587,49 @@ class TagsManager {
             const standaloneTopbar = document.getElementById('whatsapp-crm-topbar');
             if (standaloneTopbar) {
                 topbarScroll = standaloneTopbar.querySelector('#topbarScroll');
-                console.log('[TagsManager] 📺 Topbar encontrado en topbar independiente');
             }
-        } else {
-            console.log('[TagsManager] 📺 Topbar encontrado en sidebar');
         }
         
         if (!topbarScroll) {
-            console.log('[TagsManager] ❌ No se encontró el elemento topbarScroll');
-            console.log('[TagsManager] 🔍 Elementos disponibles:', {
-                topbarSection: !!document.getElementById('topbarSection'),
-                whatsappCrmTopbar: !!document.getElementById('whatsapp-crm-topbar'),
-                sidebar: !!document.getElementById('whatsapp-crm-sidebar')
-            });
+            console.log('[TagsManager] No se encontró el topbar');
             return;
         }
 
-        console.log('[TagsManager] ✅ Elemento topbarScroll encontrado');
+        // Etiquetas predefinidas
+        const predefinedTags = [
+            { id: 'all', name: 'Todos', icon: '👥', filter: 'all' },
+            { id: 'unread', name: 'No leídos', icon: '📬', filter: 'unread' },
+            { id: 'groups', name: 'Grupos', icon: '👥', filter: 'groups' }
+        ];
 
-        // Mostrar etiquetas (nativas de WhatsApp Business o fallback de Supabase)
-        if (this.tags.length === 0) {
-            console.log('[TagsManager] 📋 No hay etiquetas - mostrando mensaje vacío');
-            topbarScroll.innerHTML = `
-                <div class="empty-topbar">
-                    <div class="empty-topbar-content">
-                        <div class="empty-icon">🏷️</div>
-                        <p class="empty-text">No hay etiquetas detectadas</p>
-                        <p class="empty-subtext">Asegúrate de tener WhatsApp Business abierto</p>
-                        <button class="btn-secondary" onclick="window.redetectarEtiquetas()" style="margin-top: 8px;">
-                            🔄 Detectar Etiquetas
-                        </button>
+        // Generar HTML para etiquetas predefinidas
+        const predefinedHTML = predefinedTags.map(tag => `
+            <button class="topbar-item ${this.currentFilter === tag.filter ? 'active' : ''}" 
+                    data-filter="${tag.filter}" data-tag-id="${tag.id}">
+                <div class="topbar-item-content">
+                    <div class="topbar-icon">${tag.icon}</div>
+                    <span class="topbar-text">${tag.name}</span>
+                    <span class="topbar-count">${this.getTagCount(tag.id)}</span>
                 </div>
-                </div>
-            `;
-        } else {
-            console.log('[TagsManager] 🏷️ Generando HTML para etiquetas...');
-            
-            const tagsHTML = this.tags.map((tag, index) => {
-                // Determinar el icono y contador
-                const icon = tag.icon || (tag.isNative ? '🔗' : '🏷️');
-                const count = this.getTagCountForNative(tag);
-                const isActive = this.currentFilter === tag.id;
-                
-                console.log(`[TagsManager] 🏷️ ${index + 1}. "${tag.name}" - Count: ${count}, Native: ${tag.isNative}, Active: ${isActive}`);
-                
-                return `
-                    <button class="topbar-item ${isActive ? 'active' : ''}" 
-                            data-filter="${tag.id}" 
-                            data-tag-id="${tag.id}"
-                            data-is-native="${tag.isNative || false}"
-                            data-whatsapp-label="${tag.whatsappLabelName || ''}"
-                            title="${tag.description || tag.name}">
-                        <div class="topbar-item-content">
-                            <div class="topbar-icon" style="color: ${tag.color}">${icon}</div>
-                            <span class="topbar-text">${tag.name}</span>
-                            <span class="topbar-count">${count}</span>
-                        </div>
-                    </button>
-                `;
-            }).join('');
+            </button>
+        `).join('');
 
-            topbarScroll.innerHTML = tagsHTML;
-            console.log(`[TagsManager] ✅ HTML generado (${tagsHTML.length} caracteres)`);
-        }
+        // Generar HTML para etiquetas personalizadas
+        const customTagsHTML = this.tags.map(tag => `
+            <button class="topbar-item ${this.currentFilter === tag.id ? 'active' : ''}" 
+                    data-filter="${tag.id}" data-tag-id="${tag.id}">
+                <div class="topbar-item-content">
+                    <div class="topbar-icon" style="color: ${tag.color}">🏷️</div>
+                    <span class="topbar-text">${tag.name}</span>
+                    <span class="topbar-count">${this.getTagCount(tag.id)}</span>
+                </div>
+            </button>
+        `).join('');
+
+        topbarScroll.innerHTML = predefinedHTML + customTagsHTML;
 
         // Vincular eventos
         this.bindTopbarEvents();
-        console.log('[TagsManager] 🎯 Eventos del topbar vinculados');
-        console.log('[TagsManager] 🎨 Topbar actualizado completamente');
     }
 
     bindTopbarEvents() {
@@ -1007,23 +654,12 @@ class TagsManager {
                 });
                 document.dispatchEvent(event);
                 
-                // Aplicar filtro nativo de WhatsApp Business
-                if (window.whatsappCRM?.whatsappIntegration) {
-                    const tag = this.tags.find(t => t.id === filter);
-                    
-                    if (tag && tag.isNative && tag.whatsappLabelName) {
-                        // Etiqueta nativa: hacer click directo en el elemento real de WhatsApp
-                        console.log(`[TagsManager] 🔗 Click nativo en etiqueta: ${tag.whatsappLabelName}`);
-                        window.whatsappCRM.whatsappIntegration.clickWhatsAppLabel(tag.whatsappLabelName);
-                    } else if (tag) {
-                        // Etiqueta de Supabase: usar integración simplificada
-                        console.log(`[TagsManager] 🎯 Filtro CRM: ${tag.name}`);
-                        if (window.whatsappCRM.whatsappFilterIntegration) {
-                            window.whatsappCRM.whatsappFilterIntegration.applyFilter(filter, tag.name);
-                        }
-                    }
-                } else {
-                    console.log('[TagsManager] ⚠️ WhatsApp Business Integration no disponible');
+                // Hacer click en la etiqueta correspondiente de WhatsApp Business
+                if (window.whatsappCRM && window.whatsappCRM.whatsappIntegration) {
+                    window.whatsappCRM.whatsappIntegration.clickWhatsAppLabel(filter === 'all' ? 'Todos' : 
+                        filter === 'unread' ? 'No leídos' : 
+                        filter === 'groups' ? 'Grupos' : 
+                        this.tags.find(t => t.id === filter)?.name || filter);
                 }
                 
                 console.log('[TagsManager] Filtro cambiado:', filter, tagId);
@@ -1138,287 +774,6 @@ class FilterManager {
 
     getCurrentFilter() {
         return this.currentFilter;
-    }
-}
-
-
-class WhatsAppFilterIntegration {
-    constructor() {
-        this.currentFilter = 'all';
-        this.filterMethods = [];
-        this.lastSuccessfulMethod = null;
-        this.debugMode = true;
-        
-        this.init();
-    }
-    
-    init() {
-        console.log('[FilterIntegration] 🚀 Inicializando integración robusta de filtros...');
-        
-        // Registrar métodos de filtrado en orden de prioridad
-        this.registerFilterMethods();
-        
-        // Detectar la estructura actual de WhatsApp
-        this.analyzeWhatsAppStructure();
-    }
-    
-    registerFilterMethods() {
-        // Solo el método más efectivo para WhatsApp Business
-        this.filterMethods.push({
-            name: 'WhatsApp Business DOM Click',
-            method: this.advancedDOMClickMethod.bind(this),
-            priority: 1
-        });
-        
-        console.log(`[FilterIntegration] ✅ Solo método específico para WhatsApp Business registrado`);
-    }
-    
-    async applyFilter(filterId, filterName) {
-        console.log(`[FilterIntegration] 🎯 Aplicando filtro: ${filterId} (${filterName})`);
-        
-        this.currentFilter = filterId;
-        
-        // Si tenemos un método que funcionó la última vez, probarlo primero
-        if (this.lastSuccessfulMethod) {
-            console.log(`[FilterIntegration] 🔄 Probando último método exitoso: ${this.lastSuccessfulMethod.name}`);
-            const success = await this.tryMethod(this.lastSuccessfulMethod, filterId, filterName);
-            if (success) {
-                return true;
-            }
-        }
-        
-        // Probar todos los métodos en orden de prioridad
-        const sortedMethods = this.filterMethods.sort((a, b) => a.priority - b.priority);
-        
-        for (const method of sortedMethods) {
-            console.log(`[FilterIntegration] 🧪 Probando método: ${method.name}`);
-            const success = await this.tryMethod(method, filterId, filterName);
-            
-            if (success) {
-                this.lastSuccessfulMethod = method;
-                console.log(`[FilterIntegration] ✅ Método exitoso: ${method.name}`);
-                return true;
-            }
-            
-            // Esperar un poco antes del siguiente método
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        console.log(`[FilterIntegration] ❌ Ningún método funcionó para ${filterId}`);
-        return false;
-    }
-    
-    async tryMethod(method, filterId, filterName) {
-        try {
-            const result = await method.method(filterId, filterName);
-            return result === true;
-        } catch (error) {
-            console.log(`[FilterIntegration] ⚠️ Error en ${method.name}:`, error.message);
-            return false;
-        }
-    }
-    
-    // Método eliminado: scriptInjectionMethod (muy complejo, no necesario para WhatsApp Business)
-    
-    // Método eliminado: reactEventMethod (duplica funcionalidad del advancedDOMClickMethod)
-    
-    // Método eliminado: keyboardNavigationMethod (no funciona bien con WhatsApp Business)
-    
-    // MÉTODO PRINCIPAL: Búsqueda y click específico para WhatsApp Business
-    async advancedDOMClickMethod(filterId, filterName) {
-        console.log(`[FilterIntegration] 🔍 WhatsApp Business DOM Click para: ${filterName}`);
-        
-        // Solo las estrategias más efectivas para WhatsApp Business
-        const searchStrategies = [
-            () => this.findByAriaLabel(filterName),     // WhatsApp usa aria-label
-            () => this.findByTextContent(filterName),   // Buscar por texto exacto
-            () => this.findByDataAttributes(filterId)   // WhatsApp usa data-testid
-        ];
-        
-        for (const strategy of searchStrategies) {
-            const elements = strategy();
-            
-            if (elements.length > 0) {
-                console.log(`[FilterIntegration] 🎯 Encontrados ${elements.length} elementos, probando...`);
-            
-            for (const element of elements) {
-                console.log(`[FilterIntegration] 🎯 Probando elemento:`, element);
-                
-                const success = await this.performAdvancedClick(element);
-                if (success) {
-                        console.log(`[FilterIntegration] ✅ Click exitoso en: ${filterName}`);
-                    return true;
-                }
-                
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-        }
-        }
-        
-        console.log(`[FilterIntegration] ❌ No se pudo hacer click en: ${filterName}`);
-        return false;
-    }
-    
-    // Método eliminado: urlManipulationMethod (manipula el historial, no recomendado)
-    
-    // Métodos auxiliares
-    findByAriaLabel(filterName) {
-        return Array.from(document.querySelectorAll(`[aria-label*="${filterName}"]`));
-    }
-    
-    findByTextContent(filterName) {
-        return Array.from(document.querySelectorAll('*')).filter(el => 
-            el.textContent?.trim().toLowerCase() === filterName.toLowerCase()
-        );
-    }
-    
-    findByDataAttributes(filterId) {
-        const selectors = [
-            `[data-testid*="${filterId}"]`,
-            `[data-filter="${filterId}"]`,
-            `[data-tab="${filterId}"]`
-        ];
-        
-        const elements = [];
-        selectors.forEach(selector => {
-            elements.push(...document.querySelectorAll(selector));
-        });
-        
-        return elements;
-    }
-    
-    // Métodos eliminados: findByClassPatterns y findByPosition (no necesarios para WhatsApp Business)
-    
-    async performAdvancedClick(element) {
-        if (!element) return false;
-        
-        try {
-            console.log(`[FilterIntegration] 🖱️ Haciendo click en:`, element);
-            
-            // Método 1: Click directo (más simple)
-            if (element.click) {
-                element.click();
-                await new Promise(resolve => setTimeout(resolve, 100));
-                if (this.hasFilterChanged()) return true;
-            }
-            
-            // Método 2: Evento click simple
-            const clickEvent = new MouseEvent('click', { 
-                bubbles: true, 
-                cancelable: true,
-                button: 0 
-            });
-            element.dispatchEvent(clickEvent);
-            await new Promise(resolve => setTimeout(resolve, 100));
-            if (this.hasFilterChanged()) return true;
-            
-            // Método 3: Solo si los anteriores fallan, usar secuencia completa
-            const events = [
-                new MouseEvent('mousedown', { bubbles: true, button: 0 }),
-                new MouseEvent('mouseup', { bubbles: true, button: 0 }),
-                new MouseEvent('click', { bubbles: true, button: 0 })
-            ];
-            
-            for (const event of events) {
-                element.dispatchEvent(event);
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, 200));
-            return this.hasFilterChanged();
-            
-        } catch (error) {
-            console.log(`[FilterIntegration] Error en click:`, error);
-            return false;
-        }
-    }
-    
-    hasFilterChanged() {
-        // Implementar detección real de cambios de filtro
-        try {
-            // Método 1: Verificar cambios en URL/hash
-            const currentUrl = window.location.href;
-            if (this.lastUrl && this.lastUrl !== currentUrl) {
-                console.log('[FilterIntegration] ✅ Cambio detectado en URL');
-                this.lastUrl = currentUrl;
-                return true;
-            }
-            this.lastUrl = currentUrl;
-            
-            // Método 2: Verificar elementos activos/seleccionados
-            const activeElements = document.querySelectorAll([
-                '.active',
-                '[aria-selected="true"]',
-                '[data-active="true"]',
-                '.selected',
-                '[class*="active"]',
-                '[class*="selected"]'
-            ].join(', '));
-            
-            const currentActiveElements = activeElements.length;
-            if (this.lastActiveCount !== undefined && this.lastActiveCount !== currentActiveElements) {
-                console.log('[FilterIntegration] ✅ Cambio detectado en elementos activos');
-                this.lastActiveCount = currentActiveElements;
-                return true;
-            }
-            this.lastActiveCount = currentActiveElements;
-            
-            // Método 3: Verificar cambios en la lista de chats visible
-            const chatList = document.querySelector('[data-testid="chat-list"]');
-            if (chatList) {
-                const chatsCount = chatList.querySelectorAll('[data-testid*="cell"]').length;
-                if (this.lastChatsCount !== undefined && this.lastChatsCount !== chatsCount) {
-                    console.log('[FilterIntegration] ✅ Cambio detectado en lista de chats');
-                    this.lastChatsCount = chatsCount;
-                    return true;
-                }
-                this.lastChatsCount = chatsCount;
-            }
-            
-            // Método 4: Verificar cambios en elementos con texto de filtros
-            const filterTexts = ['Todos', 'No leídos', 'Favoritos', 'Grupos'];
-            let hasActiveFilter = false;
-            
-            filterTexts.forEach(text => {
-                const elements = Array.from(document.querySelectorAll('*')).filter(el => 
-                    el.textContent?.trim() === text && 
-                    (el.classList.contains('active') || el.getAttribute('aria-selected') === 'true')
-                );
-                
-                if (elements.length > 0) {
-                    hasActiveFilter = true;
-                    const currentActiveFilter = text.toLowerCase();
-                    if (this.lastActiveFilter && this.lastActiveFilter !== currentActiveFilter) {
-                        console.log(`[FilterIntegration] ✅ Cambio de filtro detectado: ${this.lastActiveFilter} → ${currentActiveFilter}`);
-                        this.lastActiveFilter = currentActiveFilter;
-                        return true;
-                    }
-                    this.lastActiveFilter = currentActiveFilter;
-                }
-            });
-            
-            // Por ahora, asumir que no hubo cambio detectable
-            return false;
-            
-        } catch (error) {
-            console.log('[FilterIntegration] ⚠️ Error verificando cambios:', error);
-            return false;
-        }
-    }
-    
-    analyzeWhatsAppStructure() {
-        console.log('[FilterIntegration] 🔍 Analizando estructura de WhatsApp...');
-        
-        const analysis = {
-            hasStore: !!window.Store,
-            hasRequire: typeof require !== 'undefined',
-            hasReactElements: document.querySelectorAll('[data-testid]').length,
-            sidebarElements: document.querySelectorAll('[data-testid="side"] *').length,
-            filterElements: document.querySelectorAll('[aria-label*="filter"], [data-testid*="filter"]').length
-        };
-        
-        console.log('[FilterIntegration] 📊 Análisis:', analysis);
-        return analysis;
     }
 }
 
@@ -1545,157 +900,234 @@ class WhatsAppBusinessIntegration {
     
     async detectWhatsAppLabels() {
         try {
-            console.log('[WhatsAppBusiness] 🔍 Detectando etiquetas de WhatsApp Business...');
+            // Primero intentar detectar filtros nativos de WhatsApp Business
+            console.log('[WhatsAppBusiness] 🔍 Detectando filtros nativos de WhatsApp Business...');
             const foundLabels = new Map();
             
-            // MÉTODO SIMPLE Y DIRECTO: Buscar etiquetas en WhatsApp Business
-            await this.detectWhatsAppBusinessLabels(foundLabels);
+            // Método 1: Detectar filtros nativos específicos
+            await this.detectNativeWhatsAppFilters(foundLabels);
+            
+                    // Método 2: Detectar por selectores específicos de WhatsApp Web actual
+        const labelSelectors = [
+            // Selectores específicos de WhatsApp Web 2024
+            '[data-testid*="filter"]',
+            '[data-testid*="label"]',
+            '[data-testid="filter-button"]',
+            '[data-testid="chat-list-filter"]',
+            
+            // Selectores de aria-label
+            '[aria-label*="filter"]',
+            '[aria-label*="filtro"]',
+            '[aria-label*="Filter"]',
+            '[aria-label*="Filtro"]',
+            
+            // Selectores de botones con etiquetas
+            'button[aria-label*="label"]',
+            'button[aria-label*="Label"]',
+            'div[role="button"][aria-label*="label"]',
+            'div[role="button"][aria-label*="Label"]',
+            
+            // Selectores específicos de WhatsApp Web
+            'div[role="button"][tabindex="0"]',
+            'button[tabindex="0"]',
+            '[class*="filter"]',
+            '[class*="Filter"]'
+        ];
+            
+            for (const selector of labelSelectors) {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(element => {
+                    const labelInfo = this.extractLabelInfo(element);
+                    if (labelInfo) {
+                        foundLabels.set(labelInfo.name.toLowerCase(), labelInfo);
+                    }
+                });
+            }
+            
+                    // Método 3: Búsqueda en el sidebar de WhatsApp
+        this.detectSidebarLabels(foundLabels);
+        
+        // Método 4: Detectar etiquetas personalizadas de WhatsApp Business
+        if (this.isBusinessAccount) {
+            await this.detectBusinessCustomLabels(foundLabels);
+        }
             
             if (foundLabels.size > 0) {
                 console.log('[WhatsAppBusiness] ✅ Etiquetas detectadas:', foundLabels);
                 this.whatsappLabels = foundLabels;
                 this.updateLabelMapping();
             } else {
-                console.log('[WhatsAppBusiness] ⚠️ No se detectaron etiquetas, reintentando en 5 segundos...');
-                setTimeout(() => this.detectWhatsAppLabels(), 5000);
+                console.log('[WhatsAppBusiness] ⚠️ No se detectaron etiquetas, reintentando en 3 segundos...');
+                setTimeout(() => this.detectWhatsAppLabels(), 3000);
             }
         } catch (error) {
             console.error('[WhatsAppBusiness] Error detectando etiquetas:', error);
         }
     }
     
-    // MÉTODO NUEVO Y SIMPLE: Detectar etiquetas de WhatsApp Business desde cero
-    async detectWhatsAppBusinessLabels(foundLabels) {
-        console.log('[WhatsAppBusiness] 🏷️ Detectando etiquetas de WhatsApp Business (método simple)...');
+    async detectNativeWhatsAppFilters(foundLabels) {
+        console.log('[WhatsAppBusiness] 🔍 Detectando filtros nativos de WhatsApp Web...');
         
-        // PASO 1: Buscar elementos clickeables que parezcan etiquetas
-        const allClickableElements = document.querySelectorAll('button, [role="button"], div[tabindex="0"]');
-        console.log(`[WhatsAppBusiness] 🔍 Encontrados ${allClickableElements.length} elementos clickeables`);
+        // Primero buscar específicamente en chat-list-filters
+        this.detectChatListFilters(foundLabels);
         
-        allClickableElements.forEach(element => {
-            const text = element.textContent?.trim();
-            
-            // Solo procesar elementos con texto válido
-            if (text && text.length > 0 && text.length < 50) {
-                
-                // Excluir elementos que NO son etiquetas
-                const excludePatterns = [
-                    /^(cerrar|close|x|\+|\d+)$/i,  // Botones de control
-                    /^(todos|no leídos|favoritos|grupos|archivados)$/i,  // Filtros estándar
-                    /^(etiquetas|labels|business)$/i,  // Títulos de sección
-                    /^[+\-×÷]$/,  // Símbolos matemáticos
-                    /^\d+$/,  // Solo números
-                    /^(buscar|search|filtrar|filter)$/i  // Botones de acción
-                ];
-                
-                const shouldExclude = excludePatterns.some(pattern => pattern.test(text));
-                
-                if (!shouldExclude) {
-                    // Verificar si parece una etiqueta de negocio
-                    const businessKeywords = [
-                        'cliente', 'pedido', 'pago', 'venta', 'compra', 'entrega', 'factura',
-                        'nuevo', 'pendiente', 'completado', 'cancelado', 'urgente', 'importante',
-                        'vip', 'premium', 'regular', 'especial', 'promoción', 'oferta',
-                        'workshop', 'soporte', 'consultoría', 'servicio'
-                    ];
-                    
-                    const isBusinessLabel = businessKeywords.some(keyword => 
-                        text.toLowerCase().includes(keyword)
-                    );
-                    
-                    // También incluir elementos con colores (indicativo de etiquetas)
-                    const hasColor = element.style.color || element.style.backgroundColor || 
-                                    element.querySelector('[style*="color"]') || 
-                                    element.querySelector('[style*="background"]');
-                    
-                    if (isBusinessLabel || hasColor) {
-                        const labelInfo = {
-                            name: text,
-                            element: element,
-                            count: this.extractCount(element) || 0,
-                            selector: this.generateSelector(element),
-                            isCustom: true,
-                            isRealLabel: true
-                        };
-                        
-                        foundLabels.set(text.toLowerCase(), labelInfo);
-                        console.log(`[WhatsAppBusiness] 🏷️ Etiqueta detectada: "${text}" (Business: ${isBusinessLabel}, Color: ${!!hasColor})`);
-                    }
-                }
+        // También buscar en el panel lateral de WhatsApp Web
+        this.detectSidebarFilters(foundLabels);
+        
+        // Filtros base para ambas versiones
+        let nativeFilters = [
+            { 
+                name: 'Todos', 
+                selectors: [
+                    '[aria-label*="Todos"]', 
+                    '[aria-label*="All"]', 
+                    '[aria-label*="todos"]',
+                    '[data-testid*="filter-all"]',
+                    'button:contains("Todos")',
+                    '*[role="button"]:contains("Todos")'
+                ] 
+            },
+            { 
+                name: 'No leídos', 
+                selectors: [
+                    '[aria-label*="No leídos"]', 
+                    '[aria-label*="Unread"]', 
+                    '[aria-label*="no leídos"]',
+                    '[data-testid*="filter-unread"]',
+                    'button:contains("No leídos")',
+                    '*[role="button"]:contains("No leídos")'
+                ] 
+            },
+            { 
+                name: 'Favoritos', 
+                selectors: [
+                    '[aria-label*="Favoritos"]', 
+                    '[aria-label*="Starred"]', 
+                    '[aria-label*="favoritos"]',
+                    '[data-testid*="filter-starred"]',
+                    'button:contains("Favoritos")',
+                    '*[role="button"]:contains("Favoritos")'
+                ] 
+            },
+            { 
+                name: 'Grupos', 
+                selectors: [
+                    '[aria-label*="Grupos"]', 
+                    '[aria-label*="Groups"]', 
+                    '[aria-label*="grupos"]',
+                    '[data-testid*="filter-groups"]',
+                    'button:contains("Grupos")',
+                    '*[role="button"]:contains("Grupos")'
+                ] 
             }
-        });
+        ];
         
-        console.log(`[WhatsAppBusiness] ✅ Total etiquetas detectadas: ${foundLabels.size}`);
-        
-        // PASO 2: Si no encontramos etiquetas, intentar abrir el panel de etiquetas
-        if (foundLabels.size === 0) {
-            console.log('[WhatsAppBusiness] 🔓 No se encontraron etiquetas, intentando abrir panel...');
-            await this.tryOpenLabelsPanel(foundLabels);
+        // Filtros adicionales específicos para WhatsApp Business
+        if (this.isBusinessAccount) {
+            const businessFilters = [
+                {
+                    name: 'Etiquetas',
+                    selectors: [
+                        '[data-testid="labels-filter"]',
+                        '[aria-label*="Labels"]',
+                        '[aria-label*="Etiquetas"]',
+                        '[aria-label*="labels"]',
+                        'button:contains("Etiquetas")',
+                        '*[role="button"]:contains("Labels")'
+                    ]
+                },
+                {
+                    name: 'Sin etiqueta',
+                    selectors: [
+                        '[aria-label*="Sin etiqueta"]',
+                        '[aria-label*="No label"]',
+                        '[aria-label*="Unlabeled"]',
+                        'button:contains("Sin etiqueta")',
+                        '*[role="button"]:contains("No label")'
+                    ]
+                },
+                {
+                    name: 'Archivados',
+                    selectors: [
+                        '[aria-label*="Archivados"]',
+                        '[aria-label*="Archived"]',
+                        '[aria-label*="archived"]',
+                        '[data-testid*="archived"]',
+                        'button:contains("Archivados")',
+                        '*[role="button"]:contains("Archived")'
+                    ]
+                }
+            ];
+            
+            nativeFilters = nativeFilters.concat(businessFilters);
+            console.log('[WhatsAppBusiness] ✅ Agregados filtros específicos de WhatsApp Business');
         }
-    }
-    
-    async tryOpenLabelsPanel(foundLabels) {
-        console.log('[WhatsAppBusiness] 🔓 Intentando abrir panel de etiquetas...');
         
-        // Buscar botones que puedan abrir etiquetas
-        const labelButtons = document.querySelectorAll('button, [role="button"]');
-        
-        for (const button of labelButtons) {
-            const text = button.textContent?.trim() || '';
-            const ariaLabel = button.getAttribute('aria-label') || '';
-            const title = button.getAttribute('title') || '';
-            
-            const allText = `${text} ${ariaLabel} ${title}`.toLowerCase();
-            
-            // Verificar si es un botón de etiquetas
-            if (allText.includes('etiqueta') || allText.includes('label')) {
-                console.log(`[WhatsAppBusiness] 🎯 Botón de etiquetas encontrado: "${text || ariaLabel || title}"`);
-                
+        for (const filter of nativeFilters) {
+            for (const selector of filter.selectors) {
                 try {
-                    // Hacer click en el botón
-                    button.click();
-                    console.log('[WhatsAppBusiness] ✅ Click realizado en botón de etiquetas');
-                    
-                    // Esperar a que se abra el panel
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    
-                    // Buscar etiquetas en el panel abierto
-                    const panelElements = document.querySelectorAll('button, [role="button"], div[tabindex="0"]');
-                    
-                    panelElements.forEach(element => {
-                        const text = element.textContent?.trim();
-                        if (text && text.length > 0 && text.length < 50) {
-                            // Excluir elementos de control
-                            if (!text.match(/^(cerrar|close|x|\+|\d+)$/i) && 
-                                !text.includes('Etiquetas') && 
-                                !text.includes('Labels')) {
-                                
-                                const labelInfo = {
-                                    name: text,
-                                    element: element,
-                                    count: 0,
-                                    isCustom: true,
-                                    isRealLabel: true
-                                };
-                                
-                                foundLabels.set(text.toLowerCase(), labelInfo);
-                                console.log(`[WhatsAppBusiness] 🏷️ Etiqueta de panel detectada: "${text}"`);
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(element => {
+                        if (this.isClickableLabel(element) || this.findClickableParent(element)) {
+                            const clickableElement = this.isClickableLabel(element) ? element : this.findClickableParent(element);
+                            if (clickableElement) {
+                                foundLabels.set(filter.name.toLowerCase(), {
+                                    name: filter.name,
+                                    element: clickableElement,
+                                    count: this.extractCount(clickableElement),
+                                    selector: this.generateSelector(clickableElement)
+                                });
+                                console.log(`[WhatsAppBusiness] 🎯 Filtro nativo detectado: ${filter.name}`, clickableElement);
                             }
                         }
                     });
-                    
-                    if (foundLabels.size > 0) {
-                        console.log(`[WhatsAppBusiness] ✅ ${foundLabels.size} etiquetas encontradas en panel`);
-                        return;
-                    }
-                    
-                } catch (error) {
-                    console.log('[WhatsAppBusiness] ⚠️ Error abriendo panel:', error.message);
+                } catch (e) {
+                    // Selector no válido, continuar
                 }
             }
         }
         
-        console.log('[WhatsAppBusiness] ⚠️ No se pudo abrir el panel de etiquetas');
+        // También buscar elementos que contengan texto de filtros conocidos
+        this.searchByTextContent(foundLabels);
+    }
+    
+    searchByTextContent(foundLabels) {
+        const filterTexts = ['Todos', 'No leídos', 'Favoritos', 'Grupos', 'Archivadas'];
+        
+        filterTexts.forEach(text => {
+            // Buscar todos los elementos que contengan este texto
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: function(node) {
+                        return node.textContent.trim() === text ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+                    }
+                }
+            );
+            
+            let textNode;
+            while (textNode = walker.nextNode()) {
+                // Buscar el elemento clickeable que contiene este texto
+                let current = textNode.parentElement;
+                let attempts = 0;
+                
+                while (current && attempts < 5) {
+                    if (this.isClickableLabel(current)) {
+                        foundLabels.set(text.toLowerCase(), {
+                            name: text,
+                            element: current,
+                            count: this.extractCount(current),
+                            selector: this.generateSelector(current)
+                        });
+                        console.log(`[WhatsAppBusiness] 📝 Filtro por texto detectado: ${text}`, current);
+                        break;
+                    }
+                    current = current.parentElement;
+                    attempts++;
+                }
+            }
+        });
     }
     
     detectChatListFilters(foundLabels) {
@@ -1771,6 +1203,7 @@ class WhatsAppBusinessIntegration {
     }
     
     detectSidebarFilters(foundLabels) {
+        console.log('[WhatsAppBusiness] 🔍 Buscando filtros en sidebar de WhatsApp Web...');
         
         // Buscar en el panel lateral izquierdo de WhatsApp Web
         const sidebarSelectors = [
@@ -1840,353 +1273,93 @@ class WhatsAppBusinessIntegration {
     async detectBusinessCustomLabels(foundLabels) {
         console.log('[WhatsAppBusiness] 🏷️ Detectando etiquetas personalizadas de WhatsApp Business...');
         
-        // MÉTODO 1: Detectar panel de etiquetas abierto
-        await this.detectLabelsPanel(foundLabels);
-        
-        // MÉTODO 2: Si no se encontraron etiquetas, intentar abrir el panel automáticamente
-        if (foundLabels.size === 0) {
-            console.log('[WhatsAppBusiness] 🔓 No se encontraron etiquetas, intentando abrir panel automáticamente...');
-            await this.openLabelsPanelAndDetect(foundLabels);
-        }
-        
-        // MÉTODO 3: Búsqueda específica para WhatsApp Business - Panel de etiquetas
-        await this.detectBusinessLabelsPanel(foundLabels);
-        
-        // MÉTODO 4: Búsqueda en el sidebar de WhatsApp Business
-        this.detectBusinessSidebarLabels(foundLabels);
-        
-        // MÉTODO 5: Búsqueda por texto específico de etiquetas de negocio
-        this.detectBusinessLabelsByText(foundLabels);
-        
-        console.log(`[WhatsAppBusiness] ✅ ${foundLabels.size} etiquetas personalizadas detectadas`);
-    }
-    
-    async detectBusinessLabelsPanel(foundLabels) {
-        console.log('[WhatsAppBusiness] 🔍 Detectando panel específico de etiquetas de WhatsApp Business...');
-        
-        // Selectores específicos para el panel de etiquetas de WhatsApp Business
-        const businessPanelSelectors = [
-            // Panel principal de etiquetas de WhatsApp Business
-            '[data-testid="labels-panel"]',
-            '[data-testid="business-labels"]',
-            '[aria-label*="Etiquetas"]',
-            '[aria-label*="Labels"]',
-            '.labels-panel',
-            '.business-labels',
-            
-            // Contenedores específicos
-            '[data-testid="label-list"]',
-            '[data-testid="business-label-list"]',
-            '.label-list',
-            '.business-label-list',
-            
-            // Elementos individuales de etiquetas de negocio
+        // Selectores específicos para etiquetas personalizadas de WhatsApp Business
+        const businessLabelSelectors = [
+            // Selectores principales de etiquetas
+            '[data-testid="label-filter-item"]',
             '[data-testid="label-item"]',
-            '[data-testid="business-label-item"]',
+            '[data-testid="business-label"]',
             '.label-item',
-            '.business-label-item',
+            '.business-label',
             
-            // Overlays y modales que pueden contener etiquetas
-            '[role="dialog"]',
-            '[data-testid="modal"]',
-            '.overlay',
-            '.modal'
+            // Por aria-label
+            '[aria-label*="label"]',
+            '[aria-label*="Label"]',
+            '[aria-label*="etiqueta"]',
+            '[aria-label*="Etiqueta"]',
+            
+            // Por clases comunes de etiquetas
+            '[class*="label"]',
+            '[class*="Label"]',
+            '[class*="tag"]',
+            '[class*="Tag"]'
         ];
         
-        for (const selector of businessPanelSelectors) {
+        const customLabels = new Set();
+        
+        // Buscar etiquetas con colores (indicativo de etiquetas personalizadas)
+        const coloredElements = document.querySelectorAll('[style*="color"], [style*="background"]');
+        coloredElements.forEach(element => {
+            const text = element.textContent?.trim();
+            if (text && text.length > 0 && text.length < 50) { // Filtrar textos que parezcan etiquetas
+                // Verificar si es clickeable o tiene un padre clickeable
+                if (this.isClickableLabel(element) || this.findClickableParent(element)) {
+                    customLabels.add({
+                        name: text,
+                        element: this.isClickableLabel(element) ? element : this.findClickableParent(element)
+                    });
+                }
+            }
+        });
+        
+        // Buscar específicamente por selectores de etiquetas
+        businessLabelSelectors.forEach(selector => {
             try {
                 const elements = document.querySelectorAll(selector);
-                console.log(`[WhatsAppBusiness] 🔍 Selector "${selector}": ${elements.length} elementos encontrados`);
-                
-                elements.forEach((element, index) => {
-                    // Buscar elementos clickeables dentro del panel
-                    const clickableElements = element.querySelectorAll('button, [role="button"], [tabindex="0"]');
+                elements.forEach(element => {
+                    const text = element.textContent?.trim();
+                    const ariaLabel = element.getAttribute('aria-label');
+                    const title = element.getAttribute('title');
                     
-                    clickableElements.forEach(clickable => {
-                        const text = clickable.textContent?.trim();
-                        const ariaLabel = clickable.getAttribute('aria-label');
-                        const title = clickable.getAttribute('title');
+                    const labelName = text || ariaLabel || title;
+                    if (labelName && labelName.length > 0 && labelName.length < 50) {
+                        // Excluir etiquetas estándar que ya fueron detectadas
+                        const standardLabels = ['todos', 'no leídos', 'favoritos', 'grupos', 'archivados'];
+                        const isStandardLabel = standardLabels.some(standard => 
+                            labelName.toLowerCase().includes(standard) || 
+                            standard.includes(labelName.toLowerCase())
+                        );
                         
-                        const labelName = text || ariaLabel || title;
-                        
-                        if (labelName && labelName.length > 0 && labelName.length < 50) {
-                            // Excluir etiquetas estándar y elementos de control
-                            const standardLabels = ['todos', 'no leídos', 'favoritos', 'grupos', 'archivados', 'cerrar', 'close', 'x'];
-                            const isStandardLabel = standardLabels.some(standard => 
-                                labelName.toLowerCase().includes(standard) || 
-                                standard.includes(labelName.toLowerCase())
-                            );
-                            
-                            if (!isStandardLabel && !labelName.match(/^\d+$/) && !labelName.match(/^[+\-×÷]$/)) {
-                                const labelInfo = {
+                        if (!isStandardLabel) {
+                            const clickableElement = this.isClickableLabel(element) ? element : this.findClickableParent(element);
+                            if (clickableElement) {
+                                customLabels.add({
                                     name: labelName,
-                                    element: clickable,
-                                    count: this.extractCount(clickable),
-                                    selector: this.generateSelector(clickable),
-                                    isCustom: true,
-                                    isRealLabel: true // Marcar como etiqueta real de WhatsApp Business
-                                };
-                                
-                                foundLabels.set(labelName.toLowerCase(), labelInfo);
-                                console.log(`[WhatsAppBusiness] 🏷️ Etiqueta de negocio detectada: "${labelName}" (count: ${labelInfo.count})`);
+                                    element: clickableElement
+                                });
                             }
                         }
-                    });
+                    }
                 });
             } catch (e) {
-                console.log(`[WhatsAppBusiness] ⚠️ Error con selector "${selector}":`, e.message);
-            }
-        }
-    }
-    
-    detectBusinessSidebarLabels(foundLabels) {
-        console.log('[WhatsAppBusiness] 🔍 Detectando etiquetas en sidebar de WhatsApp Business...');
-        
-        // Buscar en el sidebar principal de WhatsApp
-        const sidebarSelectors = [
-            '[data-testid="chat-list"]',
-            '[data-testid="side"]',
-            '.chat-list',
-            '.sidebar'
-        ];
-        
-        sidebarSelectors.forEach(selector => {
-            const sidebar = document.querySelector(selector);
-            if (sidebar) {
-                // Buscar elementos que parezcan etiquetas en el sidebar
-                const potentialLabels = sidebar.querySelectorAll('button, [role="button"], div[tabindex="0"]');
-                
-                potentialLabels.forEach(element => {
-                    const text = element.textContent?.trim();
-                    if (text && text.length > 0 && text.length < 30) {
-                        // Verificar si parece una etiqueta de negocio
-                        const hasColor = element.style.color || element.style.backgroundColor || 
-                                        element.querySelector('[style*="color"]') || 
-                                        element.querySelector('[style*="background"]');
-                        
-                        if (hasColor && this.isClickableLabel(element)) {
-                            const standardLabels = ['todos', 'no leídos', 'favoritos', 'grupos', 'archivados'];
-                            const isStandardLabel = standardLabels.some(standard => 
-                                text.toLowerCase().includes(standard)
-                            );
-                            
-                            if (!isStandardLabel && !text.match(/^\d+$/) && !text.match(/^[+\-×÷]$/)) {
-                                const labelInfo = {
-                                    name: text,
-                                    element: element,
-                                    count: this.extractCount(element),
-                                    selector: this.generateSelector(element),
-                                    isCustom: true,
-                                    isRealLabel: true
-                                };
-                                
-                                foundLabels.set(text.toLowerCase(), labelInfo);
-                                console.log(`[WhatsAppBusiness] 🏷️ Etiqueta de sidebar detectada: "${text}"`);
-                            }
-                        }
-                    }
-                });
+                // Selector no válido, continuar
             }
         });
-    }
-    
-    detectBusinessLabelsByText(foundLabels) {
-        console.log('[WhatsAppBusiness] 🔍 Detectando etiquetas por texto específico...');
         
-        // Buscar elementos que contengan texto que parezca etiquetas de negocio
-        const businessKeywords = [
-            'cliente', 'pedido', 'pago', 'venta', 'compra', 'entrega', 'factura',
-            'nuevo', 'pendiente', 'completado', 'cancelado', 'urgente', 'importante',
-            'vip', 'premium', 'regular', 'especial', 'promoción', 'oferta'
-        ];
-        
-        // Buscar elementos que contengan estas palabras clave
-        businessKeywords.forEach(keyword => {
-            const elements = this.findElementsByText(keyword);
-            elements.forEach(element => {
-                const text = element.textContent?.trim();
-                if (text && text.length > 0 && text.length < 50) {
-                    // Verificar si es clickeable y parece una etiqueta
-                    if (this.isClickableLabel(element) || this.findClickableParent(element)) {
-                        const clickableElement = this.isClickableLabel(element) ? element : this.findClickableParent(element);
-                        
-                        const labelInfo = {
-                            name: text,
-                            element: clickableElement,
-                            count: this.extractCount(clickableElement),
-                            selector: this.generateSelector(clickableElement),
-                            isCustom: true,
-                            isRealLabel: true
-                        };
-                        
-                        foundLabels.set(text.toLowerCase(), labelInfo);
-                        console.log(`[WhatsAppBusiness] 🏷️ Etiqueta por keyword detectada: "${text}"`);
-                    }
-                }
+        // Agregar etiquetas personalizadas encontradas
+        customLabels.forEach(labelInfo => {
+            const normalizedName = labelInfo.name.toLowerCase();
+            foundLabels.set(normalizedName, {
+                name: labelInfo.name,
+                element: labelInfo.element,
+                count: this.extractCount(labelInfo.element),
+                selector: this.generateSelector(labelInfo.element),
+                isCustom: true // Marcar como etiqueta personalizada
             });
+            console.log(`[WhatsAppBusiness] 🏷️ Etiqueta personalizada detectada: ${labelInfo.name}`, labelInfo.element);
         });
-    }
-    
-    async detectLabelsPanel(foundLabels) {
-        console.log('[WhatsAppBusiness] 🔍 Detectando panel de etiquetas abierto...');
         
-        // Buscar el panel de etiquetas que aparece en la imagen
-        const labelPanelSelectors = [
-            // Panel principal de etiquetas
-            '[data-testid="labels-panel"]',
-            '[aria-label*="Etiquetas"]',
-            '[aria-label*="Labels"]',
-            '.labels-panel',
-            '.label-panel',
-            
-            // Contenedor de etiquetas dentro del panel
-            '[data-testid="label-list"]',
-            '.label-list',
-            '.labels-container',
-            
-            // Elementos individuales de etiquetas
-            '[data-testid="label-item"]',
-            '.label-item',
-            '[role="listitem"]',
-            
-            // Overlays y modales que pueden contener etiquetas
-            '[role="dialog"]',
-            '[data-testid="modal"]',
-            '.overlay',
-            '.modal',
-            
-            // Buscar por contenido específico de etiquetas
-            'div:contains("Nuevo cliente")',
-            'div:contains("Pago pendiente")',
-            'div:contains("0 elementos")'
-        ];
-        
-        let labelPanel = null;
-        
-        // Buscar el panel
-        for (const selector of labelPanelSelectors) {
-            labelPanel = document.querySelector(selector);
-            if (labelPanel) {
-                console.log(`[WhatsAppBusiness] ✅ Panel de etiquetas encontrado con selector: ${selector}`, labelPanel);
-                break;
-            }
-        }
-        
-        if (!labelPanel) {
-            console.log('[WhatsAppBusiness] ⚠️ Panel de etiquetas no encontrado (puede estar cerrado)');
-            return;
-        }
-        
-        // Buscar elementos de etiquetas dentro del panel
-        const labelItems = labelPanel.querySelectorAll('div, span, button, li');
-        
-        labelItems.forEach(item => {
-            const text = item.textContent?.trim();
-            if (text && text.length > 0 && text.length < 50) {
-                // Verificar si parece una etiqueta (no es un filtro estándar)
-                const standardLabels = ['todos', 'no leídos', 'favoritos', 'grupos', 'archivados', 'cerrar', 'close', 'x', 'etiquetas', 'labels'];
-                const isStandardLabel = standardLabels.some(standard => 
-                    text.toLowerCase().includes(standard)
-                );
-                
-                // Verificar si es una etiqueta real de WhatsApp Business
-                const isRealLabel = text.includes('Nuevo cliente') || 
-                                   text.includes('Nuevo pedido') || 
-                                   text.includes('Pago pendiente') || 
-                                   text.includes('Pagado') || 
-                                   text.includes('Pedido finalizado') ||
-                                   text.includes('0 elementos') ||
-                                   (text.length > 2 && text.length < 30 && !text.match(/^\d+$/));
-                
-                if (!isStandardLabel && isRealLabel) {
-                    const clickableElement = this.isClickableLabel(item) ? item : this.findClickableParent(item);
-                    if (clickableElement) {
-                        foundLabels.set(text.toLowerCase(), {
-                            name: text,
-                            element: clickableElement,
-                            count: this.extractCount(clickableElement),
-                            selector: this.generateSelector(clickableElement),
-                            isCustom: true,
-                            fromPanel: true,
-                            isRealLabel: true
-                        });
-                        console.log(`[WhatsAppBusiness] 🏷️ Etiqueta real del panel detectada: "${text}"`, clickableElement);
-                    }
-                }
-            }
-        });
-    }
-    
-    async openLabelsPanelAndDetect(foundLabels) {
-        console.log('[WhatsAppBusiness] 🔍 Intentando abrir panel de etiquetas automáticamente...');
-        
-        // Buscar botones que puedan abrir el panel de etiquetas
-        const openLabelsSelectors = [
-            // Botones específicos para abrir etiquetas
-            '[data-testid="labels-button"]',
-            '[aria-label*="Etiquetas"]',
-            '[aria-label*="Labels"]',
-            '[title*="Etiquetas"]',
-            '[title*="Labels"]',
-            
-            // Botones con iconos de etiquetas
-            '[data-icon="label"]',
-            '[data-icon="labels"]',
-            
-            // Botones en el sidebar que puedan ser de etiquetas
-            'button[aria-label*="label"]',
-            'div[role="button"][aria-label*="label"]',
-            
-            // Buscar por texto específico
-            'button:contains("Etiquetas")',
-            'div[role="button"]:contains("Etiquetas")',
-            'span:contains("Etiquetas")'
-        ];
-        
-        let labelsButton = null;
-        
-        // Buscar el botón para abrir etiquetas
-        for (const selector of openLabelsSelectors) {
-            const elements = document.querySelectorAll(selector);
-            for (const element of elements) {
-                const text = element.textContent?.trim();
-                const ariaLabel = element.getAttribute('aria-label') || '';
-                const title = element.getAttribute('title') || '';
-                
-                // Verificar si es un botón de etiquetas
-                if (ariaLabel.toLowerCase().includes('etiqueta') || 
-                    ariaLabel.toLowerCase().includes('label') ||
-                    title.toLowerCase().includes('etiqueta') ||
-                    title.toLowerCase().includes('label')) {
-                    labelsButton = element;
-                    console.log(`[WhatsAppBusiness] ✅ Botón de etiquetas encontrado: "${text}" (${ariaLabel})`, element);
-                    break;
-                }
-            }
-            if (labelsButton) break;
-        }
-        
-        if (labelsButton) {
-            console.log('[WhatsAppBusiness] 🖱️ Haciendo click en botón de etiquetas...');
-            
-            try {
-                // Hacer click para abrir el panel
-                labelsButton.click();
-                
-                // Esperar a que se abra el panel
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Detectar etiquetas en el panel recién abierto
-                await this.detectLabelsPanel(foundLabels);
-                
-                console.log('[WhatsAppBusiness] ✅ Panel de etiquetas abierto y detectado');
-                
-            } catch (error) {
-                console.error('[WhatsAppBusiness] ❌ Error abriendo panel de etiquetas:', error);
-            }
-        } else {
-            console.log('[WhatsAppBusiness] ⚠️ No se encontró botón para abrir etiquetas');
-                }
+        console.log(`[WhatsAppBusiness] ✅ ${customLabels.size} etiquetas personalizadas detectadas`);
     }
     
     detectSidebarLabels(foundLabels) {
@@ -2317,12 +1490,14 @@ class WhatsAppBusinessIntegration {
             
             // Verificar si este elemento es clickeable
             if (this.isClickableLabel(current)) {
+                console.log(`[WhatsAppBusiness] 🎯 Elemento clickeable encontrado:`, current);
                 return current;
             }
             
             maxLevels--;
         }
         
+        console.log(`[WhatsAppBusiness] ❌ No se encontró elemento clickeable para:`, element);
         return null;
     }
     
@@ -2668,120 +1843,35 @@ class WhatsAppBusinessIntegration {
     }
     
     setupDOMObserver() {
-        // Observar cambios en WhatsApp Business para detectar nuevas etiquetas
+        // Observar cambios en WhatsApp para detectar nuevas etiquetas
         const observer = new MutationObserver((mutations) => {
             let shouldRedetect = false;
             
             mutations.forEach(mutation => {
                 mutation.addedNodes.forEach(node => {
                     if (node.nodeType === 1) { // Element node
-                        // Verificar si el nodo agregado contiene etiquetas de WhatsApp Business
-                        const hasBusinessLabels = node.querySelector && (
-                            node.querySelector('[data-testid*="business-label"]') ||
+                        // Si se agregan elementos que pueden contener etiquetas
+                        if (node.querySelector && (
                             node.querySelector('[data-testid*="label"]') ||
                             node.querySelector('[data-icon="label"]') ||
-                            node.querySelector('[aria-label*="Etiquetas"]') ||
-                            node.querySelector('[aria-label*="Labels"]') ||
-                            node.querySelector('[class*="business-label"]') ||
-                            node.querySelector('[class*="label"]')
-                        );
-                        
-                        // Verificar también por texto que parezca etiquetas de negocio
-                        const text = node.textContent?.trim();
-                        const businessKeywords = [
-                            'cliente', 'pedido', 'pago', 'venta', 'compra', 'entrega', 'factura',
-                            'nuevo', 'pendiente', 'completado', 'cancelado', 'urgente', 'importante',
-                            'vip', 'premium', 'regular', 'especial', 'promoción', 'oferta',
-                            'workshop', 'soporte', 'consultoría', 'servicio'
-                        ];
-                        const hasBusinessText = text && businessKeywords.some(keyword => 
-                            text.toLowerCase().includes(keyword)
-                        );
-                        
-                        // Verificar si el nodo mismo es una etiqueta
-                        const isLabelElement = node.matches && (
-                            node.matches('[data-testid*="business-label"]') ||
-                            node.matches('[data-testid*="label"]') ||
-                            node.matches('[aria-label*="label"]') ||
-                            node.matches('[aria-label*="etiqueta"]') ||
-                            node.matches('[class*="business-label"]') ||
-                            node.matches('[class*="label"]')
-                        );
-                        
-                        if (hasBusinessLabels || hasBusinessText || isLabelElement) {
+                            node.textContent?.includes('Workshop') ||
+                            node.textContent?.includes('Venta') ||
+                            node.textContent?.includes('Soporte')
+                        )) {
                             shouldRedetect = true;
-                            console.log('[WhatsAppBusiness] 🔍 Posible etiqueta de negocio detectada en DOM:', text || 'elemento');
                         }
                     }
                 });
             });
             
             if (shouldRedetect) {
-                console.log('[WhatsAppBusiness] 🔄 Cambios detectados en DOM, redetectando etiquetas de WhatsApp Business...');
-                // Esperar un poco para que el DOM se estabilice
-                setTimeout(() => {
-                    this.detectWhatsAppLabels();
-                    // Notificar al TagsManager para que actualice el topbar
-                    if (window.whatsappCRM?.tagsManager) {
-                        window.whatsappCRM.tagsManager.loadWhatsAppBusinessLabels();
-                    }
-                }, 2000);
+                setTimeout(() => this.detectWhatsAppLabels(), 1000);
             }
         });
         
         observer.observe(document.body, {
             childList: true,
             subtree: true
-        });
-        
-        this.domObserver = observer;
-        console.log('[WhatsAppBusiness] 👁️ Observador de DOM configurado para WhatsApp Business');
-        
-        // DETECCIÓN AUTOMÁTICA: Intentar detectar etiquetas reales después de que WhatsApp cargue
-        this.scheduleAutomaticDetection();
-    }
-    
-    scheduleAutomaticDetection() {
-        console.log('[WhatsAppBusiness] ⏰ Programando detección automática de etiquetas reales...');
-        
-        // Intentar detectar etiquetas reales después de que WhatsApp esté completamente cargado
-        const detectionAttempts = [
-            2000,  // 2 segundos después de la inicialización
-            5000,  // 5 segundos
-            10000, // 10 segundos
-            15000  // 15 segundos
-        ];
-        
-        detectionAttempts.forEach((delay, index) => {
-            setTimeout(async () => {
-                console.log(`[WhatsAppBusiness] 🔍 Intento automático ${index + 1} de detección de etiquetas reales...`);
-                
-                // Verificar si ya se detectaron etiquetas reales
-                const hasRealLabels = Array.from(this.labelMapping.values()).some(label => label.isRealLabel);
-                
-                if (!hasRealLabels) {
-                    console.log('[WhatsAppBusiness] 🏷️ No se detectaron etiquetas reales, intentando abrir panel...');
-                    
-                    // Intentar abrir el panel de etiquetas automáticamente
-                    const foundLabels = new Map();
-                    await this.openLabelsPanelAndDetect(foundLabels);
-                    
-                    // Si se encontraron etiquetas, actualizar el mapping
-                    if (foundLabels.size > 0) {
-                        foundLabels.forEach((labelInfo, labelName) => {
-                            this.labelMapping.set(labelName, labelInfo);
-                        });
-                        console.log(`[WhatsAppBusiness] ✅ ${foundLabels.size} etiquetas reales detectadas automáticamente`);
-                        
-                        // Notificar al TagsManager para que actualice el topbar
-                        if (window.whatsappCRM?.tagsManager) {
-                            window.whatsappCRM.tagsManager.loadWhatsAppBusinessLabels();
-                        }
-                    }
-                } else {
-                    console.log('[WhatsAppBusiness] ✅ Etiquetas reales ya detectadas, saltando intento automático');
-                }
-            }, delay);
         });
     }
 }
@@ -2800,9 +1890,6 @@ class WhatsAppCRM {
         this.tagsManager = new TagsManager(this.authService);
         this.filterManager = new FilterManager(this.tagsManager, this);
         this.whatsappIntegration = new WhatsAppBusinessIntegration();
-        
-        // WhatsAppFilterIntegration simplificada solo para WhatsApp Business
-        this.whatsappFilterIntegration = new WhatsAppFilterIntegration();
         
         // Inicializar datos con valores por defecto
         this.contacts = this.loadData('contacts', []);
@@ -2866,7 +1953,7 @@ class WhatsAppCRM {
             
             console.log('✅ Usuario autenticado, continuando inicialización...');
             
-            // Inicializar módulos (TagsManager ahora espera a WhatsApp Integration)
+            // Inicializar módulos
             await this.tagsManager.init();
             this.filterManager.init();
             
@@ -2995,23 +2082,29 @@ class WhatsAppCRM {
     }
 
     getTagCount(tagId) {
-        // Solo trabajar con etiquetas de Supabase
-        const tag = this.tags.find(t => t.id === tagId);
-        if (!tag) {
-            return 0;
-        }
-        
         // Intentar obtener contadores de WhatsApp Business primero
         if (this.whatsappIntegration) {
-            const labelName = tag.name.toLowerCase();
+            const labelName = tagId === 'all' ? 'todos' : 
+                             tagId === 'unread' ? 'no leídos' : 
+                             tagId === 'groups' ? 'grupos' : 
+                             this.tags.find(t => t.id === tagId)?.name?.toLowerCase() || tagId;
+            
             const whatsappCount = this.whatsappIntegration.getWhatsAppLabelCount(labelName);
             if (whatsappCount > 0) {
                 return whatsappCount;
             }
         }
         
-        // Fallback a contadores del CRM basado en la etiqueta
+        // Fallback a contadores del CRM
+        if (tagId === 'all') {
+            return this.contacts.length;
+        } else if (tagId === 'unread') {
+            return this.contacts.filter(c => c.unread).length;
+        } else if (tagId === 'groups') {
+            return this.contacts.filter(c => c.isGroup).length;
+        } else {
             return this.contacts.filter(c => c.tags && c.tags.includes(tagId)).length;
+        }
     }
 
     // ===========================================
@@ -4705,7 +3798,54 @@ class WhatsAppCRM {
         }
     }
 
-    
+    createSampleDataIfEmpty() {
+        if (this.tags.length === 0) {
+            this.tags = [
+                {
+                    id: 'tag_sample_1',
+                    name: 'Clientes',
+                    color: '#10b981',
+                    description: 'Clientes activos',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'tag_sample_2',
+                    name: 'Prospectos',
+                    color: '#f59e0b',
+                    description: 'Posibles clientes',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'tag_sample_3',
+                    name: 'Soporte',
+                    color: '#3b82f6',
+                    description: 'Consultas de soporte',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            this.saveData('tags', this.tags);
+        }
+        
+        if (this.templates.length === 0) {
+            this.templates = [
+                {
+                    id: 'template_sample_1',
+                    name: 'Saludo General',
+                    category: 'general',
+                    content: '¡Hola {{nombre}}! ¿Cómo estás?',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'template_sample_2',
+                    name: 'Seguimiento',
+                    category: 'ventas',
+                    content: 'Hola {{nombre}}, te escribo para hacer seguimiento de nuestra conversación anterior.',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            this.saveData('templates', this.templates);
+        }
+    }
 
     escapeHtml(unsafe) {
         return unsafe
@@ -4866,591 +4006,239 @@ window.initWhatsAppCRM = initWhatsAppCRM;
 // Inicializar automáticamente
 initWhatsAppCRM(); 
 
-// Función de test simple para verificar funcionamiento
-window.testTagFilter = function(tagName) {
-    console.log('🧪 === PRUEBA DE FILTRO DE ETIQUETA ===');
-    console.log(`🎯 Probando filtro: ${tagName}`);
-    
-    if (!window.whatsappCRM) {
-        console.log('❌ CRM no está inicializado');
-        return;
-    }
-    
-    if (!window.whatsappCRM.whatsappIntegration) {
-        console.log('❌ WhatsApp Business Integration no está disponible');
-        return;
-    }
-    
-    console.log('✅ Iniciando prueba...');
-    window.whatsappCRM.whatsappIntegration.clickWhatsAppLabel(tagName);
-};
-
-// Función de test mejorada para etiquetas nativas
-window.testNativeLabels = function() {
-    console.log('🧪 === PRUEBA DE ETIQUETAS NATIVAS ===');
-    
-    if (!window.whatsappCRM) {
-        console.log('❌ CRM no está inicializado');
-        return;
-    }
-    
-    const tagsManager = window.whatsappCRM.tagsManager;
-    if (!tagsManager) {
-        console.log('❌ TagsManager no disponible');
-        return;
-    }
-    
-    console.log(`📊 Total de etiquetas: ${tagsManager.tags.length}`);
-    
-    tagsManager.tags.forEach((tag, index) => {
-        const type = tag.isNative ? '🔗 NATIVA' : '🏷️ CRM';
-        const count = tagsManager.getTagCountForNative(tag);
-        console.log(`${index + 1}. ${type} "${tag.name}" - Contador: ${count}`);
-        
-        if (tag.isNative) {
-            console.log(`   WhatsApp Label: "${tag.whatsappLabelName}"`);
-            console.log(`   Elemento:`, tag.element);
-        }
-    });
-    
-    console.log('\n🎯 Para probar un click nativo, usa: testNativeClick("nombreEtiqueta")');
-};
-
-window.testNativeClick = function(tagName) {
-    console.log(`🎯 === PRUEBA DE CLICK NATIVO: ${tagName} ===`);
-    
-    const tagsManager = window.whatsappCRM?.tagsManager;
-    if (!tagsManager) {
-        console.log('❌ TagsManager no disponible');
-        return;
-    }
-    
-    const tag = tagsManager.tags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
-    if (!tag) {
-        console.log('❌ Etiqueta no encontrada');
-        console.log('📋 Etiquetas disponibles:', tagsManager.tags.map(t => t.name));
-        return;
-    }
-    
-    if (!tag.isNative) {
-        console.log('⚠️ Esta no es una etiqueta nativa de WhatsApp Business');
-        return;
-    }
-    
-    console.log('✅ Ejecutando click nativo...');
-    window.whatsappCRM.whatsappIntegration.clickWhatsAppLabel(tag.whatsappLabelName);
-};
-
-console.log('🛠️ === FUNCIONES DE DEBUGGING DISPONIBLES ===');
-console.log('📊 DIAGNÓSTICO:');
-console.log('  • debugEtiquetas() - Diagnóstico rápido del estado de etiquetas');
-console.log('  • mostrarEstadoCompleto() - Estado completo del sistema');
-console.log('  • detectarEtiquetasReales() - Detectar etiquetas reales de WhatsApp Business');
-console.log('');
-console.log('🔧 CORRECCIÓN:');
-console.log('  • redetectarEtiquetas() - Redetectar etiquetas de WhatsApp Business');
-console.log('  • forzarSincronizacion() - Forzar sincronización del TagsManager');
-console.log('  • actualizarTopbar() - Actualizar topbar manualmente');
-console.log('  • reiniciarCRM() - Reiniciar CRM completo');
-console.log('');
-console.log('🏷️ ETIQUETAS REALES:');
-console.log('  • abrirPanelEtiquetas() - Abrir panel de etiquetas de WhatsApp Business');
-console.log('  • sincronizarEtiquetasReales() - Detectar y sincronizar etiquetas reales');
-console.log('');
-console.log('🧪 TESTING:');
-console.log('  • testNativeLabels() - Muestra todas las etiquetas nativas detectadas');
-console.log('  • testNativeClick("nombreEtiqueta") - Prueba click nativo en etiqueta específica');
-console.log('  • testTagFilter("nombreEtiqueta") - Prueba filtro tradicional');
-console.log('');
-console.log('✨ INICIO RECOMENDADO: Ejecuta sincronizarEtiquetasReales() para detectar las etiquetas reales');
-
-// === FUNCIONES DE DEBUGGING PARA DIAGNOSTICAR ETIQUETAS ===
-window.debugEtiquetas = function() {
-    console.log('🔍 === DIAGNÓSTICO DE ETIQUETAS ===');
-    
-    if (!window.whatsappCRM) {
-        console.log('❌ window.whatsappCRM no está inicializado');
-        return;
-    }
-    
-    console.log('✅ window.whatsappCRM está disponible');
-    
-    // Verificar TagsManager
-    const tagsManager = window.whatsappCRM.tagsManager;
-    if (!tagsManager) {
-        console.log('❌ TagsManager no está disponible');
-        return;
-    }
-    console.log('✅ TagsManager está disponible');
-    console.log(`📊 Total etiquetas en TagsManager: ${tagsManager.tags.length}`);
-    
-    // Verificar WhatsAppBusinessIntegration
-    const whatsappIntegration = window.whatsappCRM.whatsappIntegration;
-    if (!whatsappIntegration) {
-        console.log('❌ WhatsAppBusinessIntegration no está disponible');
-        return;
-    }
-    console.log('✅ WhatsAppBusinessIntegration está disponible');
-    console.log(`📊 Total etiquetas detectadas en WhatsApp: ${whatsappIntegration.labelMapping.size}`);
-    
-    // Mostrar etiquetas detectadas
-    console.log('\n🏷️ ETIQUETAS DETECTADAS POR WHATSAPP INTEGRATION:');
-    whatsappIntegration.labelMapping.forEach((labelInfo, labelName) => {
-        console.log(`  - "${labelName}": Elemento=${!!labelInfo.element}, Contador=${labelInfo.count}`);
-    });
-    
-    // Mostrar etiquetas en TagsManager
-    console.log('\n🏷️ ETIQUETAS EN TAGS MANAGER:');
-    tagsManager.tags.forEach((tag, index) => {
-        const type = tag.isNative ? '🔗 NATIVA' : '🏷️ CRM';
-        console.log(`  ${index + 1}. ${type} "${tag.name}" - Contador: ${tag.count}`);
-    });
-    
-    // Verificar topbar
-    const topbarScroll = document.getElementById('topbarScroll');
-    console.log(`\n📺 Topbar elemento: ${!!topbarScroll}`);
-    if (topbarScroll) {
-        console.log(`📺 Topbar HTML length: ${topbarScroll.innerHTML.length}`);
-        console.log(`📺 Topbar contiene "No hay etiquetas": ${topbarScroll.innerHTML.includes('No hay etiquetas detectadas')}`);
-    }
-    
-    console.log('\n🚀 ACCIONES RECOMENDADAS:');
-    console.log('1. Si WhatsAppBusinessIntegration tiene 0 etiquetas: Ejecuta redetectarEtiquetas()');
-    console.log('2. Si TagsManager tiene 0 etiquetas: Ejecuta forzarSincronizacion()');
-    console.log('3. Para actualizar topbar manualmente: Ejecuta actualizarTopbar()');
-};
-
-window.redetectarEtiquetas = async function() {
-    console.log('🔄 === REDETECTANDO ETIQUETAS DE WHATSAPP ===');
+// Funciones de debug para probar la integración
+// Función para debugear la detección de filtros desde la consola
+window.debugFilterDetection = function() {
+    console.log('=== DEBUG DETECCIÓN DE FILTROS ===');
     
     if (!window.whatsappCRM?.whatsappIntegration) {
-        console.log('❌ WhatsAppBusinessIntegration no disponible');
+        console.error('❌ WhatsApp Integration no está disponible');
         return;
     }
     
-    console.log('🔍 Forzando detección de etiquetas...');
-    await window.whatsappCRM.whatsappIntegration.detectWhatsAppLabels();
+    const integration = window.whatsappCRM.whatsappIntegration;
     
-    console.log('✅ Detección completada');
-    console.log(`📊 Etiquetas detectadas: ${window.whatsappCRM.whatsappIntegration.labelMapping.size}`);
+    // Mostrar información de la versión detectada
+    console.log(`📱 Versión WhatsApp: ${integration.whatsappVersion || 'No detectada'}`);
+    console.log(`🏢 Cuenta Business: ${integration.isBusinessAccount ? 'Sí' : 'No'}`);
+    console.log(`🌐 URL actual: ${window.location.href}`);
     
-    // Listar etiquetas detectadas
-    window.whatsappCRM.whatsappIntegration.labelMapping.forEach((labelInfo, labelName) => {
-        console.log(`  🏷️ "${labelName}": ${labelInfo.count} elementos`);
-    });
-};
-
-window.forzarSincronizacion = async function() {
-    console.log('🔄 === FORZANDO SINCRONIZACIÓN TAGSMANAGER ===');
-    
-    if (!window.whatsappCRM?.tagsManager) {
-        console.log('❌ TagsManager no disponible');
-        return;
-    }
-    
-    console.log('🔍 Recargando etiquetas de WhatsApp Business...');
-    await window.whatsappCRM.tagsManager.loadWhatsAppBusinessLabels();
-    
-    console.log('✅ Sincronización completada');
-    console.log(`📊 Total etiquetas: ${window.whatsappCRM.tagsManager.tags.length}`);
-    
-    // Actualizar topbar
-    window.whatsappCRM.tagsManager.updateTopbar();
-    console.log('🎨 Topbar actualizado');
-};
-
-window.actualizarTopbar = function() {
-    console.log('🎨 === ACTUALIZANDO TOPBAR ===');
-    
-    if (!window.whatsappCRM?.tagsManager) {
-        console.log('❌ TagsManager no disponible');
-        return;
-    }
-    
-    window.whatsappCRM.tagsManager.updateTopbar();
-    console.log('✅ Topbar actualizado');
-    
-    const topbarScroll = document.getElementById('topbarScroll');
-    if (topbarScroll) {
-        console.log(`📺 Nuevo contenido HTML: ${topbarScroll.innerHTML.substring(0, 200)}...`);
-    }
-};
-
-window.reiniciarCRM = async function() {
-    console.log('🔄 === REINICIANDO CRM COMPLETO ===');
-    
-    if (window.whatsappCRM) {
-        console.log('🗑️ Eliminando instancia actual...');
-        delete window.whatsappCRM;
-    }
-    
-    console.log('🚀 Creando nueva instancia...');
-    window.whatsappCRM = new WhatsAppCRM();
-    
-    console.log('✅ CRM reiniciado');
-    
-    // Esperar un poco y luego diagnosticar
-    setTimeout(() => {
-        window.debugEtiquetas();
-    }, 3000);
-};
-
-window.mostrarEstadoCompleto = function() {
-    console.log('📊 === ESTADO COMPLETO DEL SISTEMA ===');
-    
-    // Verificar elementos DOM críticos
-    console.log('\n🎯 ELEMENTOS DOM:');
-    const elementos = {
-        'topbarScroll': document.getElementById('topbarScroll'),
-        'topbarSection': document.getElementById('topbarSection'),
-        'whatsappCrmTopbar': document.getElementById('whatsapp-crm-topbar'),
-        'sidebar': document.getElementById('whatsapp-crm-sidebar')
-    };
-    
-    Object.entries(elementos).forEach(([nombre, elemento]) => {
-        console.log(`  ${elemento ? '✅' : '❌'} ${nombre}: ${!!elemento}`);
-    });
-    
-    // Verificar WhatsApp Business
-    console.log('\n🏢 WHATSAPP BUSINESS:');
-    const isBusinessAccount = document.querySelector('[data-testid="business-account"]') || 
-                             document.querySelector('[aria-label*="Business"]') ||
-                             document.querySelector('[class*="business"]');
-    console.log(`  ${isBusinessAccount ? '✅' : '❌'} WhatsApp Business detectado: ${!!isBusinessAccount}`);
-    
-    // Verificar instancias
-    console.log('\n🔧 INSTANCIAS:');
-    console.log(`  ${window.whatsappCRM ? '✅' : '❌'} window.whatsappCRM: ${!!window.whatsappCRM}`);
-    console.log(`  ${window.whatsappCRM?.tagsManager ? '✅' : '❌'} TagsManager: ${!!window.whatsappCRM?.tagsManager}`);
-    console.log(`  ${window.whatsappCRM?.whatsappIntegration ? '✅' : '❌'} WhatsAppIntegration: ${!!window.whatsappCRM?.whatsappIntegration}`);
-    
-    if (window.whatsappCRM?.tagsManager) {
-        const tm = window.whatsappCRM.tagsManager;
-        console.log(`  📊 Etiquetas en TagsManager: ${tm.tags.length}`);
-        
-        if (tm.tags.length > 0) {
-            console.log('\n🏷️ DETALLE DE ETIQUETAS:');
-            tm.tags.forEach((tag, index) => {
-                const type = tag.isNative ? (tag.isStandard ? '🔹 ESTÁNDAR' : '🔗 NATIVA') : '📌 SUPABASE';
-                console.log(`    ${index + 1}. ${type} "${tag.name}" - Count: ${tag.count} - Real: ${tag.isRealLabel || false}`);
-            });
-        }
-    }
-    
-    if (window.whatsappCRM?.whatsappIntegration) {
-        const wi = window.whatsappCRM.whatsappIntegration;
-        console.log(`  📊 Etiquetas detectadas en WhatsApp: ${wi.labelMapping.size}`);
-        
-        if (wi.labelMapping.size > 0) {
-            console.log('\n🔗 ETIQUETAS WHATSAPP DETECTADAS:');
-            wi.labelMapping.forEach((labelInfo, labelName) => {
-                const type = labelInfo.isRealLabel ? '🏢 BUSINESS' : '🔗 NATIVA';
-                console.log(`    • ${type} "${labelName}" - Element: ${!!labelInfo.element}, Count: ${labelInfo.count}`);
-            });
-        }
-    }
-    
-    // Verificar topbar actual
-    const topbar = document.getElementById('topbarScroll');
-    if (topbar) {
-        console.log('\n📺 ESTADO DEL TOPBAR:');
-        console.log(`  HTML Length: ${topbar.innerHTML.length}`);
-        const hasEmpty = topbar.innerHTML.includes('No hay etiquetas detectadas');
-        const hasButtons = topbar.querySelectorAll('.topbar-item').length;
-        console.log(`  ${hasEmpty ? '📋' : '🏷️'} Tipo: ${hasEmpty ? 'Mensaje vacío' : `${hasButtons} botones de etiquetas`}`);
-    }
-    
-    // Verificar elementos de WhatsApp Business en el DOM
-    console.log('\n🔍 ELEMENTOS WHATSAPP BUSINESS EN DOM:');
-    const businessElements = {
-        'business-account': document.querySelector('[data-testid="business-account"]'),
-        'business-labels': document.querySelector('[data-testid="business-labels"]'),
-        'labels-panel': document.querySelector('[data-testid="labels-panel"]'),
-        'aria-business': document.querySelector('[aria-label*="Business"]'),
-        'class-business': document.querySelector('[class*="business"]')
-    };
-    
-    Object.entries(businessElements).forEach(([nombre, elemento]) => {
-        console.log(`  ${elemento ? '✅' : '❌'} ${nombre}: ${!!elemento}`);
-    });
-    
-    console.log('\n🚀 FUNCIONES DISPONIBLES:');
-    console.log('  • debugEtiquetas() - Diagnóstico rápido');
-    console.log('  • redetectarEtiquetas() - Redetectar etiquetas de WhatsApp');
-    console.log('  • detectarEtiquetasReales() - Detectar etiquetas específicas de WhatsApp Business');
-    console.log('  • forzarSincronizacion() - Forzar sincronización TagsManager');
-    console.log('  • actualizarTopbar() - Actualizar topbar manualmente');
-    console.log('  • reiniciarCRM() - Reiniciar CRM completo');
-    console.log('  • mostrarEstadoCompleto() - Esta función');
-};
-
-// === FIN FUNCIONES DE DEBUGGING ===
-
-// Inicializar automáticamente
-initWhatsAppCRM();
-
-// Ejecutar debugging
-debugDeteccion();
-
-// Función específica para detectar etiquetas reales de WhatsApp Business
-window.detectarEtiquetasReales = async function() {
-    console.log('🏷️ === DETECTANDO ETIQUETAS REALES DE WHATSAPP BUSINESS ===');
-    
-    // 1. Verificar si WhatsApp Business está cargado
-    console.log('\n🔍 VERIFICANDO WHATSAPP BUSINESS...');
-    const isBusinessAccount = document.querySelector('[data-testid="business-account"]') || 
-                             document.querySelector('[aria-label*="Business"]') ||
-                             document.querySelector('[class*="business"]');
-    
-    console.log(`  ${isBusinessAccount ? '✅' : '❌'} WhatsApp Business detectado: ${!!isBusinessAccount}`);
-    
-    // 2. Buscar el panel de etiquetas específico de WhatsApp Business
-    console.log('\n🔍 BUSCANDO PANEL DE ETIQUETAS DE WHATSAPP BUSINESS...');
-    
-    const businessPanelSelectors = [
-        // Panel principal de WhatsApp Business
-        '[data-testid="labels-panel"]',
-        '[data-testid="business-labels"]',
-        '[aria-label*="Etiquetas"]',
-        '[aria-label*="Labels"]',
-        '[aria-label*="Business"]',
-        '.labels-panel',
-        '.business-labels',
-        '.label-panel',
-        
-        // Contenedores específicos de WhatsApp Business
-        '[data-testid="label-list"]',
-        '[data-testid="business-label-list"]',
-        '.label-list',
-        '.business-label-list',
-        '.labels-container',
-        
-        // Overlays y modales de WhatsApp Business
-        '[role="dialog"]',
-        '[data-testid="modal"]',
-        '.overlay',
-        '.modal'
-    ];
-    
-    let panelEncontrado = null;
-    
-    businessPanelSelectors.forEach(selector => {
-        const elementos = document.querySelectorAll(selector);
-        console.log(`  ${selector}: ${elementos.length} elementos`);
-        
-        elementos.forEach((elemento, index) => {
-            const texto = elemento.textContent?.trim();
-            const ariaLabel = elemento.getAttribute('aria-label');
-            const title = elemento.getAttribute('title');
-            
-            console.log(`    ${index + 1}. Texto: "${texto?.substring(0, 50)}" | Aria: "${ariaLabel}" | Title: "${title}"`);
-            
-            // Verificar si este elemento contiene etiquetas de negocio
-            const businessKeywords = [
-                'cliente', 'pedido', 'pago', 'venta', 'compra', 'entrega', 'factura',
-                'nuevo', 'pendiente', 'completado', 'cancelado', 'urgente', 'importante',
-                'vip', 'premium', 'regular', 'especial', 'promoción', 'oferta',
-                'workshop', 'soporte', 'consultoría', 'servicio'
-            ];
-            
-            if (texto && businessKeywords.some(keyword => texto.toLowerCase().includes(keyword))) {
-                panelEncontrado = elemento;
-                console.log(`    🎯 ¡PANEL DE ETIQUETAS DE NEGOCIO ENCONTRADO!`, elemento);
-            }
-        });
-    });
-    
-    if (panelEncontrado) {
-        console.log('\n✅ PANEL DE ETIQUETAS DE WHATSAPP BUSINESS DETECTADO');
-        console.log('📋 Contenido del panel:', panelEncontrado.innerHTML.substring(0, 500));
-        
-        // Extraer etiquetas del panel
-        const etiquetas = [];
-        const elementos = panelEncontrado.querySelectorAll('button, [role="button"], div[tabindex="0"], span');
-        
-        elementos.forEach(elemento => {
-            const texto = elemento.textContent?.trim();
-            if (texto && texto.length > 0 && texto.length < 50) {
-                // Filtrar etiquetas reales (no botones de cerrar, etc.)
-                if (!texto.match(/^(cerrar|close|x|\+|\d+)$/i) && 
-                    !texto.includes('Etiquetas') && 
-                    !texto.includes('Labels') &&
-                    !texto.includes('Business')) {
-                    
-                    const isClickable = elemento.tagName === 'BUTTON' || 
-                                       elemento.getAttribute('role') === 'button' ||
-                                       elemento.getAttribute('tabindex') === '0';
-                    
-                    etiquetas.push({
-                        nombre: texto,
-                        elemento: elemento,
-                        clickeable: isClickable,
-                        hasColor: !!(elemento.style.color || elemento.style.backgroundColor || 
-                                   elemento.querySelector('[style*="color"]') || 
-                                   elemento.querySelector('[style*="background"]'))
-                    });
-                }
-            }
-        });
-        
-        console.log('\n🏷️ ETIQUETAS DE WHATSAPP BUSINESS ENCONTRADAS:');
-        etiquetas.forEach((etiqueta, index) => {
-            console.log(`  ${index + 1}. "${etiqueta.nombre}" - Clickeable: ${etiqueta.clickeable} - Con color: ${etiqueta.hasColor}`);
-        });
-        
-        // 3. Intentar agregar las etiquetas al sistema
-        if (etiquetas.length > 0 && window.whatsappCRM?.whatsappIntegration) {
-            console.log('\n🔄 AGREGANDO ETIQUETAS AL SISTEMA...');
-            etiquetas.forEach((etiqueta, index) => {
-                const labelInfo = {
-                    name: etiqueta.nombre,
-                    element: etiqueta.elemento,
-                    count: 0,
-                    isCustom: true,
-                    isRealLabel: true
-                };
-                
-                window.whatsappCRM.whatsappIntegration.labelMapping.set(etiqueta.nombre.toLowerCase(), labelInfo);
-                console.log(`  ✅ Etiqueta "${etiqueta.nombre}" agregada al sistema`);
-            });
-            
-            // Actualizar el topbar
-            if (window.whatsappCRM?.tagsManager) {
-                window.whatsappCRM.tagsManager.loadWhatsAppBusinessLabels();
-                console.log('🎨 Topbar actualizado con las nuevas etiquetas');
-            }
-        }
-        
-        return etiquetas;
+    console.log('\n📋 Filtros actualmente detectados:');
+    if (integration.whatsappLabels.size === 0) {
+        console.log('❌ No hay filtros detectados');
     } else {
-        console.log('\n❌ PANEL DE ETIQUETAS DE WHATSAPP BUSINESS NO ENCONTRADO');
-        console.log('💡 Sugerencias:');
-        console.log('  1. Asegúrate de estar usando WhatsApp Business (no WhatsApp Web normal)');
-        console.log('  2. Abre manualmente el panel de etiquetas desde WhatsApp Business');
-        console.log('  3. Verifica que tengas etiquetas personalizadas configuradas');
-        console.log('  4. Intenta recargar la página y ejecutar esta función nuevamente');
-        return [];
-    }
-};
-
-// Función para abrir el panel de etiquetas
-window.abrirPanelEtiquetas = async function() {
-    console.log('🔓 === ABRIENDO PANEL DE ETIQUETAS ===');
-    
-    // Buscar botones que puedan abrir el panel
-    const botonesSelectors = [
-        '[data-testid="labels-button"]',
-        '[aria-label*="Etiquetas"]',
-        '[aria-label*="Labels"]',
-        '[title*="Etiquetas"]',
-        '[title*="Labels"]',
-        '[data-icon="label"]',
-        'button[aria-label*="label"]',
-        'div[role="button"][aria-label*="label"]'
-    ];
-    
-    console.log('\n🔍 BUSCANDO BOTÓN PARA ABRIR ETIQUETAS...');
-    
-    let botonEncontrado = null;
-    
-    botonesSelectors.forEach(selector => {
-        const elementos = document.querySelectorAll(selector);
-        console.log(`  ${selector}: ${elementos.length} elementos`);
+        let standardCount = 0;
+        let customCount = 0;
         
-        elementos.forEach((elemento, index) => {
-            const texto = elemento.textContent?.trim();
-            const ariaLabel = elemento.getAttribute('aria-label') || '';
-            const title = elemento.getAttribute('title') || '';
+        integration.whatsappLabels.forEach((label, key) => {
+            const type = label.isCustom ? '🏷️ (Personalizada)' : '🎯 (Estándar)';
+            console.log(`${type} ${key}: `, label);
             
-            console.log(`    ${index + 1}. Texto: "${texto}" | Aria: "${ariaLabel}" | Title: "${title}"`);
-            
-            // Verificar si es un botón de etiquetas
-            if (ariaLabel.toLowerCase().includes('etiqueta') || 
-                ariaLabel.toLowerCase().includes('label') ||
-                title.toLowerCase().includes('etiqueta') ||
-                title.toLowerCase().includes('label')) {
-                botonEncontrado = elemento;
-                console.log(`    🎯 ¡BOTÓN DE ETIQUETAS ENCONTRADO!`, elemento);
+            if (label.isCustom) {
+                customCount++;
+            } else {
+                standardCount++;
             }
         });
-    });
-    
-    if (botonEncontrado) {
-        console.log('\n🖱️ HACIENDO CLICK EN BOTÓN DE ETIQUETAS...');
         
+        console.log(`\n📊 Resumen: ${standardCount} filtros estándar, ${customCount} etiquetas personalizadas`);
+    }
+    
+    console.log('\n🔄 Forzando nueva detección...');
+    integration.detectWhatsAppLabels().then(() => {
+        console.log('✅ Detección completada');
+        console.log('📋 Filtros después de la detección:');
+        integration.whatsappLabels.forEach((label, key) => {
+            const type = label.isCustom ? '🏷️ (Personalizada)' : '🎯 (Estándar)';
+            console.log(`${type} ${key}: `, label);
+        });
+    });
+};
+
+// Función para probar clicks en filtros
+window.testFilterClick = function(filterName) {
+    console.log(`=== TESTING CLICK EN FILTRO: ${filterName} ===`);
+    
+    if (!window.whatsappCRM?.whatsappIntegration) {
+        console.error('❌ WhatsApp Integration no está disponible');
+        return;
+    }
+    
+    const integration = window.whatsappCRM.whatsappIntegration;
+    integration.clickWhatsAppLabel(filterName).then(success => {
+        console.log(`${success ? '✅' : '❌'} Click en filtro "${filterName}": ${success ? 'Exitoso' : 'Falló'}`);
+    });
+};
+
+// Función para verificar la versión de WhatsApp
+window.checkWhatsAppVersion = function() {
+    console.log('=== VERIFICACIÓN DE VERSIÓN WHATSAPP ===');
+    
+    if (!window.whatsappCRM?.whatsappIntegration) {
+        console.error('❌ WhatsApp Integration no está disponible');
+        return;
+    }
+    
+    const integration = window.whatsappCRM.whatsappIntegration;
+    
+    console.log('🔍 Información de la aplicación:');
+    console.log(`📱 Versión detectada: ${integration.whatsappVersion || 'No detectada'}`);
+    console.log(`🏢 Es cuenta Business: ${integration.isBusinessAccount ? 'Sí' : 'No'}`);
+    console.log(`🌐 URL actual: ${window.location.href}`);
+    console.log(`📅 Última sincronización: ${new Date(integration.lastSync).toLocaleString()}`);
+    
+    console.log('\n🔄 Ejecutando nueva detección...');
+    integration.detectWhatsAppVersion().then(() => {
+        console.log('✅ Re-detección completada:');
+        console.log(`📱 Versión: ${integration.whatsappVersion}`);
+        console.log(`🏢 Business: ${integration.isBusinessAccount ? 'Sí' : 'No'}`);
+    });
+};
+
+window.debugWhatsAppIntegration = function() {
+    console.log('=== DEBUG WHATSAPP BUSINESS INTEGRATION ===');
+    
+    if (!window.whatsappCRM) {
+        console.log('❌ CRM no está inicializado');
+        return;
+    }
+    
+    const integration = window.whatsappCRM.whatsappIntegration;
+    if (!integration) {
+        console.log('❌ Integración de WhatsApp Business no está inicializada');
+        return;
+    }
+    
+    console.log('✅ Integración inicializada');
+    console.log('📊 Etiquetas detectadas en WhatsApp Business:', integration.whatsappLabels);
+    console.log('🔗 Mapeo de etiquetas:', integration.labelMapping);
+    console.log('📈 Contadores de WhatsApp Business:', integration.getAllWhatsAppCounts());
+    
+    // Detectar etiquetas manualmente
+    console.log('🔍 Re-detectando etiquetas...');
+    integration.detectWhatsAppLabels();
+    
+    // Mostrar elementos detectados con más detalle
+    console.log('🔍 Análisis detallado de elementos:');
+    integration.labelMapping.forEach((label, key) => {
+        const element = label.element;
+        console.log(`\n🏷️ ${key.toUpperCase()}:`, {
+            element: element,
+            tagName: element?.tagName,
+            className: element?.className,
+            role: element?.getAttribute('role'),
+            ariaLabel: element?.getAttribute('aria-label'),
+            dataTestId: element?.getAttribute('data-testid'),
+            textContent: element?.textContent?.trim(),
+            isConnected: element?.isConnected,
+            isVisible: element?.offsetWidth > 0 && element?.offsetHeight > 0,
+            hasClickHandler: element?.onclick !== null,
+            cursor: element ? window.getComputedStyle(element).cursor : 'unknown',
+            boundingRect: element?.getBoundingClientRect(),
+            isClickable: integration.isClickableLabel(element)
+        });
+        
+        // Mostrar jerarquía de elementos padre
+        if (element) {
+            console.log(`🌳 Jerarquía de ${key}:`);
+            let current = element;
+            let level = 0;
+            while (current && level < 3) {
+                console.log(`  ${'  '.repeat(level)}${current.tagName}${current.className ? '.' + current.className.split(' ')[0] : ''}${current.id ? '#' + current.id : ''}`);
+                current = current.parentElement;
+                level++;
+            }
+        }
+    });
+};
+
+window.testWhatsAppLabelClick = function(labelName) {
+    console.log(`\n🧪 === PRUEBA DE CLICK: ${labelName.toUpperCase()} ===`);
+    
+    if (!window.whatsappCRM?.whatsappIntegration) {
+        console.log('❌ Integración no disponible');
+        return;
+    }
+    
+    const integration = window.whatsappCRM.whatsappIntegration;
+    const normalizedName = labelName.toLowerCase();
+    const whatsappLabel = integration.labelMapping.get(normalizedName);
+    
+    if (!whatsappLabel) {
+        console.log('❌ Etiqueta no encontrada en el mapeo');
+        console.log('📋 Etiquetas disponibles:', Array.from(integration.labelMapping.keys()));
+        return;
+    }
+    
+    console.log('🎯 Información del objetivo:');
+    console.log('  - Elemento:', whatsappLabel.element);
+    console.log('  - Es clickeable:', integration.isClickableLabel(whatsappLabel.element));
+    console.log('  - Está conectado:', whatsappLabel.element?.isConnected);
+    console.log('  - Es visible:', whatsappLabel.element?.offsetWidth > 0 && whatsappLabel.element?.offsetHeight > 0);
+    
+    // Ejecutar el click
+    window.whatsappCRM.whatsappIntegration.clickWhatsAppLabel(labelName);
+};
+
+// Función para buscar específicamente en WhatsApp Business
+window.scanWhatsAppElements = function() {
+    console.log('🔍 === ESCANEO COMPLETO DE WHATSAPP BUSINESS ===');
+    
+    // Buscar elementos por diferentes criterios
+    const searches = [
+        {
+            name: 'Botones con aria-label',
+            selector: 'button[aria-label]',
+            filter: el => el.getAttribute('aria-label').toLowerCase().includes('todos') || 
+                         el.getAttribute('aria-label').toLowerCase().includes('no leídos') ||
+                         el.getAttribute('aria-label').toLowerCase().includes('favoritos')
+        },
+        {
+            name: 'Divs con role="button"',
+            selector: 'div[role="button"]',
+            filter: el => el.textContent.includes('Todos') || el.textContent.includes('No leídos')
+        },
+        {
+            name: 'Elementos con data-testid de filtro',
+            selector: '[data-testid*="filter"], [data-testid*="label"]',
+            filter: () => true
+        },
+        {
+            name: 'Elementos que contienen texto de filtros',
+            selector: '*',
+            filter: el => {
+                const text = el.textContent?.trim();
+                return text === 'Todos' || text === 'No leídos' || text === 'Favoritos' || text === 'Grupos';
+            }
+        }
+    ];
+    
+    searches.forEach(search => {
+        console.log(`\n📋 ${search.name}:`);
         try {
-            // Destacar visualmente el botón
-            const estiloOriginal = botonEncontrado.style.cssText;
-            botonEncontrado.style.cssText += 'border: 3px solid red !important; background: yellow !important;';
-            
-            // Hacer click
-            botonEncontrado.click();
-            
-            // Restaurar estilo después de 2 segundos
-            setTimeout(() => {
-                botonEncontrado.style.cssText = estiloOriginal;
-            }, 2000);
-            
-            console.log('✅ Click realizado. Esperando a que se abra el panel...');
-            
-            // Esperar y detectar etiquetas
-            setTimeout(async () => {
-                console.log('\n🔍 DETECTANDO ETIQUETAS DESPUÉS DE ABRIR PANEL...');
-                await window.detectarEtiquetasReales();
-            }, 1500);
-            
-        } catch (error) {
-            console.error('❌ Error haciendo click:', error);
+            const elements = Array.from(document.querySelectorAll(search.selector)).filter(search.filter);
+            elements.slice(0, 5).forEach((el, index) => {
+                console.log(`  ${index + 1}.`, {
+                    element: el,
+                    tagName: el.tagName,
+                    className: el.className,
+                    textContent: el.textContent?.trim()?.substring(0, 30),
+                    ariaLabel: el.getAttribute('aria-label'),
+                    isClickable: el.onclick !== null || el.getAttribute('role') === 'button' || el.tagName === 'BUTTON',
+                    cursor: window.getComputedStyle(el).cursor
+                });
+            });
+            console.log(`  Total encontrados: ${elements.length}`);
+        } catch (e) {
+            console.log(`  Error: ${e.message}`);
         }
-    } else {
-        console.log('\n❌ NO SE ENCONTRÓ BOTÓN PARA ABRIR ETIQUETAS');
-        console.log('💡 Intenta abrir manualmente el panel de etiquetas desde WhatsApp Business.');
-    }
+    });
 };
 
-// Función completa para detectar y sincronizar etiquetas reales
-window.sincronizarEtiquetasReales = async function() {
-    console.log('🔄 === SINCRONIZACIÓN COMPLETA DE ETIQUETAS REALES ===');
-    
-    // 1. Intentar detectar panel ya abierto
-    let etiquetas = await window.detectarEtiquetasReales();
-    
-    // 2. Si no hay etiquetas, intentar abrir el panel
-    if (etiquetas.length === 0) {
-        console.log('\n🔓 No se encontraron etiquetas. Intentando abrir panel...');
-        await window.abrirPanelEtiquetas();
-        
-        // Esperar y detectar nuevamente
-        setTimeout(async () => {
-            etiquetas = await window.detectarEtiquetasReales();
-            
-            if (etiquetas.length > 0) {
-                console.log('\n✅ Etiquetas detectadas. Sincronizando con CRM...');
-                
-                // Sincronizar con el CRM
-                if (window.whatsappCRM?.tagsManager) {
-                    // Agregar etiquetas detectadas al TagsManager
-                    etiquetas.forEach(etiqueta => {
-                        const tag = {
-                            id: `wa_real_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                            name: etiqueta.nombre,
-                            color: '#10b981',
-                            description: 'Etiqueta real de WhatsApp Business',
-                            isNative: true,
-                            isReal: true,
-                            element: etiqueta.elemento,
-                            count: 0,
-                            createdAt: new Date().toISOString()
-                        };
-                        
-                        window.whatsappCRM.tagsManager.tags.push(tag);
-                    });
-                    
-                    // Actualizar topbar
-                    window.whatsappCRM.tagsManager.updateTopbar();
-                    console.log('🎨 Topbar actualizado con etiquetas reales');
-                }
-            }
-        }, 2000);
-    }
-};
+    console.log('🛠️ Funciones de debug mejoradas disponibles:');
+    console.log('- debugWhatsAppIntegration() - Análisis completo de la integración');
+    console.log('- debugFilterDetection() - Detectar filtros (Web + Business) 🆕');
+    console.log('- testFilterClick("nombreFiltro") - Probar click en un filtro específico');
+    console.log('- testWhatsAppLabelClick("nombreEtiqueta") - Prueba detallada de click');
+    console.log('- scanWhatsAppElements() - Escaneo completo de elementos de WhatsApp Business');
+    console.log('- checkWhatsAppVersion() - Verificar versión y tipo de cuenta 🆕');
