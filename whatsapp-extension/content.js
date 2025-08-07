@@ -2054,9 +2054,54 @@ if (document.readyState === 'loading') {
     new WhatsAppCRMContent();
     // Ejecutar debug después de 5 segundos
     setTimeout(debugExtension, 5000);
+    
+    // Inicializar sistema de etiquetas de WhatsApp Business
+    setTimeout(() => {
+      if (typeof initWhatsAppLabelsSystem === 'function') {
+        initWhatsAppLabelsSystem();
+      } else {
+        console.log('[Content] Sistema de etiquetas no disponible, cargando...');
+        loadWhatsAppLabelsSystem();
+      }
+    }, 3000);
   });
 } else {
   new WhatsAppCRMContent();
   // Ejecutar debug después de 5 segundos
   setTimeout(debugExtension, 5000);
+  
+  // Inicializar sistema de etiquetas de WhatsApp Business
+  setTimeout(() => {
+    if (typeof initWhatsAppLabelsSystem === 'function') {
+      initWhatsAppLabelsSystem();
+    } else {
+      console.log('[Content] Sistema de etiquetas no disponible, cargando...');
+      loadWhatsAppLabelsSystem();
+    }
+  }, 3000);
+}
+
+// Función para cargar el sistema de etiquetas si no está disponible
+async function loadWhatsAppLabelsSystem() {
+  try {
+    console.log('[Content] 🚀 Cargando sistema de etiquetas de WhatsApp Business...');
+    
+    // Cargar el script de inicialización
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('initWhatsAppLabels.js');
+    script.onload = () => {
+      console.log('[Content] ✅ Script de etiquetas cargado');
+      if (typeof initWhatsAppLabelsSystem === 'function') {
+        initWhatsAppLabelsSystem();
+      }
+    };
+    script.onerror = (error) => {
+      console.error('[Content] ❌ Error cargando script de etiquetas:', error);
+    };
+    
+    document.head.appendChild(script);
+    
+  } catch (error) {
+    console.error('[Content] ❌ Error en carga del sistema de etiquetas:', error);
+  }
 } 
