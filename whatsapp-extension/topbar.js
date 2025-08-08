@@ -476,29 +476,65 @@ class WhatsAppLabelsTopBar {
       }
 
       // Obtener chats con esta etiqueta
-      let allowedChats = new Set();
-      
-      if (window.whatsappLabelsService?.getChatsByLabel) {
-        try {
-          const label = this.labels.find(l => l.id === labelId);
-          const originalId = label?.originalId || labelId;
-          const chats = await window.whatsappLabelsService.getChatsByLabel(originalId);
-          
-          if (chats && chats.length > 0) {
-            chats.forEach(chat => {
-              const chatName = chat.name || chat.title || chat.formattedTitle;
-              if (chatName) allowedChats.add(chatName);
-            });
+      const allowedChats = new Set();
+
+      const fetchChats = async (originalId) => {
+        // Intentar usar el servicio directo si está disponible
+        if (window.whatsappLabelsService?.getChatsByLabel) {
+          try {
+            return await window.whatsappLabelsService.getChatsByLabel(originalId);
+          } catch (error) {
+            console.error('[LabelsBar] Error usando whatsappLabelsService:', error);
           }
-        } catch (error) {
-          console.error('[LabelsBar] Error obteniendo chats de la etiqueta:', error);
         }
+
+        // Fallback: solicitar al bridge mediante postMessage
+        return await new Promise((resolve) => {
+          const handler = (event) => {
+            try {
+              if (event.source !== window) return;
+              const { type, payload } = event.data || {};
+              if (type === 'WA_CRM_CHATS_BY_LABEL' && payload?.labelId === originalId) {
+                window.removeEventListener('message', handler);
+                resolve(payload?.chats || []);
+              }
+            } catch (e) {
+              console.error('[LabelsBar] Error en handler de chats:', e);
+            }
+          };
+
+          window.addEventListener('message', handler);
+          try {
+            window.postMessage({ type: 'WA_CRM_GET_CHATS_BY_LABEL', payload: { labelId: originalId } }, '*');
+          } catch (_) {}
+
+          // Timeout de seguridad
+          setTimeout(() => {
+            window.removeEventListener('message', handler);
+            resolve([]);
+          }, 2000);
+        });
+      };
+
+      try {
+        const label = this.labels.find(l => l.id === labelId);
+        const originalId = label?.originalId || labelId;
+        const chats = await fetchChats(originalId);
+
+        if (Array.isArray(chats) && chats.length > 0) {
+          chats.forEach(chat => {
+            const chatName = chat.name || chat.title || chat.formattedTitle;
+            if (chatName) allowedChats.add(chatName);
+          });
+        }
+      } catch (error) {
+        console.error('[LabelsBar] Error obteniendo chats de la etiqueta:', error);
       }
 
       // Aplicar filtro
       chatElements.forEach(chatElement => {
         const chatName = this.extractChatName(chatElement);
-        
+
         if (allowedChats.size === 0 || allowedChats.has(chatName)) {
           chatElement.style.display = 'flex';
           chatElement.style.opacity = '1';
