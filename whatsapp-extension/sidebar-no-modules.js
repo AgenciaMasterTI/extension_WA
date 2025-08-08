@@ -2100,6 +2100,7 @@ class WhatsAppCRM {
         const kanbanFullscreen = document.getElementById('kanbanFullscreen');
         if (kanbanFullscreen) {
             kanbanFullscreen.classList.remove('active');
+            kanbanFullscreen.style.display = 'none';
             document.body.classList.remove('kanban-fullscreen-mode');
         }
     }
