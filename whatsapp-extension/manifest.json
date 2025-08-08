@@ -44,9 +44,14 @@
     {
       "resources": [
         "sidebar.html",
+        "topbar.html",
+        "topbar.css",
+        "topbar.js",
+        "config/*",
         "services/*",
         "utils/*",
-        "assets/*"
+        "assets/*",
+        "utils/injected.js"
       ],
       "matches": ["https://web.whatsapp.com/*"]
     }

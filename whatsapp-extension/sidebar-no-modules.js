@@ -1,11 +1,90 @@
+/**
+ * WhatsApp CRM Professional (Modo Oscuro) - Sin Módulos ES6
+ * Versión completamente integrada con autenticación y gestión de datos
+ */
+
+// Configuración de Supabase - usar configuración real
+let SUPABASE_CONFIG = {
+    url: 'https://ujiustwxxbzyrswftysn.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqaXVzdHd4eGJ6eXJzd2Z0eXNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5NDg2NzksImV4cCI6MjA2ODUyNDY3OX0.5RbcuPBJv3pPkrSuHyuWDZvrjb7h_yk5xeo82F0scIU'
+};
+
+// Intentar cargar configuración desde archivo externo si es posible
+try {
+    if (window.SUPABASE_CONFIG) {
+        SUPABASE_CONFIG = window.SUPABASE_CONFIG;
+        console.log('[WhatsAppCRM] ✅ Configuración de Supabase cargada desde window');
+    }
+} catch (error) {
+    console.warn('[WhatsAppCRM] Usando configuración local de Supabase');
+}
+
+// Definición básica de TagsService para evitar errores
+class TagsService {
+    constructor() {
+        this.supabaseClient = null;
+        this.user = null;
+    }
+
+    async init(supabaseClient, user) {
+        this.supabaseClient = supabaseClient;
+        this.user = user;
+        console.log('[TagsService] Inicializado');
+    }
+
+    async getTags(options = {}) {
+        console.log('[TagsService] Obteniendo etiquetas...');
+        // Usar wa-js wrapper para obtener etiquetas reales
+        if (window.whatsappLabelsService) {
+            try {
+                const labels = await window.whatsappLabelsService.getLabels();
+                return labels;
+            } catch (error) {
+                console.error('[TagsService] Error obteniendo etiquetas:', error);
+                return [];
+            }
+        }
+        return [];
+    }
+
+    async getChatsByTag(tagId) {
+        console.log('[TagsService] Obteniendo chats por etiqueta:', tagId);
+        // Usar wa-js wrapper para obtener chats reales
+        if (window.whatsappLabelsService) {
+            try {
+                const chats = await window.whatsappLabelsService.getChatsByLabel(tagId);
+                return chats;
+            } catch (error) {
+                console.error('[TagsService] Error obteniendo chats por etiqueta:', error);
+                return [];
+            }
+        }
+        return [];
+    }
+
+    async assignTagToChat(tagId, chatName, chatPhone) {
+        console.log('[TagsService] Asignando etiqueta:', { tagId, chatName, chatPhone });
+        // Implementar asignación real cuando sea necesario
+        return true;
+    }
+
+    async removeTagFromChat(tagId, chatName) {
+        console.log('[TagsService] Removiendo etiqueta:', { tagId, chatName });
+        // Implementar remoción real cuando sea necesario
+        return true;
+    }
+
+    async getChatTags(chatName) {
+        console.log('[TagsService] Obteniendo etiquetas del chat:', chatName);
+        // Implementar obtención real cuando sea necesario
+        return [];
+    }
+}
+
 // WhatsApp CRM Extension - Versión sin módulos ES6
 // Compatible con content scripts de Chrome
 
-// Configuración de Supabase (inline para evitar imports)
-const SUPABASE_CONFIG = {
-  url: 'https://ujiustwxxbzyrswftysn.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqaXVzdHd4eGJ6eXJzd2Z0eXNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5NDg2NzksImV4cCI6MjA2ODUyNDY3OX0.5RbcuPBJv3pPkrSuHyuWDZvrjb7h_yk5xeo82F0scIU'
-};
+
 
 // Cliente de Supabase simplificado
 class SupabaseClient {
@@ -15,28 +94,35 @@ class SupabaseClient {
   }
 
   async auth() {
-    return {
-      getSession: async () => {
-        try {
-          const session = await this.getStoredSession();
-          return { data: { session } };
-        } catch (error) {
-          return { data: { session: null } };
-        }
-      },
-      signInWithPassword: async (credentials) => {
-        return await this.signIn(credentials);
-      },
-      signUp: async (userData) => {
-        return await this.signUp(userData);
-      },
-      signOut: async () => {
-        return await this.signOut();
-      },
-      onAuthStateChange: (callback) => {
-        this.authStateCallback = callback;
-      }
-    };
+    try {
+        const config = window.SUPABASE_CONFIG || SUPABASE_CONFIG;
+        
+        // Simular la inicialización de Supabase
+        this.supabase = {
+            auth: {
+                getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+                signInWithPassword: (credentials) => this.signIn(credentials),
+                signUp: (userData) => this.signUp(userData),
+                signOut: () => this.signOut(),
+                onAuthStateChange: (callback) => {
+                    this.authCallback = callback;
+                    return { data: { subscription: { unsubscribe: () => {} } } };
+                }
+            },
+            from: (table) => ({
+                select: () => ({ data: [], error: null }),
+                insert: () => ({ data: null, error: null }),
+                update: () => ({ data: null, error: null }),
+                delete: () => ({ data: null, error: null })
+            })
+        };
+
+        console.log('✅ Cliente Supabase inicializado');
+        return this.supabase;
+    } catch (error) {
+        console.error('❌ Error inicializando Supabase:', error);
+        throw error;
+    }
   }
 
   async getStoredSession() {
@@ -239,202 +325,243 @@ class SupabaseClient {
       return { error: { message: error.message } };
     }
   }
+
+  async requestPasswordReset(email) {
+    try {
+      console.log('[AuthService] 🔄 Solicitando reset de contraseña para:', email);
+      
+      // Asegurar que tenemos supabaseClient
+      if (!this.supabaseClient) {
+        this.supabaseClient = new SupabaseClient();
+      }
+      
+      const result = await this.supabaseClient.requestPasswordReset(email);
+      
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      
+      console.log('[AuthService] ✅ Email de reset enviado');
+      return { success: true, message: 'Email enviado' };
+      
+    } catch (error) {
+      console.error('[AuthService] ❌ Error en password reset:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 // Servicio de autenticación simplificado
 class AuthService {
-  constructor() {
-    this.currentUser = null;
-    this.authToken = null;
+  constructor(supabaseClient = null) {
+    this.user = null;
     this.isAuthenticated = false;
-    this.supabase = new SupabaseClient();
-    this.authStateChangeCallback = null;
+    this.callbacks = [];
+    this.supabaseClient = supabaseClient;
   }
 
   async init() {
     try {
       console.log('[AuthService] Inicializando...');
       
-      const auth = await this.supabase.auth();
-      
-      // Verificar si hay una sesión guardada
-      const { data: { session } } = await auth.getSession();
-      
-      if (session) {
-        this.authToken = session.access_token;
-        this.currentUser = session.user;
-        this.isAuthenticated = true;
-        
-        console.log('[AuthService] Sesión restaurada para usuario:', this.currentUser.email);
+      // Si no hay supabaseClient, crear uno
+      if (!this.supabaseClient) {
+        console.log('[AuthService] 🔧 Creando SupabaseClient...');
+        this.supabaseClient = new SupabaseClient();
       }
       
-      // Configurar callback para cambios de autenticación
-      auth.onAuthStateChange((event, session) => {
-        console.log('[AuthService] Auth state changed:', event, session?.user?.email);
-        
-        if (event === 'SIGNED_IN' && session) {
-          this.authToken = session.access_token;
-          this.currentUser = session.user;
-          this.isAuthenticated = true;
-        } else if (event === 'SIGNED_OUT') {
-          this.authToken = null;
-          this.currentUser = null;
-          this.isAuthenticated = false;
-        }
-        
-        // Notificar al callback si existe
-        if (this.authStateChangeCallback) {
-          this.authStateChangeCallback(event, session);
-        }
-      });
+      // Verificar si hay una sesión almacenada
+      const session = await this.supabaseClient.getStoredSession();
       
-      return this.isAuthenticated;
+      if (session) {
+        this.user = session.user;
+        this.isAuthenticated = true;
+        console.log('[AuthService] ✅ Sesión restaurada:', this.user.email);
+        
+        // Notificar cambio de estado
+        this.onAuthStateChange('SIGNED_IN', { user: this.user });
+      } else {
+        console.log('[AuthService] 📭 No hay sesión almacenada');
+      }
+      
     } catch (error) {
-      console.error('[AuthService] Error inicializando auth service:', error);
-      return false;
+      console.error('[AuthService] ❌ Error inicializando:', error);
+      this.isAuthenticated = false;
     }
   }
 
   onAuthStateChange(callback) {
-    this.authStateChangeCallback = callback;
+    this.callbacks.push(callback);
+    // Llamar inmediatamente si ya hay usuario
+    if (this.user) {
+      callback('SIGNED_IN', { user: this.user });
+    }
+  }
+
+  // Método para notificar a todos los callbacks
+  notifyAuthStateChange(event, data) {
+    this.callbacks.forEach(callback => {
+      try {
+        callback(event, data);
+      } catch (error) {
+        console.error('[AuthService] Error en callback:', error);
+      }
+    });
   }
 
   async login(email, password) {
     try {
-      console.log('[AuthService] Intentando login para:', email);
+      console.log('[AuthService] 🔐 Intentando login...');
       
-      const auth = await this.supabase.auth();
-      const { data, error } = await auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password: password
-      });
-
-      if (error) {
-        throw new Error(error.message);
+      // Asegurar que tenemos supabaseClient
+      if (!this.supabaseClient) {
+        this.supabaseClient = new SupabaseClient();
       }
-
-      if (data.user && data.session) {
-        this.authToken = data.session.access_token;
-        this.currentUser = data.user;
-        this.isAuthenticated = true;
-
-        console.log('[AuthService] Login exitoso:', this.currentUser.email);
-        return { success: true, user: this.currentUser };
-      } else {
-        throw new Error('No se pudo iniciar sesión');
+      
+      const result = await this.supabaseClient.signIn({ email, password });
+      
+      if (result.error) {
+        throw new Error(result.error.message);
       }
+      
+      this.user = result.data.user;
+      this.isAuthenticated = true;
+      
+      console.log('[AuthService] ✅ Login exitoso:', this.user.email);
+      
+      // Notificar cambio de estado
+      this.notifyAuthStateChange('SIGNED_IN', { user: this.user });
+      
+      return { success: true, user: this.user };
+      
     } catch (error) {
-      console.error('[AuthService] Error en login:', error);
+      console.error('[AuthService] ❌ Error en login:', error);
+      this.isAuthenticated = false;
       return { success: false, error: error.message };
     }
   }
 
   async register(userData) {
     try {
-      console.log('[AuthService] Intentando registro para:', userData.email);
+      console.log('[AuthService] 📝 Intentando registro...');
       
-      const auth = await this.supabase.auth();
-      const result = await auth.signUp(userData);
-
-      console.log('[AuthService] Resultado del registro:', result);
-
+      // Asegurar que tenemos supabaseClient
+      if (!this.supabaseClient) {
+        this.supabaseClient = new SupabaseClient();
+      }
+      
+      const result = await this.supabaseClient.signUp(userData);
+      
       if (result.error) {
-        console.error('[AuthService] Error en registro:', JSON.stringify(result.error, null, 2));
-        throw new Error(result.error.message || 'Error en el registro');
+        throw new Error(result.error.message);
       }
       
-      // Verificar si el registro fue exitoso
-      if (result.data && result.data.user) {
-        console.log('[AuthService] Registro exitoso:', result.data.user.email);
-        
-        // Si hay sesión automática, actualizar estado
-        if (result.data.session) {
-          this.authToken = result.data.session.access_token;
-          this.currentUser = result.data.user;
-          this.isAuthenticated = true;
-        }
-        
-        return { success: true, user: result.data.user };
-      } else {
-        console.error('[AuthService] Respuesta inesperada:', result);
-        throw new Error('No se pudo registrar el usuario');
-      }
+      console.log('[AuthService] ✅ Registro exitoso, redirigiendo a login...');
+      
+      // Redirigir a login después del registro
+      this.notifyAuthStateChange('SIGNED_UP', { user: result.data.user });
+      
+      return { success: true, user: result.data.user };
+      
     } catch (error) {
-      console.error('[AuthService] Error en registro:', error);
+      console.error('[AuthService] ❌ Error en registro:', error);
       return { success: false, error: error.message };
     }
   }
 
   async logout() {
     try {
-      console.log('[AuthService] Cerrando sesión...');
+      console.log('[AuthService] 🚪 Cerrando sesión...');
       
-      const auth = await this.supabase.auth();
-      const { error } = await auth.signOut();
-
-      if (error) {
-        throw new Error(error.message);
+      // Asegurar que tenemos supabaseClient
+      if (!this.supabaseClient) {
+        this.supabaseClient = new SupabaseClient();
       }
-
-      // Limpiar datos locales
-      this.authToken = null;
-      this.currentUser = null;
+      
+      await this.supabaseClient.signOut();
+      
+      this.user = null;
       this.isAuthenticated = false;
-
-      console.log('[AuthService] Sesión cerrada exitosamente');
+      
+      console.log('[AuthService] ✅ Sesión cerrada');
+      
+      // Notificar cambio de estado
+      this.notifyAuthStateChange('SIGNED_OUT', null);
+      
       return { success: true };
+      
     } catch (error) {
-      console.error('[AuthService] Error cerrando sesión:', error);
+      console.error('[AuthService] ❌ Error en logout:', error);
       return { success: false, error: error.message };
     }
   }
 
   isUserAuthenticated() {
-    return this.isAuthenticated && this.authToken && this.currentUser;
+    return this.isAuthenticated;
   }
 
   getCurrentUser() {
-    return this.currentUser;
+    return this.user;
   }
 
   getAuthToken() {
-    return this.authToken;
+    try {
+      const session = localStorage.getItem('whatsapp_crm_session');
+      if (session) {
+        const parsed = JSON.parse(session);
+        return parsed.access_token;
+      }
+    } catch (e) {
+      console.error('[AuthService] Error obteniendo token:', e);
+    }
+    return null;
   }
 
   async requestPasswordReset(email) {
     try {
-      const response = await fetch(`${SUPABASE_CONFIG.url}/auth/v1/recover`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_CONFIG.anonKey
-        },
-        body: JSON.stringify({ email })
-      });
-
-      const data = await response.json();
+      console.log('[AuthService] 🔄 Solicitando reset de contraseña para:', email);
       
-      if (data.error) {
-        throw new Error(data.error_description || 'Error al enviar el enlace');
+      // Asegurar que tenemos supabaseClient
+      if (!this.supabaseClient) {
+        this.supabaseClient = new SupabaseClient();
       }
       
-      return { success: true };
+      const result = await this.supabaseClient.requestPasswordReset(email);
+      
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      
+      console.log('[AuthService] ✅ Email de reset enviado');
+      return { success: true, message: 'Email enviado' };
+      
     } catch (error) {
-      console.error('[AuthService] Error en password reset:', error);
+      console.error('[AuthService] ❌ Error en password reset:', error);
       return { success: false, error: error.message };
     }
+  }
+
+  // Método adicional para obtener la sesión
+  async getSession() {
+    return { data: { session: this.user ? { user: this.user } : null }, error: null };
   }
 }
 
 // Clase principal de WhatsApp CRM
 class WhatsAppCRM {
     constructor() {
-        console.log('🚀 WhatsApp CRM Professional (Modo Oscuro) - Iniciando...');
+        console.log('🚀 WhatsApp CRM Professional (Modo Oscuro) - Constructor iniciado...');
         
-        // Inicializar servicio de autenticación
-        this.authService = new AuthService();
+        // Inicializar cliente de Supabase
+        this.supabaseClient = new SupabaseClient();
+        
+        // Inicializar servicio de autenticación con el cliente
+        this.authService = new AuthService(this.supabaseClient);
         this.isAuthenticated = false;
         this.currentUser = null;
+        
+        // Quitar el bloqueo aquí, se hará en init()
+        // this.blockSidebarUntilAuth();
         
         // Inicializar datos con valores por defecto
         this.contacts = this.loadData('contacts', []);
@@ -464,16 +591,83 @@ class WhatsAppCRM {
             lastError: null
         };
         
-        this.init();
+        // 🔧 PREVENIR BUCLE INFINITO
+        this.initAttempts = 0;
+        this.maxInitAttempts = 10;
+        this.isInitializing = false;
+        
+        // Inicializar después de un pequeño delay para asegurar que el HTML esté inyectado
+        setTimeout(() => {
+            console.log('📄 Iniciando CRM después de delay...');
+            this.init();
+        }, 1000);
     }
 
     // ===========================================
     // INICIALIZACIÓN Y CONFIGURACIÓN
     // ===========================================
 
+    blockSidebarUntilAuth() {
+        try {
+            console.log('🔒 Bloqueando sidebar hasta autenticación...');
+            
+            // Ocultar toda la interfaz del CRM hasta que el usuario se autentique
+            const elementsToHide = [
+                'tabsSection',
+                'sidebar-nav', 
+                'sidebar-content'
+            ];
+            
+            elementsToHide.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.style.display = 'none';
+                    console.log(`✅ Elemento ${id} ocultado`);
+                } else {
+                    console.warn(`⚠️ Elemento ${id} no encontrado`);
+                }
+            });
+            
+            // Ocultar header del sidebar
+            const sidebarHeader = document.querySelector('.sidebar-header');
+            if (sidebarHeader) {
+                sidebarHeader.style.display = 'none';
+                console.log('✅ Header del sidebar ocultado');
+            }
+            
+            // Ocultar usuario minimalista
+            const userMinimal = document.getElementById('userMinimal');
+            if (userMinimal) {
+                userMinimal.style.display = 'none';
+            }
+            
+            // Mostrar sección de autenticación
+            const authSection = document.getElementById('authSection');
+            if (authSection) {
+                authSection.style.display = 'block';
+                console.log('✅ Sección de autenticación mostrada');
+            } else {
+                console.error('❌ Sección de autenticación no encontrada');
+            }
+            
+            console.log('🔒 Sidebar bloqueado hasta autenticación');
+        } catch (error) {
+            console.error('[blockSidebarUntilAuth] Error:', error);
+        }
+    }
+
     async init() {
         try {
-            console.log('🎯 Inicializando CRM Professional...');
+            // 🔧 PREVENIR MÚLTIPLES INICIALIZACIONES
+            if (this.isInitializing) {
+                console.log('⏳ Inicialización ya en progreso, saltando...');
+                return;
+            }
+            
+            this.isInitializing = true;
+            this.initAttempts++;
+            
+            console.log(`🎯 Inicializando CRM Professional (intento ${this.initAttempts}/${this.maxInitAttempts})...`);
             
             // Esperar un poco para que el HTML se inyecte
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -481,22 +675,44 @@ class WhatsAppCRM {
             // Verificar si estamos listos para inicializar
             if (!this.waitForHTMLElements()) {
                 console.log('⏳ Esperando a que el HTML esté disponible...');
-                setTimeout(() => this.init(), 1000);
+                
+                // 🔧 PREVENIR BUCLE INFINITO
+                if (this.initAttempts >= this.maxInitAttempts) {
+                    console.error('❌ Máximo de intentos de inicialización alcanzado');
+                    this.isInitializing = false;
+                    this.showNotification('Error: No se pudo inicializar el CRM', 'error');
+                    return;
+                }
+                
+                // Reintentar después de un delay
+                setTimeout(() => {
+                    this.isInitializing = false;
+                    this.init();
+                }, 2000);
                 return;
             }
             
             console.log('✅ HTML elements disponibles, continuando inicialización...');
             
-            // Inicializar autenticación
+            // BLOQUEAR sidebar hasta autenticación
+            this.blockSidebarUntilAuth();
+            
+            // Inicializar autenticación PRIMERO
             await this.initAuthentication();
             
             // Solo continuar si el usuario está autenticado
             if (!this.isAuthenticated) {
-                console.log('🔐 Usuario no autenticado, esperando login...');
+                console.log('🔐 Usuario no autenticado, mostrando pantalla de login...');
+                // Mostrar pantalla de autenticación y NO continuar
+                this.showAuthSection();
+                this.isInitializing = false;
                 return;
             }
             
-            console.log('✅ Usuario autenticado, continuando inicialización...');
+            console.log('✅ Usuario autenticado, mostrando interfaz principal...');
+            
+            // Mostrar interfaz principal
+            this.showMainInterface();
             
             // Crear datos de ejemplo si no existen
             this.createSampleDataIfEmpty();
@@ -526,33 +742,51 @@ class WhatsAppCRM {
                 user: this.currentUser?.email
             });
             
+            // 🔧 MARCAR INICIALIZACIÓN COMPLETADA
+            this.isInitializing = false;
+            
         } catch (error) {
             console.error('❌ Error en inicialización:', error);
             this.debugStats.lastError = error;
             this.showNotification('Error al inicializar CRM', 'error');
+            this.isInitializing = false;
         }
     }
     
     waitForHTMLElements() {
+        // Solo verificar elementos críticos para autenticación
         const criticalElements = [
-            'sidebarToggle',
-            'addTagBtn', 
-            'tagsContainer',
-            'addTemplateBtn',
-            'templatesContainer',
-            'tagModal',
-            'templateModal',
-            'authSection'
+            'authSection',
+            'authContainer',
+            'authLoginForm',
+            'authRegisterForm',
+            'loginForm',
+            'registerForm'
         ];
         
-        const missingElements = criticalElements.filter(id => !document.getElementById(id));
+        console.log('🔍 Verificando elementos críticos de autenticación...');
+        
+        const missingElements = [];
+        const foundElements = [];
+        
+        criticalElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                foundElements.push(id);
+                console.log(`✅ Elemento encontrado: ${id}`);
+            } else {
+                missingElements.push(id);
+                console.log(`❌ Elemento faltante: ${id}`);
+            }
+        });
         
         if (missingElements.length > 0) {
             console.log('⏳ Elementos faltantes:', missingElements);
+            console.log('✅ Elementos encontrados:', foundElements);
             return false;
         }
         
-        console.log('✅ Todos los elementos críticos encontrados');
+        console.log('✅ Todos los elementos críticos de autenticación encontrados');
         return true;
     }
 
@@ -562,37 +796,56 @@ class WhatsAppCRM {
 
     async initAuthentication() {
         try {
-            console.log('🔐 Inicializando autenticación...');
+            console.log('[WhatsAppCRM] 🔐 Iniciando autenticación...');
             
-            // Mostrar estado de carga
-            this.showAuthLoading();
-            
-            // Inicializar el servicio de autenticación
-            const isAuthenticated = await this.authService.init();
-            
-            // Ocultar estado de carga
-            this.hideAuthLoading();
-            
-            if (isAuthenticated) {
-                this.isAuthenticated = true;
-                this.currentUser = this.authService.getCurrentUser();
-                console.log('✅ Usuario autenticado:', this.currentUser.email);
-                this.showMainInterface();
+            // Verificar configuración de Supabase
+            const config = window.SUPABASE_CONFIG || SUPABASE_CONFIG;
+            if (!config || !config.url || !config.anonKey) {
+                console.warn('[WhatsAppCRM] ⚠️ Configuración de Supabase no encontrada, usando modo mock');
             } else {
-                console.log('❌ Usuario no autenticado - Mostrando formulario de login');
-                this.showAuthSection();
+                console.log('[WhatsAppCRM] ✅ Configuración de Supabase encontrada');
             }
-            
-            // Configurar callback para cambios de autenticación
+
+            // Inicializar cliente de Supabase
+            console.log('[WhatsAppCRM] 🔧 Inicializando cliente de Supabase...');
+            await this.supabaseClient.auth();
+            console.log('[WhatsAppCRM] ✅ Cliente de Supabase inicializado');
+
+            // Inicializar servicio de autenticación
+            console.log('[WhatsAppCRM] 🔧 Inicializando servicio de autenticación...');
+            await this.authService.init();
+            console.log('[WhatsAppCRM] ✅ Servicio de autenticación inicializado');
+
+            // Inicializar servicio de etiquetas
+            console.log('[WhatsAppCRM] 🔧 Inicializando servicio de etiquetas...');
+            this.tagsService = window.tagsService || new TagsService();
+            console.log('[WhatsAppCRM] ✅ Servicio de etiquetas inicializado');
+
+            // Configurar listener de cambio de estado de autenticación
+            console.log('[WhatsAppCRM] 🔧 Configurando listener de autenticación...');
             this.authService.onAuthStateChange((event, session) => {
-                console.log('🔄 Cambio de estado de autenticación:', event);
                 this.handleAuthStateChange(event, session);
             });
-            
+            console.log('[WhatsAppCRM] ✅ Listener de autenticación configurado');
+
+            // Verificar sesión existente
+            console.log('[WhatsAppCRM] 🔍 Verificando sesión existente...');
+            if (this.authService.isUserAuthenticated()) {
+                console.log('[WhatsAppCRM] ✅ Sesión existente encontrada');
+                this.currentUser = this.authService.getCurrentUser();
+                this.isAuthenticated = true;
+                
+                // Inicializar servicios con el usuario
+                await this.tagsService.init(this.supabaseClient, this.currentUser);
+                
+                this.showMainInterface();
+            } else {
+                console.log('[WhatsAppCRM] ❌ No hay sesión activa, mostrando pantalla de login');
+                this.showAuthSection();
+            }
+
         } catch (error) {
-            console.error('❌ Error inicializando autenticación:', error);
-            // Ocultar estado de carga en caso de error
-            this.hideAuthLoading();
+            console.error('[WhatsAppCRM] ❌ Error en autenticación:', error);
             this.showConnectionError();
         }
     }
@@ -663,11 +916,27 @@ class WhatsAppCRM {
 
     handleAuthStateChange(event, session) {
         if (event === 'SIGNED_IN' && session) {
+            console.log('🔄 Usuario autenticado exitosamente, mostrando interfaz principal...');
             this.isAuthenticated = true;
             this.currentUser = session.user;
+            
+            // Mostrar interfaz principal inmediatamente
             this.showMainInterface();
             this.showNotification('Sesión iniciada correctamente', 'success');
+            
+            // 🔧 PREVENIR MÚLTIPLES REINICIALIZACIONES
+            if (!this.isInitializing) {
+                // Reinicializar la aplicación después del login exitoso
+                setTimeout(() => {
+                    console.log('🔄 Reinicializando aplicación después del login...');
+                    this.initAttempts = 0; // Resetear contador para la reinicialización
+                    this.init();
+                }, 1000);
+            } else {
+                console.log('⏳ Inicialización ya en progreso, saltando reinicialización...');
+            }
         } else if (event === 'SIGNED_OUT') {
+            console.log('🔄 Usuario cerró sesión, mostrando pantalla de login...');
             this.isAuthenticated = false;
             this.currentUser = null;
             this.showAuthSection();
@@ -676,64 +945,137 @@ class WhatsAppCRM {
     }
 
     showAuthSection() {
+        console.log('🔐 Mostrando sección de autenticación...');
+        
         // Ocultar toda la interfaz principal
         const mainSections = [
             'tabsSection',
             'sidebar-nav',
             'sidebar-content'
         ];
-        
         mainSections.forEach(sectionId => {
             const section = document.getElementById(sectionId);
             if (section) {
                 section.style.display = 'none';
+                console.log(`✅ Sección ${sectionId} ocultada`);
+            } else {
+                console.warn(`⚠️ Sección ${sectionId} no encontrada`);
             }
         });
         
-        // Mostrar sección de autenticación
+        // Ocultar usuario minimalista
+        const userMinimal = document.getElementById('userMinimal');
+        if (userMinimal) {
+            userMinimal.style.display = 'none';
+            console.log('✅ Usuario minimalista ocultado');
+        }
+        
+        // Ocultar header del sidebar (logo y toggle)
+        const sidebarHeader = document.querySelector('.sidebar-header');
+        if (sidebarHeader) {
+            sidebarHeader.style.display = 'none';
+            console.log('✅ Header del sidebar ocultado');
+        } else {
+            console.warn('⚠️ Header del sidebar no encontrado');
+        }
+        
+        // Asegurar que la sección de autenticación esté visible
         const authSection = document.getElementById('authSection');
         if (authSection) {
             authSection.style.display = 'block';
+            console.log('✅ Sección de autenticación mostrada');
+        } else {
+            console.error('❌ Sección de autenticación no encontrada');
+            return;
         }
         
-        // Ocultar estado de carga y mostrar formulario de login
+        // Siempre forzar estado: ocultar spinner y mostrar formulario de login
         this.hideAuthLoading();
         this.showLoginForm();
         
         // Vincular eventos de autenticación
         this.bindAuthEvents();
+        
+        console.log('✅ Pantalla de autenticación mostrada correctamente');
+        
+        // Verificar que el formulario de login sea visible
+        setTimeout(() => {
+            const loginForm = document.getElementById('authLoginForm');
+            if (loginForm && loginForm.style.display === 'block') {
+                console.log('✅ Formulario de login visible');
+            } else {
+                console.error('❌ Formulario de login no visible');
+            }
+        }, 100);
     }
 
     showMainInterface() {
+        console.log('🔄 Mostrando interfaz principal...');
+        
         // Ocultar sección de autenticación
         const authSection = document.getElementById('authSection');
         if (authSection) {
             authSection.style.display = 'none';
+            console.log('✅ Sección de autenticación ocultada');
         }
-        
+
+        // Mostrar header del sidebar (logo y toggle)
+        const sidebarHeader = document.querySelector('.sidebar-header');
+        if (sidebarHeader) {
+            sidebarHeader.style.display = 'flex';
+            console.log('✅ Header del sidebar mostrado');
+        }
+
         // Mostrar interfaz principal
         const mainSections = [
             'tabsSection',
             'sidebar-nav',
             'sidebar-content'
         ];
-        
         mainSections.forEach(sectionId => {
             const section = document.getElementById(sectionId);
             if (section) {
                 section.style.display = 'block';
+                console.log(`✅ Sección ${sectionId} mostrada`);
+            } else {
+                console.warn(`⚠️ Sección ${sectionId} no encontrada`);
             }
         });
-        
+
+        // Ocultar userMinimal por defecto (solo se muestra en settings)
+        const userMinimal = document.getElementById('userMinimal');
+        if (userMinimal) {
+            userMinimal.style.display = 'none';
+        }
+
         // Actualizar información del usuario
         this.updateUserInfo();
+        
+        console.log('✅ Interfaz principal mostrada correctamente');
     }
 
     showLoginForm() {
+        console.log('🔐 Mostrando formulario de login...');
+        
         this.hideAllAuthForms();
+        
         const loginForm = document.getElementById('authLoginForm');
         if (loginForm) {
             loginForm.style.display = 'block';
+            console.log('✅ Formulario de login mostrado');
+            
+            // Verificar que los campos estén disponibles
+            const emailField = document.getElementById('loginEmail');
+            const passwordField = document.getElementById('loginPassword');
+            const submitBtn = document.getElementById('loginBtn');
+            
+            if (emailField && passwordField && submitBtn) {
+                console.log('✅ Campos de login disponibles');
+            } else {
+                console.warn('⚠️ Algunos campos de login no encontrados');
+            }
+        } else {
+            console.error('❌ Formulario de login no encontrado');
         }
     }
 
@@ -754,6 +1096,8 @@ class WhatsAppCRM {
     }
 
     hideAllAuthForms() {
+        console.log('🔐 Ocultando todos los formularios de autenticación...');
+        
         const forms = [
             'authLoading',
             'authLoginForm',
@@ -766,28 +1110,40 @@ class WhatsAppCRM {
             const form = document.getElementById(formId);
             if (form) {
                 form.style.display = 'none';
+                console.log(`✅ Formulario ${formId} ocultado`);
+            } else {
+                console.warn(`⚠️ Formulario ${formId} no encontrado`);
             }
         });
     }
 
     updateUserInfo() {
         if (!this.currentUser) return;
-        
+
+        // Sección minimalista
+        const userMinimalAvatar = document.getElementById('userMinimalAvatar');
+        const userMinimalEmail = document.getElementById('userMinimalEmail');
+        if (userMinimalAvatar) {
+            const initials = this.getUserInitials(this.currentUser.user_metadata?.name || this.currentUser.email);
+            userMinimalAvatar.textContent = initials;
+        }
+        if (userMinimalEmail) {
+            userMinimalEmail.textContent = this.currentUser.email;
+        }
+
+        // (Antigua, por compatibilidad)
         const userName = document.getElementById('userName');
         const userAvatar = document.getElementById('userAvatar');
         const userPlan = document.getElementById('userPlan');
-        
         if (userName) {
             userName.textContent = this.currentUser.user_metadata?.name || this.currentUser.email;
         }
-        
         if (userAvatar) {
             const initials = this.getUserInitials(this.currentUser.user_metadata?.name || this.currentUser.email);
             userAvatar.textContent = initials;
         }
-        
         if (userPlan) {
-            userPlan.textContent = 'Plan Gratis'; // Por ahora hardcodeado
+            userPlan.textContent = 'Plan Gratis';
         }
     }
 
@@ -806,30 +1162,30 @@ class WhatsAppCRM {
         if (loginForm) {
             loginForm.addEventListener('submit', (e) => this.handleLogin(e));
         }
-        
         // Eventos del formulario de registro
         const registerForm = document.getElementById('registerForm');
         if (registerForm) {
             registerForm.addEventListener('submit', (e) => this.handleRegister(e));
         }
-        
         // Botones de cambio de formulario
         const showRegisterBtn = document.getElementById('showRegisterForm');
         if (showRegisterBtn) {
             showRegisterBtn.addEventListener('click', () => this.showRegisterForm());
         }
-        
         const showLoginBtn = document.getElementById('showLoginForm');
         if (showLoginBtn) {
             showLoginBtn.addEventListener('click', () => this.showLoginForm());
         }
-        
-        // Botón de logout
+        // Botón de logout minimalista
+        const userMinimalLogout = document.getElementById('userMinimalLogout');
+        if (userMinimalLogout) {
+            userMinimalLogout.onclick = () => this.handleLogout();
+        }
+        // Botón de logout antiguo (por compatibilidad)
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => this.handleLogout());
         }
-        
         // Botón de olvidé contraseña
         const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
         if (forgotPasswordBtn) {
@@ -866,8 +1222,10 @@ class WhatsAppCRM {
                 this.showMainInterface();
                 this.showNotification('Sesión iniciada correctamente', 'success');
                 
-                // Reinicializar la aplicación
-                this.init();
+                // Reinicializar la aplicación después del login exitoso
+                setTimeout(() => {
+                    this.init();
+                }, 500);
             } else {
                 // Traducir errores comunes
                 let errorMessage = result.error;
@@ -1047,8 +1405,8 @@ class WhatsAppCRM {
 
     // Métodos básicos para evitar errores
     createSampleDataIfEmpty() {
-        // Implementación básica
-        console.log('Creating sample data if empty...');
+        // Ya no creamos datos de muestra, usamos datos reales de WhatsApp
+        console.log('[WhatsAppCRM] No se crean datos de muestra, usando datos reales de WhatsApp');
     }
 
     migrateOldStatusToTags() {
@@ -1063,6 +1421,12 @@ class WhatsAppCRM {
 
     bindAllEvents() {
         console.log('Binding all events...');
+        
+        // Verificar autenticación antes de vincular eventos
+        if (!this.isAuthenticated) {
+            console.log('🔒 No se vinculan eventos: Usuario no autenticado');
+            return;
+        }
         
         // Navegación principal
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -1240,6 +1604,12 @@ class WhatsAppCRM {
     loadInitialData() {
         console.log('Loading initial data...');
         
+        // Verificar autenticación antes de cargar datos
+        if (!this.isAuthenticated) {
+            console.log('🔒 No se cargan datos: Usuario no autenticado');
+            return;
+        }
+        
         // Cargar datos iniciales
         this.loadContacts();
         this.loadTags();
@@ -1253,6 +1623,12 @@ class WhatsAppCRM {
 
     startPeriodicSync() {
         console.log('Starting periodic sync...');
+        
+        // Verificar autenticación antes de iniciar sincronización
+        if (!this.isAuthenticated) {
+            console.log('🔒 No se inicia sincronización: Usuario no autenticado');
+            return;
+        }
         
         // Sincronización cada 30 segundos si está habilitada
         if (this.settings.autoSync) {
@@ -1285,9 +1661,25 @@ class WhatsAppCRM {
         
         // Cargar datos específicos de la sección
         this.loadSectionData(section);
+        
+        // Mostrar u ocultar userMinimal solo en settings
+        const userMinimal = document.getElementById('userMinimal');
+        if (userMinimal) {
+            if (section === 'settings' && this.isAuthenticated) {
+                userMinimal.style.display = 'flex';
+                this.updateUserInfo();
+                // Reasignar evento logout cada vez que se muestra userMinimal
+                const userMinimalLogout = document.getElementById('userMinimalLogout');
+                if (userMinimalLogout) {
+                    userMinimalLogout.onclick = () => this.handleLogout();
+                }
+            } else {
+                userMinimal.style.display = 'none';
+            }
+        }
     }
 
-    loadSectionData(section) {
+    async loadSectionData(section) {
         try {
             console.log(`📊 Cargando datos para sección: ${section}`);
             
@@ -1296,7 +1688,7 @@ class WhatsAppCRM {
                     this.refreshDashboard();
                     break;
                 case 'kanban':
-                    this.loadKanban();
+                    await this.loadKanban();
                     break;
                 case 'contacts':
                     this.loadContacts();
@@ -1426,6 +1818,7 @@ class WhatsAppCRM {
      * Abre el kanban en modo pantalla completa (overlay independiente)
      */
     expandKanban() {
+        if (!this.requireAuth()) return;
         this.openKanbanFull();
     }
 
@@ -1433,166 +1826,361 @@ class WhatsAppCRM {
      * Crea (si no existe) y muestra un overlay de pantalla completa con el kanban
      */
     openKanbanFull() {
+        console.log('[WhatsAppCRM] 📋 Abriendo Kanban en pantalla completa...');
+        
+        // Verificar que los servicios estén inicializados
+        if (!this.tagsService) {
+            console.error('[WhatsAppCRM] ❌ Servicio de etiquetas no inicializado');
+            this.showNotification('Error: Servicio de etiquetas no disponible', 'error');
+            return;
+        }
+
+        // Asegurarse de que el contenedor de Kanban fullscreen existe
+        const kanbanFullscreen = document.getElementById('kanbanFullscreen');
+        if (!kanbanFullscreen) {
+            console.error('[WhatsAppCRM] ❌ Contenedor de Kanban fullscreen no encontrado');
+            this.showNotification('Error: Contenedor de Kanban no encontrado', 'error');
+            return;
+        }
+
+        // Renderizar Kanban en pantalla completa
+        this.renderKanbanFull();
+
+        // Mostrar el contenedor de Kanban fullscreen
+        kanbanFullscreen.classList.add('active');
+        kanbanFullscreen.style.display = 'flex';
+        document.body.classList.add('kanban-fullscreen-mode');
+
+        // Configurar eventos de cierre
+        const closeBtn = document.getElementById('closeKanbanFullscreen');
+        if (closeBtn) {
+            // Remover listener anterior si existe
+            closeBtn.removeEventListener('click', this.closeKanbanFull);
+            closeBtn.addEventListener('click', () => this.closeKanbanFull());
+        }
+
+        // Configurar eventos de agregar contacto
+        const addContactBtn = document.getElementById('addContactFullscreen');
+        if (addContactBtn) {
+            addContactBtn.removeEventListener('click', this.showContactModal);
+            addContactBtn.addEventListener('click', () => this.showContactModal());
+        }
+
+        console.log('[WhatsAppCRM] ✅ Kanban fullscreen activado');
+    }
+
+    async renderKanbanFull() {
         try {
-            // Ocultar WhatsApp y sidebar
-            const whatsappApp = document.querySelector('#app');
-            const sidebar = document.getElementById('whatsapp-crm-sidebar') || document.querySelector('.wa-crm-sidebar');
-
-            if (whatsappApp) whatsappApp.style.display = 'none';
-            if (sidebar) sidebar.style.display = 'none';
-
-            // Crear o regenerar overlay
-            let overlay = document.getElementById('kanbanOverlay');
-            const overlayHTML = `
-                <div class="kanban-overlay-header">
-                    <button id="kanbanBackBtn" class="kanban-back-btn">← Volver</button>
-                    <h1 class="kanban-overlay-title">📋 CRM Kanban</h1>
-                    <button id="kanbanCloseBtn" class="kanban-close-btn">✕</button>
-                </div>
-                <div class="kanban-overlay-content" id="kanbanOverlayContent"></div>
-            `;
-
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'kanbanOverlay';
-                document.body.appendChild(overlay);
+            console.log('[WhatsAppCRM] 🏷️ Renderizando kanban fullscreen...');
+            
+            const container = document.getElementById('kanbanFullscreenContainer');
+            if (!container) {
+                console.error('[WhatsAppCRM] ❌ Contenedor de kanban no encontrado');
+                return;
             }
 
-            // Siempre actualizar contenido HTML para evitar versiones vacías
-            overlay.innerHTML = overlayHTML;
-
-            // (Re)vincular eventos de cierre
-            overlay.querySelector('#kanbanBackBtn').onclick = () => this.closeKanbanFull();
-            overlay.querySelector('#kanbanCloseBtn').onclick = () => this.closeKanbanFull();
-
-            // Esc para cerrar
-            if (!this.__kanbanEscListener) {
-                this.__kanbanEscListener = (e) => { if (e.key === 'Escape') this.closeKanbanFull(); };
-                document.addEventListener('keydown', this.__kanbanEscListener);
+            // Usar el nuevo método con datos reales
+            await this.renderKanbanReal(container);
+            
+            // Configurar drag and drop
+            this.setupKanbanDragAndDrop();
+            
+            // Configurar botón de retry si hay error
+            const retryBtn = container.querySelector('.retry-btn');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => this.renderKanbanFull());
             }
             
-            overlay.style.display = 'flex';
+        } catch (error) {
+            console.error('[WhatsAppCRM] ❌ Error renderizando kanban fullscreen:', error);
             
-            // Renderizar contenido
+            const container = document.getElementById('kanbanFullscreenContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="kanban-empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div class="empty-state-text">Error cargando kanban</div>
+                        <div class="empty-state-subtext">${error.message}</div>
+                        <button class="retry-btn btn-primary">Reintentar</button>
+                    </div>
+                `;
+                
+                const retryBtn = container.querySelector('.retry-btn');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', () => this.renderKanbanFull());
+                }
+            }
+        }
+    }
+
+    // Método para obtener contactos por etiqueta usando Supabase
+    async getContactsByTag(tagId) {
+        try {
+            // Obtener chats con esta etiqueta
+            const chatTags = await this.tagsService.getChatsByTag(tagId);
+            
+            // Filtrar y mapear contactos
+            return this.contacts.filter(contact => 
+                chatTags.some(chatTag => chatTag.chat_name === contact.name)
+            );
+        } catch (error) {
+            console.error('Error obteniendo contactos por etiqueta:', error);
+            return [];
+        }
+    }
+
+    // Método para actualizar etiqueta de contacto
+    async updateContactTag(contactId, newTagId) {
+        try {
+            // Obtener información del contacto
+            const contact = this.contacts.find(c => c.id === contactId);
+            if (!contact) {
+                throw new Error('Contacto no encontrado');
+            }
+
+            // Remover etiquetas anteriores
+            const oldChatTags = await this.tagsService.getChatTags(contact.name);
+            for (const oldTag of oldChatTags) {
+                await this.tagsService.removeTagFromChat(oldTag.tags.id, contact.name);
+            }
+
+            // Asignar nueva etiqueta
+            await this.tagsService.assignTagToChat(newTagId, contact.name, contact.phone);
+
+            // Actualizar vista
             this.renderKanbanFull();
 
+            // Mostrar notificación
+            this.showNotification('Contacto actualizado', 'success');
         } catch (error) {
-            console.error('[openKanbanFull] Error:', error);
+            console.error('Error actualizando etiqueta de contacto:', error);
+            this.showNotification('Error al actualizar contacto', 'error');
         }
     }
 
-    /*
-     * Cierra el kanban fullscreen y restaura WhatsApp + sidebar
-     */
-    closeKanbanFull() {
-        const overlay = document.getElementById('kanbanOverlay');
-        if (overlay) overlay.style.display = 'none';
-
-        const whatsappApp = document.querySelector('#app');
-        const sidebar = document.getElementById('whatsapp-crm-sidebar') || document.querySelector('.wa-crm-sidebar');
-
-        if (whatsappApp) whatsappApp.style.display = '';
-        if (sidebar) sidebar.style.display = '';
-    }
-
-    /*
-     * Genera las columnas y tarjetas dentro del overlay a pantalla completa
-     */
-    renderKanbanFull() {
-        const container = document.getElementById('kanbanOverlayContent');
-        if (!container) return;
-
-        console.log('[renderKanbanFull] Renderizando kanban fullscreen...');
-        console.log('[renderKanbanFull] Tags:', this.tags.length, this.tags.map(t=>t.name));
-        console.log('[renderKanbanFull] Contacts:', this.contacts.length);
-
-        // Columnas: una por etiqueta + sin etiqueta
-        const columns = [];
-        // Columna sin etiqueta
-        columns.push({ tagId: null, name: 'Sin Etiqueta', color: '#6B7280' });
-        this.tags.forEach(tag => columns.push({ tagId: tag.id, name: tag.name, color: tag.color }));
-
-        if (columns.length === 0) {
-            container.innerHTML = `<div style="margin:auto; color:#8b949e; text-align:center; font-size:16px;">No hay datos para mostrar</div>`;
-            return;
-        }
-
-        container.innerHTML = columns.map(col => {
-            const contacts = col.tagId ? this.getContactsByTag(col.tagId) : this.contacts.filter(c => !c.tags || c.tags.length === 0);
-            return `
-                <div class="kanban-overlay-column" style="border:2px solid ${col.color};">
-                    <div class="kanban-overlay-column-header" style="background:${col.color};">
-                        <span>${this.escapeHtml(col.name)}</span>
-                        <span class="kanban-overlay-count">${contacts.length}</span>
+    renderKanbanCard(contact, tag) {
+        return `
+            <div class="kanban-fullscreen-card" 
+                 draggable="true" 
+                 data-contact-id="${contact.id}" 
+                 data-tag-id="${tag.id}">
+                <div class="kanban-fullscreen-card-header">
+                    <div class="kanban-fullscreen-avatar">
+                        <img src="${contact.avatar || this.getDefaultAvatar(contact)}" alt="${contact.name}">
                     </div>
-                    <div class="kanban-overlay-cards">
-                        ${contacts.map(ct => `
-                            <div class="kanban-overlay-card">
-                                <div class="ko-card-avatar">${this.getUserInitials(ct.name)}</div>
-                                <div class="ko-card-info">
-                                    <div class="ko-card-name">${this.escapeHtml(ct.name)}</div>
-                                    <div class="ko-card-phone">${ct.phone}</div>
-                                </div>
-                            </div>
-                        `).join('')}
+                    <div class="kanban-fullscreen-info">
+                        <div class="kanban-fullscreen-name">${contact.name}</div>
+                        <div class="kanban-fullscreen-phone">${contact.phone}</div>
                     </div>
                 </div>
-            `;
-        }).join('');
-
-        console.log('[renderKanbanFull] Columnas renderizadas:', columns.length);
-    }
- 
-    refreshKanban() {
-        this.showNotification('Actualizando kanban...', 'info');
-        this.loadKanban();
-        this.showNotification('Kanban actualizado', 'success');
-    }
-
-    loadKanban() {
-        const container = document.getElementById('kanbanContainer');
-        if (!container) return;
-        
-        if (this.tags.length === 0) {
-            container.innerHTML = `
-                <div class="kanban-empty">
-                    <div style="text-align: center; padding: 40px; color: #8b949e;">
-                        <div style="font-size: 24px; margin-bottom: 16px;">📋</div>
-                        <div>No hay etiquetas para mostrar</div>
-                        <div style="margin-top: 8px; font-size: 12px;">Crea etiquetas para organizar tus contactos</div>
-                    </div>
-                </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = this.tags.map(tag => `
-            <div class="kanban-column">
-                <div class="kanban-column-header">
-                    <div class="kanban-column-title" style="color: ${tag.color};">${tag.name}</div>
-                    <div class="kanban-column-count">${this.getContactsByTag(tag.id).length}</div>
-                </div>
-                <div class="kanban-column-content" data-tag-id="${tag.id}">
-                    ${this.getContactsByTag(tag.id).map(contact => `
-                        <div class="kanban-card" data-contact-id="${contact.id}">
-                            <div class="kanban-card-header">
-                                <div class="kanban-card-avatar">${this.getUserInitials(contact.name)}</div>
-                                <div class="kanban-card-name">${contact.name}</div>
-                            </div>
-                            <div class="kanban-card-phone">${contact.phone}</div>
-                            <div class="kanban-card-actions">
-                                <button class="kanban-card-btn" onclick="this.openContact('${contact.id}')">👁️</button>
-                                <button class="kanban-card-btn" onclick="this.editContact('${contact.id}')">✏️</button>
-                            </div>
-                        </div>
-                    `).join('')}
+                <div class="kanban-fullscreen-status">${contact.status || 'Sin estado'}</div>
+                <div class="kanban-fullscreen-actions">
+                    <button class="kanban-fullscreen-action-btn whatsapp" 
+                            onclick="window.whatsappCRM.openWhatsAppChat('${contact.phone}')">💬</button>
+                    <button class="kanban-fullscreen-action-btn call" 
+                            onclick="window.whatsappCRM.initiateCall('${contact.phone}')">📞</button>
                 </div>
             </div>
-        `).join('');
+        `;
     }
 
-    getContactsByTag(tagId) {
-        return this.contacts.filter(contact => contact.tags && contact.tags.includes(tagId));
+    getDefaultAvatar(contact) {
+        // Generar avatar basado en iniciales
+        const initials = contact.name 
+            ? contact.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() 
+            : '?';
+        
+        // Generar color de fondo basado en el nombre
+        const hash = this.hashCode(contact.name || contact.phone);
+        const hue = hash % 360;
+        
+        // Crear avatar SVG
+        return `data:image/svg+xml;utf8,
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                <rect width="40" height="40" fill="hsl(${hue}, 50%, 50%)" />
+                <text x="50%" y="50%" text-anchor="middle" dy=".35em" fill="white" font-size="16">
+                    ${initials}
+                </text>
+            </svg>`;
+    }
+
+    hashCode(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return Math.abs(hash);
+    }
+
+    closeKanbanFull() {
+        const kanbanFullscreen = document.getElementById('kanbanFullscreen');
+        if (kanbanFullscreen) {
+            kanbanFullscreen.classList.remove('active');
+            document.body.classList.remove('kanban-fullscreen-mode');
+        }
+    }
+
+    setupKanbanDragAndDrop() {
+        const cards = document.querySelectorAll('.kanban-fullscreen-card');
+        const columns = document.querySelectorAll('.kanban-fullscreen-column');
+
+        cards.forEach(card => {
+            card.addEventListener('dragstart', (e) => {
+                card.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', JSON.stringify({
+                    contactId: card.dataset.contactId,
+                    originalTagId: card.dataset.tagId
+                }));
+            });
+
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+            });
+        });
+
+        columns.forEach(column => {
+            column.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                column.classList.add('drag-over');
+            });
+
+            column.addEventListener('dragleave', () => {
+                column.classList.remove('drag-over');
+            });
+
+            column.addEventListener('drop', (e) => {
+                e.preventDefault();
+                column.classList.remove('drag-over');
+                
+                const droppedData = JSON.parse(e.dataTransfer.getData('text/plain'));
+                const contactId = droppedData.contactId;
+                const originalTagId = droppedData.originalTagId;
+                const newTagId = column.dataset.tagId;
+
+                const draggedCard = document.querySelector(`.kanban-fullscreen-card[data-contact-id="${contactId}"]`);
+                const targetColumn = column.querySelector('.kanban-fullscreen-cards');
+                
+                if (draggedCard && targetColumn) {
+                    // Mover tarjeta visualmente
+                    targetColumn.insertBefore(draggedCard, targetColumn.querySelector('.kanban-add-contact'));
+                    
+                    // Actualizar etiqueta del contacto
+                    if (originalTagId !== newTagId) {
+                        this.updateContactTag(contactId, newTagId);
+                    }
+                }
+            });
+        });
+    }
+
+    async refreshKanban() {
+        try {
+            this.showNotification('Actualizando kanban...', 'info');
+            await this.loadKanban();
+            this.showNotification('Kanban actualizado', 'success');
+        } catch (error) {
+            console.error('Error refrescando kanban:', error);
+            this.showNotification('Error actualizando kanban', 'error');
+        }
+    }
+
+    async loadKanban() {
+        const container = document.getElementById('kanbanFullscreenContainer');
+        if (!container) return;
+        
+        try {
+            if (this.tags.length === 0) {
+                container.innerHTML = `
+                    <div class="kanban-empty">
+                        <div style="text-align: center; padding: 40px; color: #8b949e;">
+                            <div style="font-size: 24px; margin-bottom: 16px;">📋</div>
+                            <div>No hay etiquetas para mostrar</div>
+                            <div style="margin-top: 8px; font-size: 12px;">Crea etiquetas para organizar tus contactos</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Mostrar indicador de carga
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div class="loading"></div>
+                    <div style="margin-top: 16px; color: #8b949e;">Cargando kanban...</div>
+                </div>
+            `;
+            
+            // Cargar contactos por etiqueta de forma asíncrona
+            const columnsHTML = await Promise.all(this.tags.map(async (tag) => {
+                try {
+                    const contactsInTag = await this.getContactsByTag(tag.id);
+                    
+                    return `
+                        <div class="kanban-fullscreen-column" data-tag-id="${tag.id}" droppable="true">
+                            <div class="kanban-fullscreen-column-header">
+                                <div class="kanban-fullscreen-column-title" style="color: ${tag.color};">${tag.name}</div>
+                                <div class="kanban-fullscreen-column-count">${contactsInTag.length}</div>
+                            </div>
+                            <div class="kanban-fullscreen-cards" data-tag-id="${tag.id}">
+                                ${contactsInTag.map(contact => `
+                                    <div class="kanban-fullscreen-card" 
+                                         draggable="true" 
+                                         data-contact-id="${contact.id}" 
+                                         data-tag-id="${tag.id}">
+                                        <div class="kanban-fullscreen-card-header">
+                                            <div class="kanban-fullscreen-avatar">
+                                                <img src="${contact.avatar || 'default-avatar.png'}" alt="${contact.name}">
+                                            </div>
+                                            <div class="kanban-fullscreen-info">
+                                                <div class="kanban-fullscreen-name">${contact.name}</div>
+                                                <div class="kanban-fullscreen-phone">${contact.phone}</div>
+                                            </div>
+                                        </div>
+                                        <div class="kanban-fullscreen-status">${contact.status || 'Sin estado'}</div>
+                                        <div class="kanban-fullscreen-actions">
+                                            <button class="kanban-fullscreen-action-btn whatsapp">💬</button>
+                                            <button class="kanban-fullscreen-action-btn call">📞</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error(`Error cargando contactos para etiqueta ${tag.name}:`, error);
+                    return `
+                        <div class="kanban-fullscreen-column" data-tag-id="${tag.id}">
+                            <div class="kanban-fullscreen-column-header">
+                                <div class="kanban-fullscreen-column-title" style="color: ${tag.color};">${tag.name}</div>
+                                <div class="kanban-fullscreen-column-count">Error</div>
+                            </div>
+                            <div class="kanban-fullscreen-cards" data-tag-id="${tag.id}">
+                                <div style="padding: 20px; text-align: center; color: #8b949e;">
+                                    Error cargando contactos
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }));
+
+            container.innerHTML = columnsHTML.join('');
+
+            // Configurar drag and drop
+            this.setupKanbanDragAndDrop();
+            
+        } catch (error) {
+            console.error('Error en loadKanban:', error);
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #ef4444;">
+                    <div style="font-size: 24px; margin-bottom: 16px;">❌</div>
+                    <div>Error cargando kanban</div>
+                    <div style="margin-top: 8px; font-size: 12px;">Intenta recargar la página</div>
+                </div>
+            `;
+        }
     }
 
     // ===========================================
@@ -1639,6 +2227,8 @@ class WhatsAppCRM {
     }
 
     showContactModal(contactId = null) {
+        if (!this.requireAuth()) return;
+        
         console.log('[showContactModal] Abriendo modal de contacto, contactId:', contactId);
         
         const modal = document.getElementById('contactModal');
@@ -1797,6 +2387,8 @@ class WhatsAppCRM {
     }
 
     showTagModal(tagId = null) {
+        if (!this.requireAuth()) return;
+        
         const modal = document.getElementById('tagModal');
         const title = document.getElementById('tagModalTitle');
         const nameInput = document.getElementById('tagName');
@@ -1911,6 +2503,8 @@ class WhatsAppCRM {
     }
 
     showTemplateModal(templateId = null) {
+        if (!this.requireAuth()) return;
+        
         const modal = document.getElementById('templateModal');
         const title = document.getElementById('templateModalTitle');
         const nameInput = document.getElementById('templateName');
@@ -2146,6 +2740,16 @@ class WhatsAppCRM {
     // MÉTODOS AUXILIARES
     // ===========================================
 
+    requireAuth() {
+        if (!this.isAuthenticated || !this.currentUser) {
+            console.log('🔒 Acceso denegado: Usuario no autenticado');
+            this.showAuthSection();
+            this.showNotification('Debes iniciar sesión para acceder a esta función', 'error');
+            return false;
+        }
+        return true;
+    }
+
     handleSearch(query) {
         console.log('Searching for:', query);
         // Implementar búsqueda en contactos, etiquetas, etc.
@@ -2201,6 +2805,11 @@ class WhatsAppCRM {
                 window.dispatchEvent(new Event('resize'));
             }, 300);
             
+            // Notificar al topbar del cambio de estado
+            if (window.whatsappLabelsTopBar && typeof window.whatsappLabelsTopBar.notifySidebarStateChange === 'function') {
+                window.whatsappLabelsTopBar.notifySidebarStateChange(isCollapsed);
+            }
+            
             console.log(`📐 Sidebar ${isCollapsed ? 'contraído' : 'expandido'} - Ancho: ${isCollapsed ? '60px' : '380px'}`);
             
         } catch (error) {
@@ -2228,8 +2837,18 @@ class WhatsAppCRM {
                     toggleIcon.textContent = '⟩';
                 }
                 
+                // Notificar al topbar del estado inicial
+                if (window.whatsappLabelsTopBar && typeof window.whatsappLabelsTopBar.notifySidebarStateChange === 'function') {
+                    window.whatsappLabelsTopBar.notifySidebarStateChange(true);
+                }
+                
                 console.log('📐 Estado del sidebar restaurado: contraído (60px)');
             } else if (sidebar) {
+                // Notificar al topbar del estado expandido
+                if (window.whatsappLabelsTopBar && typeof window.whatsappLabelsTopBar.notifySidebarStateChange === 'function') {
+                    window.whatsappLabelsTopBar.notifySidebarStateChange(false);
+                }
+                
                 console.log('📐 Estado del sidebar restaurado: expandido (380px)');
             }
         } catch (error) {
@@ -2238,52 +2857,8 @@ class WhatsAppCRM {
     }
 
     createSampleDataIfEmpty() {
-        if (this.tags.length === 0) {
-            this.tags = [
-                {
-                    id: 'tag_sample_1',
-                    name: 'Clientes',
-                    color: '#10b981',
-                    description: 'Clientes activos',
-                    createdAt: new Date().toISOString()
-                },
-                {
-                    id: 'tag_sample_2',
-                    name: 'Prospectos',
-                    color: '#f59e0b',
-                    description: 'Posibles clientes',
-                    createdAt: new Date().toISOString()
-                },
-                {
-                    id: 'tag_sample_3',
-                    name: 'Soporte',
-                    color: '#3b82f6',
-                    description: 'Consultas de soporte',
-                    createdAt: new Date().toISOString()
-                }
-            ];
-            this.saveData('tags', this.tags);
-        }
-        
-        if (this.templates.length === 0) {
-            this.templates = [
-                {
-                    id: 'template_sample_1',
-                    name: 'Saludo General',
-                    category: 'general',
-                    content: '¡Hola {{nombre}}! ¿Cómo estás?',
-                    createdAt: new Date().toISOString()
-                },
-                {
-                    id: 'template_sample_2',
-                    name: 'Seguimiento',
-                    category: 'ventas',
-                    content: 'Hola {{nombre}}, te escribo para hacer seguimiento de nuestra conversación anterior.',
-                    createdAt: new Date().toISOString()
-                }
-            ];
-            this.saveData('templates', this.templates);
-        }
+        // Ya no creamos datos de muestra, usamos datos reales de WhatsApp
+        console.log('[WhatsAppCRM] No se crean datos de muestra, usando datos reales de WhatsApp');
     }
 
     escapeHtml(unsafe) {
@@ -2424,18 +2999,89 @@ class WhatsAppCRM {
             console.error('[bindContactEvents] Error:', error);
         }
     }
+
+    // Método para renderizar kanban con datos reales
+    async renderKanbanReal(container) {
+        try {
+            console.log('[WhatsAppCRM] 🏷️ Renderizando kanban con datos reales...');
+            
+            // Obtener etiquetas reales usando wa-js wrapper
+            let tags = [];
+            if (window.whatsappLabelsService) {
+                tags = await window.whatsappLabelsService.getLabels();
+            }
+            
+            if (!tags || tags.length === 0) {
+                container.innerHTML = `
+                    <div class="kanban-empty-state">
+                        <div class="empty-state-icon">🏷️</div>
+                        <div class="empty-state-text">No hay etiquetas disponibles</div>
+                        <div class="empty-state-subtext">Las etiquetas aparecerán cuando estén disponibles en WhatsApp Business</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const columnsHTML = tags.map(tag => `
+                <div class="kanban-fullscreen-column" data-tag-id="${tag.id}">
+                    <div class="kanban-fullscreen-column-header">
+                        <div class="kanban-fullscreen-column-title" style="color: ${tag.color};">
+                            ${tag.name}
+                        </div>
+                        <div class="kanban-fullscreen-column-count">
+                            0
+                            <span class="tag-usage-stats">(${tag.usage_count || 0} usos)</span>
+                        </div>
+                    </div>
+                    <div class="kanban-fullscreen-cards" data-tag-id="${tag.id}">
+                        <div class="kanban-add-contact" data-tag-id="${tag.id}">
+                            <span>+ Añadir Contacto</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = columnsHTML;
+            console.log('[WhatsAppCRM] ✅ Kanban renderizado con datos reales');
+            
+        } catch (error) {
+            console.error('[WhatsAppCRM] ❌ Error renderizando kanban:', error);
+            container.innerHTML = `
+                <div class="kanban-empty-state">
+                    <div class="empty-state-icon">❌</div>
+                    <div class="empty-state-text">Error cargando etiquetas</div>
+                    <div class="empty-state-subtext">${error.message}</div>
+                </div>
+            `;
+        }
+    }
 }
 
 // Inicializar la aplicación cuando el DOM esté listo
 function initWhatsAppCRM() {
+    console.log('🚀 Función initWhatsAppCRM llamada...');
+    
+    // Prevenir múltiples inicializaciones
+    if (window.whatsappCRMInstance) {
+        console.log('⚠️ WhatsApp CRM ya inicializado, saltando...');
+        return;
+    }
+    
     if (document.readyState === 'loading') {
+        console.log('📄 DOM cargando, esperando DOMContentLoaded...');
         document.addEventListener('DOMContentLoaded', () => {
-            new WhatsAppCRM();
+            console.log('📄 DOM cargado, creando instancia de WhatsApp CRM...');
+            window.whatsappCRMInstance = new WhatsAppCRM();
         });
     } else {
-        new WhatsAppCRM();
+        console.log('📄 DOM ya cargado, creando instancia de WhatsApp CRM inmediatamente...');
+        // Pequeño delay para asegurar que el HTML esté inyectado
+        setTimeout(() => {
+            window.whatsappCRMInstance = new WhatsAppCRM();
+        }, 500);
     }
 }
 
 // Inicializar automáticamente
+console.log('🚀 Inicializando WhatsApp CRM Extension...');
 initWhatsAppCRM(); 

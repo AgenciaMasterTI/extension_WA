@@ -1,394 +1,318 @@
-/**
- * Popup Control Center - WhatsApp CRM Extension
- * Interfaz minimalista que se conecta al CRM principal del sidebar
- */
-
-class PopupControlCenter {
-  constructor() {
-    this.sidebarState = null;
-    this.refreshInterval = null;
-    
-    this.init();
-  }
-
-  async init() {
-    console.log('[Popup Control Center] Iniciando...');
-    
-    // Configurar event listeners
-    this.setupEventListeners();
-    
-    // Verificar estado inicial
-    await this.checkSidebarState();
-    
-    // Configurar refresco automático cada 5 segundos
-    this.startAutoRefresh();
-  }
-
-  setupEventListeners() {
-    // Abrir WhatsApp Web
-    const openWhatsAppBtn = document.getElementById('openWhatsAppBtn');
-    if (openWhatsAppBtn) {
-      openWhatsAppBtn.addEventListener('click', () => {
-        this.openWhatsApp();
-      });
+// WhatsApp CRM Popup - Información y Acciones Rápidas
+class CRMPopup {
+    constructor() {
+        console.log('🚀 CRM Popup iniciando...');
+        this.init();
     }
 
-    // Abrir/mostrar CRM
-    const showCrmBtn = document.getElementById('showCrmBtn');
-    if (showCrmBtn) {
-      showCrmBtn.addEventListener('click', () => {
-        this.showCRM();
-      });
+    async init() {
+        try {
+            // Cargar datos del CRM
+            await this.loadCRMData();
+            
+            // Actualizar interfaz
+            this.updateUI();
+            
+            // Vincular eventos
+            this.bindEvents();
+            
+            console.log('✅ CRM Popup iniciado correctamente');
+        } catch (error) {
+            console.error('❌ Error iniciando popup:', error);
+        }
     }
 
-    // Toggle CRM principal
-    const toggleCrmBtn = document.getElementById('toggleCrmBtn');
-    if (toggleCrmBtn) {
-      toggleCrmBtn.addEventListener('click', () => {
-        this.toggleCRM();
-      });
+    async loadCRMData() {
+        try {
+            // Obtener datos del localStorage del CRM
+            const contacts = this.getLocalStorageData('wa_crm_contacts', []);
+            const tags = this.getLocalStorageData('wa_crm_tags', []);
+            const templates = this.getLocalStorageData('wa_crm_templates', []);
+            const settings = this.getLocalStorageData('wa_crm_settings', {});
+            
+            // Obtener información de autenticación
+            const session = await this.getStoredSession();
+            
+            this.crmData = {
+                contacts: contacts,
+                tags: tags,
+                templates: templates,
+                settings: settings,
+                isAuthenticated: !!session,
+                user: session?.user || null
+            };
+            
+            console.log('📊 Datos del CRM cargados:', {
+                contacts: contacts.length,
+                tags: tags.length,
+                templates: templates.length,
+                authenticated: !!session
+            });
+            
+        } catch (error) {
+            console.error('Error cargando datos del CRM:', error);
+            this.crmData = {
+                contacts: [],
+                tags: [],
+                templates: [],
+                settings: {},
+                isAuthenticated: false,
+                user: null
+            };
+        }
     }
 
-    // Ir a WhatsApp Web
-    const focusWhatsAppBtn = document.getElementById('focusWhatsAppBtn');
-    if (focusWhatsAppBtn) {
-      focusWhatsAppBtn.addEventListener('click', () => {
-        this.focusWhatsApp();
-      });
+    getLocalStorageData(key, defaultValue = []) {
+        try {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : defaultValue;
+        } catch (error) {
+            console.error(`Error obteniendo ${key}:`, error);
+            return defaultValue;
+        }
     }
 
-    // Sincronizar datos
-    const syncDataBtn = document.getElementById('syncDataBtn');
-    if (syncDataBtn) {
-      syncDataBtn.addEventListener('click', () => {
-        this.syncData();
-      });
-    }
-  }
-
-  async checkSidebarState() {
-    try {
-      this.showLoading(true);
-      this.updateConnectionStatus('loading', 'Verificando...', 'Conectando con WhatsApp Web');
-      
-      console.log('[Popup] === DEBUGGING POPUP STATE CHECK ===');
-      console.log('[Popup] Enviando mensaje getSidebarState...');
-      
-      const response = await this.sendMessage({ action: 'getSidebarState' });
-      console.log('[Popup] Respuesta completa recibida:', JSON.stringify(response, null, 2));
-      
-      this.sidebarState = response;
-      
-      console.log('[Popup] Estado almacenado:', this.sidebarState);
-      console.log('[Popup] whatsappOpen:', this.sidebarState?.whatsappOpen);
-      console.log('[Popup] isAuthenticated:', this.sidebarState?.isAuthenticated);
-      console.log('[Popup] currentUser:', this.sidebarState?.currentUser);
-      
-      this.updateInterface();
-      
-    } catch (error) {
-      console.error('[Popup] Error verificando estado:', error);
-      this.showConnectionError();
-    } finally {
-      this.showLoading(false);
-    }
-  }
-
-  updateInterface() {
-    if (!this.sidebarState || !this.sidebarState.success) {
-      this.showConnectionError();
-      return;
+    async getStoredSession() {
+        try {
+            const result = await chrome.storage.local.get(['supabase_session']);
+            return result.supabase_session || null;
+        } catch (error) {
+            console.error('Error obteniendo sesión:', error);
+            return null;
+        }
     }
 
-    // WhatsApp Web no está abierto
-    if (this.sidebarState.whatsappOpen === false) {
-      this.showWhatsAppNeeded();
-      return;
+    updateUI() {
+        // Actualizar estadísticas
+        this.updateStats();
+        
+        // Actualizar estado de autenticación
+        this.updateAuthStatus();
+        
+        // Actualizar información del usuario
+        this.updateUserInfo();
     }
 
-    // WhatsApp abierto pero CRM no autenticado
-    if (!this.sidebarState.isAuthenticated) {
-      this.showAuthNeeded();
-      return;
+    updateStats() {
+        const totalContacts = document.getElementById('totalContacts');
+        const totalTags = document.getElementById('totalTags');
+        const totalTemplates = document.getElementById('totalTemplates');
+        
+        if (totalContacts) totalContacts.textContent = this.crmData.contacts.length;
+        if (totalTags) totalTags.textContent = this.crmData.tags.length;
+        if (totalTemplates) totalTemplates.textContent = this.crmData.templates.length;
     }
 
-    // Todo funcionando - mostrar interfaz completa
-    this.showCRMActive();
-  }
-
-  showWhatsAppNeeded() {
-    this.updateConnectionStatus('offline', 'WhatsApp Web cerrado', 'Necesitas abrir WhatsApp Web');
-    this.hideAllSections();
-    this.showElement('whatsappNeeded');
-  }
-
-  showAuthNeeded() {
-    this.updateConnectionStatus('loading', 'WhatsApp Web abierto', 'Inicia sesión en el CRM');
-    this.hideAllSections();
-    this.showElement('authNeeded');
-  }
-
-  showCRMActive() {
-    this.updateConnectionStatus('online', 'CRM conectado', 'Todo funcionando correctamente');
-    this.hideAllSections();
-    this.showElement('crmActive');
-    
-    // Actualizar información del usuario
-    this.updateUserInfo();
-    
-    // Actualizar estadísticas
-    this.updateStats();
-    
-    // Actualizar texto del botón toggle
-    this.updateToggleButton();
-  }
-
-  showConnectionError() {
-    this.updateConnectionStatus('offline', 'Error de conexión', 'No se puede conectar con WhatsApp Web');
-    this.hideAllSections();
-    this.showElement('whatsappNeeded');
-  }
-
-  updateConnectionStatus(status, text, detail) {
-    const statusDot = document.getElementById('statusDot');
-    const statusText = document.getElementById('statusText');
-    const statusDetail = document.getElementById('statusDetail');
-    
-    if (statusDot) {
-      statusDot.className = `status-dot ${status}`;
+    updateAuthStatus() {
+        const authStatus = document.getElementById('authStatus');
+        if (!authStatus) return;
+        
+        const statusItem = authStatus.querySelector('.status-item');
+        const statusIcon = statusItem.querySelector('.status-icon');
+        const statusText = statusItem.querySelector('.status-text');
+        
+        if (this.crmData.isAuthenticated) {
+            statusItem.classList.add('authenticated');
+            statusIcon.textContent = '✅';
+            statusText.textContent = 'Autenticado';
+        } else {
+            statusItem.classList.remove('authenticated');
+            statusIcon.textContent = '🔐';
+            statusText.textContent = 'No autenticado';
+        }
     }
-    
-    if (statusText) {
-      statusText.textContent = text;
-    }
-    
-    if (statusDetail) {
-      statusDetail.textContent = detail;
-    }
-  }
 
-  updateUserInfo() {
-    if (!this.sidebarState.currentUser) return;
-    
-    const userName = document.getElementById('userName');
-    const userPlan = document.getElementById('userPlan');
-    const userAvatar = document.getElementById('userAvatar');
-    
-    if (userName) {
-      userName.textContent = this.sidebarState.currentUser.name || this.sidebarState.currentUser.email;
+    updateUserInfo() {
+        const userSection = document.getElementById('userSection');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const userEmail = document.getElementById('userEmail');
+        
+        if (this.crmData.isAuthenticated && this.crmData.user) {
+            // Mostrar información del usuario
+            userSection.style.display = 'block';
+            
+            if (userAvatar) {
+                const initials = this.getUserInitials(this.crmData.user.user_metadata?.name || this.crmData.user.email);
+                userAvatar.textContent = initials;
+            }
+            
+            if (userName) {
+                userName.textContent = this.crmData.user.user_metadata?.name || 'Usuario';
+            }
+            
+            if (userEmail) {
+                userEmail.textContent = this.crmData.user.email;
+            }
+        } else {
+            // Ocultar sección de usuario
+            userSection.style.display = 'none';
+        }
     }
-    
-    if (userPlan) {
-      const plan = this.sidebarState.currentUser.plan || 'free';
-      userPlan.textContent = `Plan ${plan.charAt(0).toUpperCase() + plan.slice(1)}`;
+
+    getUserInitials(name) {
+        return name
+            .split(' ')
+            .map(word => word.charAt(0))
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
     }
-    
-    if (userAvatar) {
-      // Usar iniciales del nombre
-      const name = this.sidebarState.currentUser.name || this.sidebarState.currentUser.email;
-      const initials = this.getInitials(name);
-      userAvatar.textContent = initials;
+
+    bindEvents() {
+        // Botón para abrir el sidebar del CRM
+        const openSidebarBtn = document.getElementById('openSidebarBtn');
+        if (openSidebarBtn) {
+            openSidebarBtn.addEventListener('click', () => this.openSidebar());
+        }
+        
+        // Botón para sincronizar datos
+        const syncDataBtn = document.getElementById('syncDataBtn');
+        if (syncDataBtn) {
+            syncDataBtn.addEventListener('click', () => this.syncData());
+        }
+        
+        // Enlaces del footer
+        const helpLink = document.getElementById('helpLink');
+        if (helpLink) {
+            helpLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showHelp();
+            });
+        }
+        
+        const settingsLink = document.getElementById('settingsLink');
+        if (settingsLink) {
+            settingsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.openSettings();
+            });
+        }
     }
-  }
 
-  updateStats() {
-    if (!this.sidebarState.stats) return;
-    
-    const totalTags = document.getElementById('totalTags');
-    const totalTemplates = document.getElementById('totalTemplates');
-    const totalContacts = document.getElementById('totalContacts');
-    
-    if (totalTags) {
-      totalTags.textContent = this.sidebarState.stats.tags || 0;
+    openSidebar() {
+        try {
+            // Enviar mensaje al content script para abrir el sidebar
+            chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+                if (tabs[0]) {
+                    chrome.tabs.sendMessage(tabs[0].id, {
+                        action: 'openSidebar'
+                    }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.log('No se pudo abrir el sidebar:', chrome.runtime.lastError.message);
+                            this.showNotification('Abre WhatsApp Web para usar el CRM', 'info');
+                        } else {
+                            console.log('Sidebar abierto correctamente');
+                        }
+                    });
+                }
+            });
+        } catch (error) {
+            console.error('Error abriendo sidebar:', error);
+            this.showNotification('Error al abrir el CRM', 'error');
+        }
     }
-    
-    if (totalTemplates) {
-      totalTemplates.textContent = this.sidebarState.stats.templates || 0;
+
+    async syncData() {
+        try {
+            const syncBtn = document.getElementById('syncDataBtn');
+            if (syncBtn) {
+                syncBtn.classList.add('loading');
+                syncBtn.disabled = true;
+            }
+            
+            // Simular sincronización
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Recargar datos
+            await this.loadCRMData();
+            this.updateUI();
+            
+            this.showNotification('Datos sincronizados correctamente', 'success');
+            
+        } catch (error) {
+            console.error('Error sincronizando datos:', error);
+            this.showNotification('Error al sincronizar datos', 'error');
+        } finally {
+            const syncBtn = document.getElementById('syncDataBtn');
+            if (syncBtn) {
+                syncBtn.classList.remove('loading');
+                syncBtn.disabled = false;
+            }
+        }
     }
-    
-    if (totalContacts) {
-      totalContacts.textContent = this.sidebarState.stats.contacts || 0;
-    }
-  }
 
-  updateToggleButton() {
-    const toggleBtn = document.getElementById('toggleCrmBtn');
-    const actionText = toggleBtn?.querySelector('.action-text');
-    
-    if (actionText) {
-      if (this.sidebarState.sidebarVisible) {
-        actionText.textContent = 'Ocultar CRM';
-      } else {
-        actionText.textContent = 'Mostrar CRM';
-      }
-    }
-  }
-
-  hideAllSections() {
-    this.hideElement('whatsappNeeded');
-    this.hideElement('authNeeded');
-    this.hideElement('crmActive');
-  }
-
-  async openWhatsApp() {
-    try {
-      this.showMessage('Abriendo WhatsApp Web...', 'info');
-      
-      const response = await this.sendMessage({ action: 'openWhatsApp' });
-      
-      if (response.success) {
-        this.showMessage(response.message, 'success');
-        // Refrescar estado después de un momento
-        setTimeout(() => this.checkSidebarState(), 2000);
-      } else {
-        this.showMessage(response.error || 'Error abriendo WhatsApp Web', 'error');
-      }
-    } catch (error) {
-      console.error('[Popup] Error abriendo WhatsApp:', error);
-      this.showMessage('Error abriendo WhatsApp Web', 'error');
-    }
-  }
-
-  async showCRM() {
-    // Igual que toggle pero asegura que esté visible
-    await this.toggleCRM(true);
-  }
-
-  async focusWhatsApp() {
-    await this.openWhatsApp();
-  }
-
-  async toggleCRM(forceShow = false) {
-    try {
-      this.showMessage('Cambiando vista del CRM...', 'info');
-      
-      const response = await this.sendMessage({ action: 'toggleSidebar' });
-      
-      if (response.success) {
-        this.showMessage('CRM actualizado', 'success');
-        // Refrescar estado
-        await this.checkSidebarState();
-      } else {
-        this.showMessage(response.error || 'Error cambiando vista del CRM', 'error');
-      }
-    } catch (error) {
-      console.error('[Popup] Error toggle CRM:', error);
-      this.showMessage('Error cambiando vista del CRM', 'error');
-    }
-  }
-
-  async syncData() {
-    try {
-      this.showMessage('Sincronizando datos...', 'info');
-      
-      // Simular sincronización por ahora
-      setTimeout(() => {
-        this.showMessage('Datos sincronizados', 'success');
-        this.checkSidebarState();
-      }, 1500);
-      
-    } catch (error) {
-      console.error('[Popup] Error sincronizando:', error);
-      this.showMessage('Error sincronizando datos', 'error');
-    }
-  }
-
-  startAutoRefresh() {
-    // Refrescar cada 5 segundos
-    this.refreshInterval = setInterval(() => {
-      this.checkSidebarState();
-    }, 5000);
-  }
-
-  stopAutoRefresh() {
-    if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
-      this.refreshInterval = null;
-    }
-  }
-
-  // Utilidades de comunicación
-  async sendMessage(message) {
-    return new Promise((resolve, reject) => {
-      try {
-        chrome.runtime.sendMessage(message, (response) => {
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message));
-          } else {
-            resolve(response);
-          }
+    showHelp() {
+        // Abrir página de ayuda
+        chrome.tabs.create({
+            url: 'https://github.com/tu-usuario/whatsapp-crm#readme'
         });
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  // Utilidades de UI
-  showElement(elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-      element.style.display = 'block';
     }
-  }
 
-  hideElement(elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-      element.style.display = 'none';
+    openSettings() {
+        // Abrir página de opciones de la extensión
+        chrome.runtime.openOptionsPage();
     }
-  }
 
-  showLoading(show = true) {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) {
-      overlay.style.display = show ? 'flex' : 'none';
+    showNotification(message, type = 'info') {
+        // Crear notificación temporal
+        const notification = document.createElement('div');
+        notification.className = `popup-notification popup-notification-${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease-out;
+            background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
     }
-  }
 
-  showMessage(text, type = 'info') {
-    const container = document.getElementById('messageContainer');
-    const messageText = document.getElementById('messageText');
-    
-    if (container && messageText) {
-      messageText.textContent = text;
-      container.className = `message ${type}`;
-      container.style.display = 'block';
-      
-      // Ocultar después de 3 segundos
-      setTimeout(() => {
-        this.hideMessage();
-      }, 3000);
+    // Método para actualizar datos en tiempo real
+    async refreshData() {
+        await this.loadCRMData();
+        this.updateUI();
     }
-  }
-
-  hideMessage() {
-    const container = document.getElementById('messageContainer');
-    if (container) {
-      container.style.display = 'none';
-    }
-  }
-
-  getInitials(name) {
-    if (!name) return '👤';
-    
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    } else {
-      return name.substring(0, 2).toUpperCase();
-    }
-  }
 }
 
-// Cleanup al cerrar popup
-window.addEventListener('beforeunload', () => {
-  if (window.popupControlCenter) {
-    window.popupControlCenter.stopAutoRefresh();
-  }
+// Inicializar popup cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    new CRMPopup();
 });
 
+// Escuchar mensajes del content script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'updatePopupData') {
+        // Actualizar datos del popup cuando cambien en el CRM
+        const popup = window.crmPopup;
+        if (popup) {
+            popup.refreshData();
+        }
+    }
+    sendResponse({success: true});
+});
+
+// Exponer instancia globalmente para acceso desde otros scripts
+window.crmPopup = null;
+
 // Inicializar cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-  window.popupControlCenter = new PopupControlCenter();
-}); 
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        window.crmPopup = new CRMPopup();
+    });
+} else {
+    window.crmPopup = new CRMPopup();
+} 

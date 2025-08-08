@@ -90,17 +90,7 @@
 
                 <!-- Usuario Autenticado -->
                 <div class="auth-user" id="authUser" style="display: none;">
-                    <div class="user-info">
-                        <div class="user-avatar" id="userAvatar">👤</div>
-                        <div class="user-details">
-                            <div class="user-name" id="userName">Usuario</div>
-                            <div class="user-plan" id="userPlan">Plan Gratis</div>
-                        </div>
-                    </div>
-                    <div class="user-actions">
-                        <button class="btn-secondary btn-sm" id="userSettingsBtn">⚙️</button>
-                        <button class="btn-secondary btn-sm" id="logoutBtn">🚪</button>
-                    </div>
+                    <!-- Esta sección ya no se usará, pero se deja para compatibilidad -->
                 </div>
             </div>
         </div>
@@ -128,7 +118,7 @@
         </div>
 
         <!-- Navegación Principal -->
-        <nav class="sidebar-nav">
+        <nav class="sidebar-nav" id="sidebar-nav">
             <div class="nav-item active" data-section="dashboard" title="Dashboard">
                 <span class="nav-icon">📊</span>
                 <span class="nav-text">Dashboard</span>
@@ -171,7 +161,7 @@
         </nav>
 
         <!-- Contenido Principal -->
-        <div class="sidebar-content">
+        <div class="sidebar-content" id="sidebar-content">
             <!-- Dashboard Section -->
             <div class="content-section active" id="dashboard">
                 <div class="section-header">
@@ -343,58 +333,61 @@
                     <h3>Configuración</h3>
                     <button class="btn-secondary" id="resetSettingsBtn">🔄 Restaurar</button>
                 </div>
-                <div class="section-body">
-                    <div class="setting-group">
-                        <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Apariencia</h4>
-                        <div class="setting-item">
-                            <label>
-                                <span>Tema</span>
-                                <select id="themeSelect" style="margin-left: auto; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-background); color: var(--text-primary);">
-                                    <option value="light">Claro</option>
-                                    <option value="dark">Oscuro</option>
-                                </select>
-                            </label>
-                        </div>
-                        <div class="setting-item">
-                            <label>
-                                <span>Idioma</span>
-                                <select id="languageSelect" style="margin-left: auto; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-background); color: var(--text-primary);">
-                                    <option value="es">Español</option>
-                                    <option value="en">English</option>
-                                </select>
-                            </label>
-                        </div>
+                <div class="user-minimal" id="userMinimal" style="display: none; margin-bottom: 18px;">
+                    <div class="user-minimal-avatar" id="userMinimalAvatar">👤</div>
+                    <div class="user-minimal-email" id="userMinimalEmail">usuario@email.com</div>
+                    <button class="user-minimal-logout" id="userMinimalLogout" title="Cerrar sesión">⎋</button>
+                </div>
+                <div class="setting-group">
+                    <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Apariencia</h4>
+                    <div class="setting-item">
+                        <label>
+                            <span>Tema</span>
+                            <select id="themeSelect" style="margin-left: auto; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-background); color: var(--text-primary);">
+                                <option value="light">Claro</option>
+                                <option value="dark">Oscuro</option>
+                            </select>
+                        </label>
                     </div>
-
-                    <div class="setting-group" style="margin-top: 24px;">
-                        <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Funcionalidades</h4>
-                        <div class="setting-item">
-                            <label style="display: flex; align-items: center; justify-content: space-between;">
-                                <span>Sincronización automática</span>
-                                <input type="checkbox" id="autoSyncChk" style="margin-left: auto;">
-                            </label>
-                        </div>
-                        <div class="setting-item">
-                            <label style="display: flex; align-items: center; justify-content: space-between;">
-                                <span>Notificaciones</span>
-                                <input type="checkbox" id="notificationsChk" style="margin-left: auto;">
-                            </label>
-                        </div>
-                        <div class="setting-item">
-                            <label style="display: flex; align-items: center; justify-content: space-between;">
-                                <span>Modo compacto</span>
-                                <input type="checkbox" id="compactModeChk" style="margin-left: auto;">
-                            </label>
-                        </div>
+                    <div class="setting-item">
+                        <label>
+                            <span>Idioma</span>
+                            <select id="languageSelect" style="margin-left: auto; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-background); color: var(--text-primary);">
+                                <option value="es">Español</option>
+                                <option value="en">English</option>
+                            </select>
+                        </label>
                     </div>
+                </div>
 
-                    <div class="setting-group" style="margin-top: 24px;">
-                        <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Datos</h4>
-                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                            <button class="btn-secondary" id="syncBtn">🔄 Sincronizar</button>
-                            <button class="btn-secondary" id="exportBtn">📤 Exportar</button>
-                            <button class="btn-secondary" id="importBtn">📥 Importar</button>
-                        </div>
+                <div class="setting-group" style="margin-top: 24px;">
+                    <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Funcionalidades</h4>
+                    <div class="setting-item">
+                        <label style="display: flex; align-items: center; justify-content: space-between;">
+                            <span>Sincronización automática</span>
+                            <input type="checkbox" id="autoSyncChk" style="margin-left: auto;">
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label style="display: flex; align-items: center; justify-content: space-between;">
+                            <span>Notificaciones</span>
+                            <input type="checkbox" id="notificationsChk" style="margin-left: auto;">
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label style="display: flex; align-items: center; justify-content: space-between;">
+                            <span>Modo compacto</span>
+                            <input type="checkbox" id="compactModeChk" style="margin-left: auto;">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group" style="margin-top: 24px;">
+                    <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Datos</h4>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn-secondary" id="syncBtn">🔄 Sincronizar</button>
+                        <button class="btn-secondary" id="exportBtn">📤 Exportar</button>
+                        <button class="btn-secondary" id="importBtn">📥 Importar</button>
                     </div>
                 </div>
             </div>
@@ -503,25 +496,18 @@
     </div>
 
     <!-- Kanban Fullscreen -->
-    <div class="kanban-fullscreen" id="kanbanFullscreen">
+    <div id="kanbanFullscreen" class="kanban-fullscreen">
         <div class="kanban-fullscreen-header">
             <div class="kanban-fullscreen-title">
-                <button class="kanban-back-btn" id="backToSidebar">← Volver</button>
-                <span style="font-size: 20px;">📋</span>
                 <h1>CRM Kanban</h1>
             </div>
             <div class="kanban-fullscreen-actions">
-                <button class="btn-secondary btn-sm" id="addTagBtnFullscreen">🏷️ Nueva Etiqueta</button>
-                <button class="btn-primary btn-sm" id="addContactBtnFullscreen">➕ Nuevo Contacto</button>
-                <button class="btn-secondary btn-sm" id="refreshKanbanFullscreen">🔄 Actualizar</button>
-                <button class="kanban-close-btn" id="closeKanbanFullscreen" title="Cerrar">✕</button>
+                <button class="btn-primary" id="addContactFullscreen">+ Nuevo Contacto</button>
+                <button class="btn-secondary" id="closeKanbanFullscreen">Cerrar</button>
             </div>
         </div>
-        
-        <div class="kanban-fullscreen-content">
-            <div class="kanban-fullscreen-container" id="kanbanFullscreenContainer">
-                <!-- Las columnas se generan dinámicamente -->
-            </div>
+        <div id="kanbanFullscreenContainer" class="kanban-fullscreen-content">
+            <!-- Columnas de Kanban se generarán dinámicamente aquí -->
         </div>
     </div>
 </body>

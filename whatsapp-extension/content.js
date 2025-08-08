@@ -70,31 +70,11 @@ class WhatsAppCRMContent {
   }
 
   waitForWhatsAppLoad() {
+    // Espera fija de 15s sin chequeos de DOM para evitar bloqueos
     return new Promise((resolve) => {
-      const checkWhatsApp = () => {
-        // Múltiples verificaciones para asegurar que WhatsApp está completamente cargado
-        const app = document.getElementById('app');
-        const mainPanel = document.querySelector('[data-testid="conversation-panel-body"]') ||
-                         document.querySelector('div[role="main"]') ||
-                         document.querySelector('#app > div > div');
-        const sidePanel = document.querySelector('[data-testid="chat-list"]') ||
-                         document.querySelector('[data-testid="side"]');
-        
-        // Verificar que no hay pantalla de carga
-        const loadingScreen = document.querySelector('[data-testid="startup"]') ||
-                             document.querySelector('.landing-wrapper') ||
-                             document.querySelector('[data-testid="intro-wrapper"]');
-        
-        if (app && (mainPanel || sidePanel) && !loadingScreen) {
-          logger.log('WhatsApp Web completamente cargado y listo');
-          // Esperar un poco más para asegurar estabilidad
-          setTimeout(resolve, 2000);
-        } else {
-          logger.log('Esperando a WhatsApp Web... app:', !!app, 'panels:', !!(mainPanel || sidePanel), 'loading:', !!loadingScreen);
-          setTimeout(checkWhatsApp, 1000);
-        }
-      };
-      checkWhatsApp();
+      const delayMs = 15000; // 15 segundos
+      logger.log(`⏳ Espera fija de ${delayMs / 1000}s antes de iniciar CRM`);
+      setTimeout(resolve, delayMs);
     });
   }
 
@@ -102,546 +82,223 @@ class WhatsAppCRMContent {
     if (this.isInjected) return;
 
     try {
-      // Crear contenedor del sidebar directamente
+      // Cargar el HTML real del sidebar
+      const response = await fetch(chrome.runtime.getURL('sidebar.html'));
+      const sidebarHTML = await response.text();
+
+      // Crear contenedor del sidebar
       const sidebarContainer = document.createElement('div');
       sidebarContainer.id = 'whatsapp-crm-sidebar';
       sidebarContainer.className = 'wa-crm-sidebar';
-      
-      // HTML del sidebar directamente (sin cargar archivo)
-      const sidebarHTML = `
-        <div class="wa-crm-sidebar-container">
-          <!-- Header Profesional -->
-          <div class="sidebar-header">
-            <div class="logo">
-              <div class="logo-icon">💬</div>
-              <span class="logo-text">CRM Pro</span>
-            </div>
-            <button class="toggle-btn" id="sidebarToggle" title="Contraer/Expandir">
-              <span class="toggle-icon">⟨</span>
-            </button>
-          </div>
-
-          <!-- Sección de Autenticación -->
-          <div class="auth-section" id="authSection">
-            <div class="auth-container" id="authContainer">
-              <!-- Estado de carga -->
-              <div class="auth-loading" id="authLoading">
-                <div class="auth-loading-spinner"></div>
-                <div class="auth-loading-text">Conectando...</div>
-              </div>
-
-              <!-- Formulario de Login -->
-              <div class="auth-form" id="authLoginForm" style="display: none;">
-                <div class="auth-header">
-                  <div class="auth-logo">🔐</div>
-                  <h3>Iniciar Sesión</h3>
-                  <p>Accede a tu cuenta CRM</p>
-                </div>
-                <form id="loginForm">
-                  <div class="form-group">
-                    <label for="loginEmail">Email</label>
-                    <input type="email" id="loginEmail" placeholder="tu@email.com" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="loginPassword">Contraseña</label>
-                    <input type="password" id="loginPassword" placeholder="••••••••" required>
-                  </div>
-                  <button type="submit" class="btn-primary btn-full" id="loginBtn">
-                    <span class="btn-text">Iniciar Sesión</span>
-                    <span class="btn-loading" style="display: none;">⏳</span>
-                  </button>
-                </form>
-                <div class="auth-footer">
-                  <button class="btn-link" id="showRegisterForm">¿No tienes cuenta? Regístrate</button>
-                  <button class="btn-link" id="forgotPasswordBtn">¿Olvidaste tu contraseña?</button>
-                </div>
-              </div>
-
-              <!-- Formulario de Registro -->
-              <div class="auth-form" id="authRegisterForm" style="display: none;">
-                <div class="auth-header">
-                  <div class="auth-logo">📝</div>
-                  <h3>Crear Cuenta</h3>
-                  <p>Únete a CRM Pro</p>
-                </div>
-                <form id="registerForm">
-                  <div class="form-group">
-                    <label for="registerName">Nombre</label>
-                    <input type="text" id="registerName" placeholder="Tu nombre" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="registerEmail">Email</label>
-                    <input type="email" id="registerEmail" placeholder="tu@email.com" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="registerPassword">Contraseña</label>
-                    <input type="password" id="registerPassword" placeholder="••••••••" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="registerPasswordConfirm">Confirmar Contraseña</label>
-                    <input type="password" id="registerPasswordConfirm" placeholder="••••••••" required>
-                  </div>
-                  <button type="submit" class="btn-primary btn-full" id="registerBtn">
-                    <span class="btn-text">Crear Cuenta</span>
-                    <span class="btn-loading" style="display: none;">⏳</span>
-                  </button>
-                </form>
-                <div class="auth-footer">
-                  <button class="btn-link" id="showLoginForm">¿Ya tienes cuenta? Inicia sesión</button>
-                </div>
-              </div>
-
-              <!-- Usuario Autenticado -->
-              <div class="auth-user" id="authUser" style="display: none;">
-                <div class="user-info">
-                  <div class="user-avatar" id="userAvatar">👤</div>
-                  <div class="user-details">
-                    <div class="user-name" id="userName">Usuario</div>
-                    <div class="user-plan" id="userPlan">Plan Gratis</div>
-                  </div>
-                </div>
-                <div class="user-actions">
-                  <button class="btn-secondary btn-sm" id="userSettingsBtn">⚙️</button>
-                  <button class="btn-secondary btn-sm" id="logoutBtn">🚪</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sección de Pestañas Dinámicas tipo WhatsApp -->
-          <div class="tabs-section" id="tabsSection" style="display: none;">
-            <div class="search-row">
-              <input type="text" 
-                     class="search-input" 
-                     id="searchInput" 
-                     placeholder="🔍 Buscar contactos...">
-            </div>
-            <div class="tabs-container" id="tabsContainer">
-              <div class="tabs-scroll" id="tabsScroll">
-                <!-- Las pestañas se generan dinámicamente -->
-                <button class="tab-item active" data-filter="all">
-                  <span class="tab-text">Todos</span>
-                  <span class="tab-count">0</span>
-                </button>
-              </div>
-              <button class="tab-add-btn" id="addTabBtn" title="Nueva etiqueta">
-                <span>+</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Navegación Principal -->
-          <nav class="sidebar-nav" id="sidebar-nav" style="display: none;">
-            <div class="nav-item active" data-section="dashboard" title="Dashboard">
-              <span class="nav-icon">📊</span>
-              <span class="nav-text">Dashboard</span>
-            </div>
-            
-            <div class="nav-item" data-section="kanban" title="Vista Kanban">
-              <span class="nav-icon">📋</span>
-              <span class="nav-text">Kanban</span>
-            </div>
-            
-            <div class="nav-item" data-section="contacts" title="Contactos">
-              <span class="nav-icon">👥</span>
-              <span class="nav-text">Contactos</span>
-            </div>
-            
-            <div class="nav-item" data-section="tags" title="Etiquetas">
-              <span class="nav-icon">🏷️</span>
-              <span class="nav-text">Etiquetas</span>
-            </div>
-            
-            <div class="nav-item" data-section="templates" title="Plantillas">
-              <span class="nav-icon">📄</span>
-              <span class="nav-text">Plantillas</span>
-            </div>
-            
-            <div class="nav-item" data-section="analytics" title="Analíticas">
-              <span class="nav-icon">📈</span>
-              <span class="nav-text">Analíticas</span>
-            </div>
-            
-            <div class="nav-item" data-section="automations" title="Automatizaciones">
-              <span class="nav-icon">🔄</span>
-              <span class="nav-text">Automaciones</span>
-            </div>
-            
-            <div class="nav-item" data-section="settings" title="Configuración">
-              <span class="nav-icon">⚙️</span>
-              <span class="nav-text">Configuración</span>
-            </div>
-          </nav>
-
-          <!-- Contenido Principal -->
-          <div class="sidebar-content" id="sidebar-content" style="display: none;">
-            <!-- Dashboard Section -->
-            <div class="content-section active" id="dashboard">
-              <div class="section-header">
-                <h3>Dashboard</h3>
-                <button class="btn-primary" id="refreshDashboard">🔄 Actualizar</button>
-              </div>
-              <div class="section-body">
-                <div class="stats-grid">
-                  <div class="stat-card">
-                    <span class="stat-number" id="totalContacts">0</span>
-                    <span class="stat-label">Contactos</span>
-                  </div>
-                  <div class="stat-card">
-                    <span class="stat-number" id="totalTags">0</span>
-                    <span class="stat-label">Etiquetas</span>
-                  </div>
-                  <div class="stat-card">
-                    <span class="stat-number" id="totalTemplates">0</span>
-                    <span class="stat-label">Plantillas</span>
-                  </div>
-                  <div class="stat-card">
-                    <span class="stat-number" id="todayChats">0</span>
-                    <span class="stat-label">Chats Hoy</span>
-                  </div>
-                </div>
-                
-                <!-- Actividad Reciente -->
-                <div class="recent-activity">
-                  <h4 style="margin-bottom: 16px; color: var(--text-primary); font-size: 18px;">Actividad Reciente</h4>
-                  <div id="recentActivityList">
-                    <div class="empty-state">
-                      <div class="empty-state-icon">📱</div>
-                      <div class="empty-state-text">No hay actividad reciente</div>
-                      <div class="empty-state-subtext">Los chats aparecerán aquí cuando interactúes con WhatsApp</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Vista Kanban -->
-            <div class="content-section" id="kanban">
-              <div class="kanban-header-main">
-                <h2>CRM Kanban</h2>
-                <div class="kanban-actions">
-                  <button class="kanban-expand-btn" id="expandKanbanBtn">⛶ Pantalla Completa</button>
-                  <button class="btn-primary btn-sm" id="addContactBtn">➕ Nuevo</button>
-                  <button class="btn-secondary btn-sm" id="refreshKanban">🔄</button>
-                </div>
-              </div>
-              
-              <div class="kanban-wrapper">
-                <div class="kanban-container" id="kanbanContainer">
-                  <!-- Las columnas se generan dinámicamente basándose en las etiquetas -->
-                  <div class="kanban-loading" style="text-align: center; padding: 40px; color: #8b949e;">
-                    <div style="font-size: 24px; margin-bottom: 16px;">📋</div>
-                    <div>Cargando kanban...</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Contactos Section -->
-            <div class="content-section" id="contacts">
-              <div class="section-header">
-                <h3>Gestión de Contactos</h3>
-                <button class="btn-primary" id="importContactsBtn">📥 Importar</button>
-              </div>
-              <div class="section-body">
-                <div id="contactsList">
-                  <div class="empty-state">
-                    <div class="empty-state-icon">👥</div>
-                    <div class="empty-state-text">No hay contactos registrados</div>
-                    <div class="empty-state-subtext">Los contactos aparecerán automáticamente cuando chatees en WhatsApp</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tags Section Mejorado -->
-            <div class="content-section" id="tags">
-              <div class="section-header">
-                <h3>Gestión de Etiquetas</h3>
-                <button class="btn-primary" id="addTagBtn">➕ Nueva Etiqueta</button>
-              </div>
-              <div class="section-body">
-                <div class="current-chat-info" id="currentChatInfo">
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <div class="contact-avatar" style="width: 32px; height: 32px; font-size: 14px;">👤</div>
-                    <div>
-                      <div style="font-weight: 600; color: var(--text-primary);">Chat Actual</div>
-                      <div class="chat-name" id="currentChatName">Selecciona un chat</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="tags-container" id="tagsContainer">
-                  <div class="empty-state">
-                    <div class="empty-state-icon">🏷️</div>
-                    <div class="empty-state-text">No hay etiquetas creadas</div>
-                    <div class="empty-state-subtext">Crea etiquetas para organizar tus contactos</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Templates Section Mejorado -->
-            <div class="content-section" id="templates">
-              <div class="section-header">
-                <h3>Plantillas de Mensajes</h3>
-                <button class="btn-primary" id="addTemplateBtn">➕ Nueva Plantilla</button>
-              </div>
-              <div class="section-body">
-                <div class="templates-container" id="templatesContainer">
-                  <div class="empty-state">
-                    <div class="empty-state-icon">📄</div>
-                    <div class="empty-state-text">No hay plantillas creadas</div>
-                    <div class="empty-state-subtext">Crea plantillas para responder más rápido</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Analytics Section -->
-            <div class="content-section" id="analytics">
-              <div class="section-header">
-                <h3>Analíticas y Reportes</h3>
-                <button class="btn-secondary" id="exportReportBtn">📊 Exportar</button>
-              </div>
-              <div class="section-body">
-                <div class="stats-grid">
-                  <div class="stat-card">
-                    <span class="stat-number" id="weeklyChats">0</span>
-                    <span class="stat-label">Chats esta semana</span>
-                  </div>
-                  <div class="stat-card">
-                    <span class="stat-number" id="avgResponseTime">0</span>
-                    <span class="stat-label">Tiempo respuesta</span>
-                  </div>
-                  <div class="stat-card">
-                    <span class="stat-number" id="conversionRate">0%</span>
-                    <span class="stat-label">Tasa conversión</span>
-                  </div>
-                </div>
-                <div class="coming-soon">
-                  <div>📈 Gráficos y métricas avanzadas</div>
-                  <div style="margin-top: 8px; font-size: 12px;">Próximamente disponible</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Automations Section -->
-            <div class="content-section" id="automations">
-              <div class="section-header">
-                <h3>Automatizaciones</h3>
-                <button class="btn-primary" id="createAutomationBtn">⚡ Nueva Automatización</button>
-              </div>
-              <div class="section-body">
-                <div class="coming-soon">
-                  <div>🤖 Respuestas automáticas y flujos de trabajo</div>
-                  <div style="margin-top: 8px; font-size: 12px;">Próximamente disponible</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Settings Section Mejorado -->
-            <div class="content-section" id="settings">
-              <div class="section-header">
-                <h3>Configuración</h3>
-                <button class="btn-secondary" id="resetSettingsBtn">🔄 Restaurar</button>
-              </div>
-              <div class="section-body">
-                <div class="setting-group">
-                  <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Apariencia</h4>
-                  <div class="setting-item">
-                    <label>
-                      <span>Tema</span>
-                      <select id="themeSelect" style="margin-left: auto; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-background); color: var(--text-primary);">
-                        <option value="light">Claro</option>
-                        <option value="dark">Oscuro</option>
-                      </select>
-                    </label>
-                  </div>
-                  <div class="setting-item">
-                    <label>
-                      <span>Idioma</span>
-                      <select id="languageSelect" style="margin-left: auto; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-background); color: var(--text-primary);">
-                        <option value="es">Español</option>
-                        <option value="en">English</option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-                <div class="setting-group" style="margin-top: 24px;">
-                  <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Funcionalidades</h4>
-                  <div class="setting-item">
-                    <label style="display: flex; align-items: center; justify-content: space-between;">
-                      <span>Sincronización automática</span>
-                      <input type="checkbox" id="autoSyncChk" style="margin-left: auto;">
-                    </label>
-                  </div>
-                  <div class="setting-item">
-                    <label style="display: flex; align-items: center; justify-content: space-between;">
-                      <span>Notificaciones</span>
-                      <input type="checkbox" id="notificationsChk" style="margin-left: auto;">
-                    </label>
-                  </div>
-                  <div class="setting-item">
-                    <label style="display: flex; align-items: center; justify-content: space-between;">
-                      <span>Modo compacto</span>
-                      <input type="checkbox" id="compactModeChk" style="margin-left: auto;">
-                    </label>
-                  </div>
-                </div>
-
-                <div class="setting-group" style="margin-top: 24px;">
-                  <h4 style="margin-bottom: 12px; color: var(--text-primary); font-size: 16px;">Datos</h4>
-                  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <button class="btn-secondary" id="syncBtn">🔄 Sincronizar</button>
-                    <button class="btn-secondary" id="exportBtn">📤 Exportar</button>
-                    <button class="btn-secondary" id="importBtn">📥 Importar</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-                     </div>
-         </div>
-
-         <!-- Modales -->
-         <!-- Modal de Etiquetas -->
-         <div class="modal" id="tagModal" style="display: none;">
-           <div class="modal-content">
-             <div class="modal-header">
-               <h3 id="tagModalTitle">Nueva Etiqueta</h3>
-               <button class="modal-close" id="closeTagModal">×</button>
-             </div>
-             <div class="modal-body">
-               <form id="tagForm">
-                 <div class="form-group">
-                   <label for="tagName">Nombre</label>
-                   <input type="text" id="tagName" placeholder="Nombre de la etiqueta" required>
-                 </div>
-                 <div class="form-group">
-                   <label for="tagColor">Color</label>
-                   <input type="color" id="tagColor" value="#10b981">
-                 </div>
-                 <div class="form-group">
-                   <label for="tagDescription">Descripción</label>
-                   <textarea id="tagDescription" placeholder="Descripción opcional" rows="3"></textarea>
-                 </div>
-                 <div class="form-actions">
-                   <button type="button" class="btn-secondary" id="cancelTagBtn">Cancelar</button>
-                   <button type="submit" class="btn-primary" id="saveTagBtn">
-                     <span class="btn-text">Guardar</span>
-                     <span class="btn-loading" style="display: none;">⏳</span>
-                   </button>
-                 </div>
-               </form>
-             </div>
-           </div>
-         </div>
-
-         <!-- Modal de Plantillas -->
-         <div class="modal" id="templateModal" style="display: none;">
-           <div class="modal-content">
-             <div class="modal-header">
-               <h3 id="templateModalTitle">Nueva Plantilla</h3>
-               <button class="modal-close" id="closeTemplateModal">×</button>
-             </div>
-             <div class="modal-body">
-               <form id="templateForm">
-                 <div class="form-group">
-                   <label for="templateName">Nombre</label>
-                   <input type="text" id="templateName" placeholder="Nombre de la plantilla" required>
-                 </div>
-                 <div class="form-group">
-                   <label for="templateCategory">Categoría</label>
-                   <select id="templateCategory">
-                     <option value="general">General</option>
-                     <option value="ventas">Ventas</option>
-                     <option value="soporte">Soporte</option>
-                     <option value="marketing">Marketing</option>
-                   </select>
-                 </div>
-                 <div class="form-group">
-                   <label for="templateContent">Contenido</label>
-                   <textarea id="templateContent" placeholder="Contenido de la plantilla..." rows="6" required></textarea>
-                   <div class="template-variables">
-                     <small>Variables disponibles: {{nombre}}, {{empresa}}, {{fecha}}</small>
-                   </div>
-                 </div>
-                 <div class="form-actions">
-                   <button type="button" class="btn-secondary" id="cancelTemplateBtn">Cancelar</button>
-                   <button type="submit" class="btn-primary" id="saveTemplateBtn">
-                     <span class="btn-text">Guardar</span>
-                     <span class="btn-loading" style="display: none;">⏳</span>
-                   </button>
-                 </div>
-               </form>
-             </div>
-           </div>
-         </div>
-
-         <!-- Modal de Contactos -->
-         <div class="modal" id="contactModal" style="display: none;">
-           <div class="modal-content">
-             <div class="modal-header">
-               <h3 id="contactModalTitle">Nuevo Contacto</h3>
-               <button class="modal-close" id="closeContactModal">×</button>
-             </div>
-             <div class="modal-body">
-               <form id="contactForm">
-                 <input type="hidden" id="contactId">
-                 <div class="form-group">
-                   <label for="contactName">Nombre</label>
-                   <input type="text" id="contactName" placeholder="Nombre del contacto" required>
-                 </div>
-                 <div class="form-group">
-                   <label for="contactPhone">Teléfono</label>
-                   <input type="tel" id="contactPhone" placeholder="+1234567890">
-                 </div>
-                 <div class="form-group">
-                   <label for="contactEmail">Email</label>
-                   <input type="email" id="contactEmail" placeholder="contacto@email.com">
-                 </div>
-                 <div class="form-group">
-                   <label for="contactCompany">Empresa</label>
-                   <input type="text" id="contactCompany" placeholder="Nombre de la empresa">
-                 </div>
-                 <div class="form-group">
-                   <label for="contactTag">Etiquetas</label>
-                   <select id="contactTag" class="tags-selector">
-                     <!-- Las etiquetas se cargan dinámicamente -->
-                   </select>
-                 </div>
-                 <div class="form-group">
-                   <label for="contactNotes">Notas</label>
-                   <textarea id="contactNotes" placeholder="Notas adicionales..." rows="3"></textarea>
-                 </div>
-                 <div class="form-actions">
-                   <button type="button" class="btn-secondary" id="cancelContactBtn">Cancelar</button>
-                   <button type="submit" class="btn-primary" id="saveContactBtn">
-                     <span class="btn-text">Guardar</span>
-                     <span class="btn-loading" style="display: none;">⏳</span>
-                   </button>
-                 </div>
-               </form>
-             </div>
-           </div>
-         </div>
-       `;
-      
       sidebarContainer.innerHTML = sidebarHTML;
-      
-      // Integrar en WhatsApp Web en lugar de superponer
-      this.integrateWithWhatsApp(sidebarContainer);
-      
-      // Inicializar funcionalidad del sidebar
-      await this.initSidebar();
-      
-      this.isInjected = true;
-      logger.log('Sidebar integrado correctamente');
 
+      // Insertar el sidebar en el body
+      document.body.appendChild(sidebarContainer);
+
+      this.sidebar = sidebarContainer;
+      this.isInjected = true;
+
+      // Integración visual con WhatsApp Web (ajustar layout si es necesario)
+      this.integrateWithWhatsApp(sidebarContainer);
+
+      // Inyectar la top bar
+      await this.injectTopBar();
+
+      // Inicializar la lógica del CRM tras inyectar el HTML
+      // Esperar un poco para que el script del sidebar se cargue
+      setTimeout(() => {
+        if (typeof window.initWhatsAppCRM === 'function') {
+          logger.log('🚀 Inicializando WhatsApp CRM...');
+          window.initWhatsAppCRM();
+        } else {
+          logger.error('❌ Función initWhatsAppCRM no encontrada');
+        }
+      }, 500);
     } catch (error) {
       logger.error('Error inyectando sidebar:', error);
+      // Modo de emergencia
+      try {
+        const basicSidebar = document.createElement('div');
+        basicSidebar.id = 'whatsapp-crm-sidebar';
+        basicSidebar.innerHTML = '<div style="padding: 20px; background: #1e1e1e; color: white;">Error cargando CRM. Recarga la página.</div>';
+        document.body.appendChild(basicSidebar);
+      } catch (emergencyError) {
+        logger.error('Error en modo de emergencia:', emergencyError);
+      }
     }
+  }
+
+  async injectTopBar() {
+    try {
+      // Inyectar el bridge en el contexto de la página (no content script)
+      await this.injectInjectedBridge();
+    } catch (e) {
+      logger.error('No se pudo inyectar injected.js', e);
+    }
+    try {
+      logger.log('🏷️ Inyectando top bar de filtros...');
+      
+      // Cargar el HTML de la top bar
+      const response = await fetch(chrome.runtime.getURL('topbar.html'));
+      const topbarHTML = await response.text();
+
+      // Crear contenedor de la top bar
+      const topbarContainer = document.createElement('div');
+      topbarContainer.id = 'whatsapp-crm-topbar-wrapper';
+      topbarContainer.innerHTML = topbarHTML;
+
+      // Insertar la top bar en el body
+      document.body.appendChild(topbarContainer);
+
+      // Cargar el CSS de la top bar
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = chrome.runtime.getURL('topbar.css');
+      document.head.appendChild(link);
+
+      // Inyectar wa-js wrapper ANTES de cargar la TopBar para disponer de APIs de etiquetas
+      try {
+        await this.injectWaJsWrapper();
+      } catch (e) {
+        logger.error('No se pudo inyectar wa-js wrapper previo a TopBar:', e);
+      }
+
+      // 🆕 Inicializar el servicio de etiquetas ANTES de cargar la TopBar
+      try {
+        await this.initializeWhatsAppLabelsService();
+      } catch (e) {
+        logger.error('No se pudo inicializar el servicio de etiquetas antes de TopBar:', e);
+      }
+
+      // Función para cargar scripts secuencialmente con verificación
+      const loadScriptWithCheck = (src, checkFn, name) => {
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = chrome.runtime.getURL(src);
+          script.type = 'text/javascript';
+          
+          script.onload = () => {
+            // Esperar un poco para que el script se ejecute completamente
+            setTimeout(() => {
+              if (checkFn && checkFn()) {
+                logger.log(`✅ ${name} cargado y verificado`);
+                resolve();
+              } else if (!checkFn) {
+                logger.log(`✅ ${name} cargado`);
+                resolve();
+              } else {
+                logger.error(`❌ ${name} cargado pero no disponible`);
+                reject(new Error(`${name} no disponible`));
+              }
+            }, 100);
+          };
+          
+          script.onerror = () => {
+            logger.error(`❌ Error cargando ${name}`);
+            reject(new Error(`Error cargando ${name}`));
+          };
+          
+          document.head.appendChild(script);
+        });
+      };
+      
+      // Cargar scripts en secuencia
+      const initializeTopBar = async () => {
+        try {
+          // 0. Cargar debug helper (siempre útil)
+          try {
+            await loadScriptWithCheck(
+              'utils/debugHelper.js',
+              () => window.DebugHelper && typeof window.DebugHelper.diagnoseExtension === 'function',
+              'Debug Helper'
+            );
+          } catch (error) {
+            logger.log('⚠️ Debug Helper no disponible, continuando...');
+          }
+          
+          // 1. Cargar labels top bar (obligatorio)
+          await loadScriptWithCheck(
+            'topbar.js',
+            () => window.WhatsAppLabelsTopBar,
+            'Labels Top Bar'
+          );
+          
+          // 4. Verificar inicialización
+          setTimeout(() => {
+            if (window.whatsappLabelsTopBar) {
+              logger.log('🚀 WhatsApp Labels Top Bar inicializada correctamente');
+              
+              // Ejecutar diagnóstico automático en modo debug
+              if (window.DebugHelper && console.log) {
+                logger.log('🔍 Ejecutando diagnóstico automático...');
+                window.DebugHelper.diagnoseExtension();
+              }
+            } else {
+              logger.error('❌ WhatsApp Labels Top Bar no se inicializó');
+              
+              // Mostrar ayuda de debug si está disponible
+              if (window.DebugHelper) {
+                logger.log('🔧 Usa repairWhatsAppCRM() para intentar reparar');
+              }
+            }
+          }, 2000);
+          
+        } catch (error) {
+          logger.error('❌ Error en inicialización de Top Bar:', error);
+          
+          // Fallback: cargar solo topbar sin dependencias
+          try {
+            await loadScriptWithCheck('topbar.js', null, 'Top Bar (fallback)');
+          } catch (fallbackError) {
+            logger.error('❌ Error crítico cargando Top Bar:', fallbackError);
+            
+            // Si debug helper está disponible, mostrar ayuda
+            if (window.DebugHelper) {
+              logger.log('🔧 Debug helper disponible. Usa debugWhatsAppCRM() para más información');
+            }
+          }
+        }
+      };
+      
+      // Inicializar
+      initializeTopBar();
+
+      // Configurar la top bar para que funcione con el sidebar
+      this.setupTopBarIntegration();
+
+      logger.log('✅ Top bar inyectada correctamente');
+    } catch (error) {
+      logger.error('Error inyectando top bar:', error);
+    }
+  }
+
+  setupTopBarIntegration() {
+    // Solo establecer z-index para que esté por encima de otros elementos
+    const topbarContainer = document.getElementById('waLabelsTopbar');
+    if (topbarContainer) {
+      topbarContainer.style.zIndex = '999998';
+      // La posición y el ancho ahora se manejan con CSS según el estado del sidebar
+    }
+
+    // Ajustar WhatsApp Web para que tenga en cuenta la top bar
+    const whatsappApp = document.getElementById('app');
+    if (whatsappApp) {
+      whatsappApp.style.marginTop = '48px';
+    }
+
+    // Configurar comunicación entre sidebar y labels top bar
+    window.whatsappCRM = window.whatsappCRM || {};
+    window.whatsappCRM.labelsTopBar = {
+      getSelectedLabel: () => {
+        return window.whatsappLabelsTopBar?.getSelectedLabel() || 'all';
+      },
+      setSelectedLabel: (labelId) => {
+        window.whatsappLabelsTopBar?.setSelectedLabel(labelId);
+      },
+      refreshLabels: () => {
+        window.whatsappLabelsTopBar?.refreshLabels();
+      }
+    };
   }
 
   integrateWithWhatsApp(sidebarContainer) {
@@ -821,7 +478,122 @@ class WhatsAppCRMContent {
     }
   }
 
+  async initializeWhatsAppLabelsService() {
+    try {
+      logger.log('🚀 Inicializando servicio de etiquetas (delegando al bridge inyectado)...');
+      // Asegurar que el bridge está cargado
+      await this.injectInjectedBridge();
+      // Solicitar etiquetas proactivamente al bridge (contexto página)
+      try { window.postMessage({ type: 'WA_CRM_GET_LABELS' }, '*'); } catch (_) {}
+      logger.log('✅ Solicitud de etiquetas enviada al bridge');
+    } catch (error) {
+      logger.error('❌ Error inicializando servicio de etiquetas (bridge):', error);
+    }
+  }
 
+  async injectWaJsWrapper() {
+    return new Promise((resolve, reject) => {
+      if (window.WPP) {
+        logger.log('✅ WPP ya está disponible');
+        resolve();
+        return;
+      }
+      
+      logger.log('📥 Inyectando wa-js wrapper...');
+      const script = document.createElement('script');
+      script.src = chrome.runtime.getURL('utils/wa-js-wrapper.js');
+      script.type = 'text/javascript';
+      
+      script.onload = () => {
+        logger.log('✅ wa-js wrapper inyectado correctamente');
+        resolve();
+      };
+      
+      script.onerror = () => {
+        logger.error('❌ Error inyectando wa-js wrapper');
+        reject(new Error('Error inyectando wa-js wrapper'));
+      };
+      
+      document.head.appendChild(script);
+    });
+  }
+
+  async waitForWPP() {
+    return new Promise((resolve) => {
+      const checkWPP = () => {
+        if (window.WPP) {
+          logger.log('✅ WPP disponible');
+          resolve();
+        } else {
+          logger.log('⏳ Esperando WPP...');
+          setTimeout(checkWPP, 500);
+        }
+      };
+      checkWPP();
+    });
+  }
+
+  async injectInjectedBridge() {
+    return new Promise((resolve, reject) => {
+      try {
+        // Evitar reinyección
+        if (window.__waInjectedLoaded) return resolve();
+
+        const script = document.createElement('script');
+        script.src = chrome.runtime.getURL('utils/injected.js');
+        script.type = 'text/javascript';
+        script.async = false;
+
+        script.onload = () => {
+          window.__waInjectedLoaded = true;
+          logger.log('✅ injected.js cargado');
+          resolve();
+        };
+        script.onerror = () => {
+          reject(new Error('No se pudo cargar injected.js'));
+        };
+
+        (document.head || document.documentElement).appendChild(script);
+
+        // Configurar listeners de mensajes desde injected.js
+        window.addEventListener('message', (event) => {
+          try {
+            if (!event || !event.data || event.source !== window) return;
+            const { source, type, payload } = event.data;
+            if (source !== 'wa_crm_injected') return;
+
+            if (type === 'WA_CRM_READY') {
+              logger.log('🔌 Bridge listo:', payload);
+              // Solicitar etiquetas de forma proactiva para evitar condiciones de carrera
+              try { window.postMessage({ type: 'WA_CRM_GET_LABELS' }, '*'); } catch (_) {}
+            } else if (type === 'WA_CRM_LABELS') {
+              const labels = payload?.labels || [];
+              logger.log(`🏷️ Etiquetas recibidas (${labels.length})`);
+              // Guardar tanto id como originalId para filtros posteriores
+              try {
+                window.whatsappCRM = window.whatsappCRM || {};
+                if (window.whatsappCRM.saveData) {
+                  window.whatsappCRM.saveData('tags', labels);
+                }
+              } catch (e) {}
+
+              // Si la labels topbar está lista, recargar etiquetas
+              if (window.whatsappLabelsTopBar && typeof window.whatsappLabelsTopBar.refreshLabels === 'function') {
+                window.whatsappLabelsTopBar.refreshLabels();
+              }
+            } else if (type === 'WA_CRM_CHATS_BY_LABEL') {
+              // Se puede usar para depurar o cachear si se desea
+              logger.log('📥 Chats por etiqueta recibidos:', payload?.labelId, payload?.chats?.length || 0);
+            }
+          } catch (err) {
+            logger.error('Error manejando mensaje del bridge:', err);
+          }
+        });
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
 
   initChatObserver() {
     // Observer para detectar cambios de chat
@@ -900,6 +672,39 @@ function debugExtension() {
 
 // Hacer disponible la función de debug globalmente
 window.debugWhatsAppCRM = debugExtension;
+
+// Listener para mensajes del popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  try {
+    logger.log('Mensaje recibido del popup:', message);
+    
+    if (message.action === 'openSidebar') {
+      // Mostrar el sidebar si está oculto
+      const sidebar = document.getElementById('whatsapp-crm-sidebar');
+      if (sidebar) {
+        sidebar.style.display = 'block';
+        
+        // Ajustar WhatsApp Web
+        const whatsappApp = document.getElementById('app');
+        if (whatsappApp) {
+          whatsappApp.style.marginLeft = '380px';
+          whatsappApp.style.width = 'calc(100vw - 380px)';
+        }
+        
+        logger.log('Sidebar abierto desde popup');
+        sendResponse({success: true, message: 'Sidebar abierto'});
+      } else {
+        logger.error('Sidebar no encontrado');
+        sendResponse({success: false, message: 'Sidebar no encontrado'});
+      }
+    }
+    
+    return true; // Mantener el canal abierto para respuesta asíncrona
+  } catch (error) {
+    logger.error('Error procesando mensaje del popup:', error);
+    sendResponse({success: false, error: error.message});
+  }
+});
 
 // Inicializar cuando el DOM esté listo
 if (document.readyState === 'loading') {
