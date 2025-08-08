@@ -1,15 +1,16 @@
 /* WhatsApp Business Labels Top Bar - Estilo nativo */
+
 :root {
-  --wa-bg: #202c33;
-  --wa-surface: #111b21;
-  --wa-border: #313d45;
-  --wa-text: #e9edef;
-  --wa-text-secondary: #8696a0;
-  --wa-primary: #00a884;
-  --wa-primary-hover: #008f72;
-  --wa-chip-bg: #2a3942;
-  --wa-chip-hover: #374045;
-  --wa-chip-active: #005c4b;
+  --wa-bg: var(--surface-color);
+  --wa-surface: var(--background-color);
+  --wa-border: var(--border-color);
+  --wa-text: var(--text-primary);
+  --wa-text-secondary: var(--text-secondary);
+  --wa-primary: var(--primary-color);
+  --wa-primary-hover: var(--primary-dark);
+  --wa-chip-bg: var(--surface-hover);
+  --wa-chip-hover: var(--card-background);
+  --wa-chip-active: var(--primary-dark);
   --wa-radius: 18px;
   --wa-transition: all 0.2s ease;
 }
@@ -21,7 +22,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-family: var(--font-family-base);
   background: transparent;
   color: var(--wa-text);
 }
@@ -49,8 +50,8 @@ body {
 
 /* Estado cuando el sidebar está colapsado */
 .wa-labels-topbar.sidebar-collapsed {
-  left: 60px;
-  width: calc(100vw - 60px);
+  left: 0;
+  width: 100vw;
 }
 
 /* Fallback para cuando no hay clase específica pero se detecta estado colapsado */

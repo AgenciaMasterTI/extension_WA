@@ -1,32 +1,34 @@
-/* WhatsApp CRM Extension - Professional Design (Modo Oscuro) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Variables CSS para modo oscuro por defecto */
+/* Variables de diseño profesional y escalable */
 :root {
-  --primary-color: #00a884;
-  --primary-dark: #008c73;
-  --primary-light: #00bf9f;
-  --secondary-color: #667781;
-  --accent-color: #25d366;
-  
-  /* Tema oscuro como predeterminado */
-  --background-color: #0b1426;
-  --surface-color: #1a2332;
-  --surface-hover: #253142;
-  --card-background: #1e2a3a;
-  --border-color: #2a3441;
-  --border-light: #364152;
-  --text-primary: #e4e6ea;
-  --text-secondary: #b0b3b8;
-  --text-tertiary: #8a8d91;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.6);
-  
-  /* Gradientes para modo oscuro */
-  --gradient-primary: linear-gradient(135deg, #00a884 0%, #00bf9f 100%);
-  --gradient-card: linear-gradient(145deg, #1e2a3a 0%, #1a2332 100%);
-  --gradient-hover: linear-gradient(145deg, #253142 0%, #1e2a3a 100%);
+  --font-family-base: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  --primary-color: #1d4ed8;
+  --primary-dark: #1e40af;
+  --primary-light: #3b82f6;
+  --secondary-color: #64748b;
+  --accent-color: #2563eb;
+
+  /* Tema claro profesional */
+  --background-color: #f8fafc;
+  --surface-color: #ffffff;
+  --surface-hover: #f1f5f9;
+  --card-background: #ffffff;
+  --border-color: #e2e8f0;
+  --border-light: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-tertiary: #64748b;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.16);
+
+  /* Gradientes para el nuevo esquema */
+  --gradient-primary: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+  --gradient-card: linear-gradient(145deg, #ffffff 0%, #f1f5f9 100%);
+  --gradient-hover: linear-gradient(145deg, #f1f5f9 0%, #ffffff 100%);
   
   /* Transiciones */
   --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -65,7 +67,7 @@
   background: var(--background-color) !important;
   border-right: 1px solid var(--border-color) !important;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1) !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif !important;
+  font-family: var(--font-family-base) !important;
   font-size: 14px !important;
   line-height: 1.5 !important;
   color: var(--text-primary) !important;
@@ -144,9 +146,13 @@ body.whatsapp-crm-active #app > div:first-child {
   .wa-crm-sidebar.collapsed {
     width: 0 !important;
     border: none !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
-  
+
+  .wa-crm-sidebar.collapsed .toggle-btn {
+    right: -18px !important;
+  }
+
   .wa-crm-sidebar:not(.collapsed) {
     width: 100vw !important;
     position: absolute !important;
@@ -158,7 +164,15 @@ body.whatsapp-crm-active #app > div:first-child {
 }
 
 .wa-crm-sidebar.collapsed {
-  width: 95px !important;
+  width: 0 !important;
+  border: none !important;
+  overflow: visible !important;
+}
+
+.wa-crm-sidebar.collapsed .toggle-btn {
+  position: absolute !important;
+  top: var(--spacing-md) !important;
+  right: -18px !important;
 }
 
 .wa-crm-sidebar-container {
@@ -232,28 +246,27 @@ body.whatsapp-crm-active #app > div:first-child {
 }
 
 .toggle-btn {
-  background: rgba(255,255,255,0.15) !important;
+  background: var(--primary-color) !important;
   border: none !important;
   cursor: pointer !important;
   padding: var(--spacing-sm) !important;
   border-radius: var(--radius-md) !important;
-  color: white !important;
+  color: #ffffff !important;
   transition: var(--transition-fast) !important;
-  backdrop-filter: blur(10px) !important;
   width: 36px !important;
   height: 36px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+  box-shadow: var(--shadow-sm) !important;
   position: relative !important;
   z-index: 9999 !important;
 }
 
 .toggle-btn:hover {
-  background: rgba(255,255,255,0.25) !important;
+  background: var(--primary-dark) !important;
   transform: scale(1.1) !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+  box-shadow: var(--shadow) !important;
 }
 
 .toggle-btn:active {
