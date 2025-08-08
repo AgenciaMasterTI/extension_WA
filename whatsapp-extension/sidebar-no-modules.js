@@ -3097,12 +3097,12 @@ class WhatsAppCRM {
         try {
             console.log('[WhatsAppCRM] 🏷️ Renderizando kanban con datos reales...');
             
-            // Obtener etiquetas reales usando wa-js wrapper
-            let tags = [];
-            if (window.whatsappLabelsService) {
-                tags = await window.whatsappLabelsService.getLabels();
+            // Obtener etiquetas reales desde el servicio de etiquetas
+            const tags = await this.tagsService.getTags();
+            if (Array.isArray(tags)) {
+                this.tags = tags;
             }
-            
+
             if (!tags || tags.length === 0) {
                 container.innerHTML = `
                     <div class="kanban-empty-state">
@@ -3113,27 +3113,65 @@ class WhatsAppCRM {
                 `;
                 return;
             }
-            
-            const columnsHTML = tags.map(tag => `
-                <div class="kanban-fullscreen-column" data-tag-id="${tag.id}">
-                    <div class="kanban-fullscreen-column-header">
-                        <div class="kanban-fullscreen-column-title" style="color: ${tag.color};">
-                            ${tag.name}
-                        </div>
-                        <div class="kanban-fullscreen-column-count">
-                            0
-                            <span class="tag-usage-stats">(${tag.usage_count || 0} usos)</span>
-                        </div>
-                    </div>
-                    <div class="kanban-fullscreen-cards" data-tag-id="${tag.id}">
-                        <div class="kanban-add-contact" data-tag-id="${tag.id}">
-                            <span>+ Añadir Contacto</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
 
-            container.innerHTML = columnsHTML;
+            // Generar columnas con tarjetas reales por etiqueta
+            const columnsHTML = await Promise.all(tags.map(async (tag) => {
+                try {
+                    const contactsInTag = await this.getContactsByTag(tag.id);
+
+                    return `
+                        <div class="kanban-fullscreen-column" data-tag-id="${tag.id}" droppable="true">
+                            <div class="kanban-fullscreen-column-header">
+                                <div class="kanban-fullscreen-column-title" style="color: ${tag.color};">${tag.name}</div>
+                                <div class="kanban-fullscreen-column-count">${contactsInTag.length}</div>
+                            </div>
+                            <div class="kanban-fullscreen-cards" data-tag-id="${tag.id}">
+                                ${contactsInTag.map(contact => `
+                                    <div class="kanban-fullscreen-card"
+                                         draggable="true"
+                                         data-contact-id="${contact.id}"
+                                         data-tag-id="${tag.id}">
+                                        <div class="kanban-fullscreen-card-header">
+                                            <div class="kanban-fullscreen-avatar">
+                                                <img src="${contact.avatar || 'default-avatar.png'}" alt="${contact.name}">
+                                            </div>
+                                            <div class="kanban-fullscreen-info">
+                                                <div class="kanban-fullscreen-name">${contact.name}</div>
+                                                <div class="kanban-fullscreen-phone">${contact.phone}</div>
+                                            </div>
+                                        </div>
+                                        <div class="kanban-fullscreen-status">${contact.status || 'Sin estado'}</div>
+                                        <div class="kanban-fullscreen-actions">
+                                            <button class="kanban-fullscreen-action-btn whatsapp">💬</button>
+                                            <button class="kanban-fullscreen-action-btn call">📞</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                <div class="kanban-add-contact" data-tag-id="${tag.id}">
+                                    <span>+ Añadir Contacto</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error(`Error cargando contactos para etiqueta ${tag.name}:`, error);
+                    return `
+                        <div class="kanban-fullscreen-column" data-tag-id="${tag.id}">
+                            <div class="kanban-fullscreen-column-header">
+                                <div class="kanban-fullscreen-column-title" style="color: ${tag.color};">${tag.name}</div>
+                                <div class="kanban-fullscreen-column-count">Error</div>
+                            </div>
+                            <div class="kanban-fullscreen-cards" data-tag-id="${tag.id}">
+                                <div style="padding: 20px; text-align: center; color: #8b949e;">
+                                    Error cargando contactos
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }));
+
+            container.innerHTML = columnsHTML.join('');
             console.log('[WhatsAppCRM] ✅ Kanban renderizado con datos reales');
             
         } catch (error) {
