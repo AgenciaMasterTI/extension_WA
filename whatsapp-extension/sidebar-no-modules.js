@@ -872,6 +872,9 @@ class WhatsAppCRM {
                 this.currentUser = this.authService.getCurrentUser();
                 this.isAuthenticated = true;
                 
+                // Migrar datos globales a claves con namespace por usuario
+                this.migrateGlobalToNamespaced(['tags','contacts','templates','settings']);
+                
                 // Inicializar servicios con el usuario
                 await this.tagsService.init(this.supabaseClient, this.currentUser);
                 
@@ -1259,6 +1262,10 @@ class WhatsAppCRM {
             if (result.success) {
                 this.isAuthenticated = true;
                 this.currentUser = result.user;
+                
+                // Migrar datos globales a claves con namespace por usuario
+                this.migrateGlobalToNamespaced(['tags','contacts','templates','settings']);
+                
                 this.showMainInterface();
                 this.showNotification('Sesión iniciada correctamente', 'success');
                 
@@ -1343,6 +1350,8 @@ class WhatsAppCRM {
             
             if (result.success) {
                 this.isAuthenticated = false;
+                // Limpiar claves legacy globales para evitar mezcla entre cuentas
+                try { localStorage.removeItem('wa_crm_tags'); localStorage.removeItem('wa_crm_contacts'); localStorage.removeItem('wa_crm_templates'); localStorage.removeItem('wa_crm_settings'); } catch(_) {}
                 this.currentUser = null;
                 this.showAuthSection();
                 this.showNotification('Sesión cerrada correctamente', 'info');
@@ -1398,9 +1407,41 @@ class WhatsAppCRM {
     // UTILIDADES Y MÉTODOS AUXILIARES
     // ===========================================
 
+    getStorageKey(key) {
+        try {
+            const userId = this.currentUser?.id || null;
+            return userId ? `wa_crm_${userId}_${key}` : `wa_crm_${key}`;
+        } catch (error) {
+            return `wa_crm_${key}`;
+        }
+    }
+
+    migrateGlobalToNamespaced(keys = ['tags']) {
+        try {
+            const userId = this.currentUser?.id;
+            if (!userId) return;
+            keys.forEach((key) => {
+                const namespacedKey = this.getStorageKey(key);
+                const legacyKey = `wa_crm_${key}`;
+                const hasNamespaced = !!localStorage.getItem(namespacedKey);
+                const legacyData = localStorage.getItem(legacyKey);
+                if (!hasNamespaced && legacyData) {
+                    localStorage.setItem(namespacedKey, legacyData);
+                }
+                if (legacyData) {
+                    // Eliminar clave global para evitar mezclas entre cuentas
+                    localStorage.removeItem(legacyKey);
+                }
+            });
+        } catch (error) {
+            console.warn('[WhatsAppCRM] Error migrando storage a namespace por usuario:', error);
+        }
+    }
+
     loadData(key, defaultValue = []) {
         try {
-            const data = localStorage.getItem(`wa_crm_${key}`);
+            const storageKey = this.getStorageKey(key);
+            const data = localStorage.getItem(storageKey);
             return data ? JSON.parse(data) : defaultValue;
         } catch (error) {
             console.error(`Error loading data for ${key}:`, error);
@@ -1410,7 +1451,8 @@ class WhatsAppCRM {
 
     saveData(key, data) {
         try {
-            localStorage.setItem(`wa_crm_${key}`, JSON.stringify(data));
+            const storageKey = this.getStorageKey(key);
+            localStorage.setItem(storageKey, JSON.stringify(data));
         } catch (error) {
             console.error(`Error saving data for ${key}:`, error);
         }

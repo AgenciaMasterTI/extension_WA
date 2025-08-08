@@ -193,15 +193,21 @@ class WhatsAppLabelsTopBar {
             console.error('[LabelsBar] Error obteniendo etiquetas desde API:', err);
           }
 
-          // 2) Respaldo localStorage
+          // 2) Respaldo localStorage con namespace por usuario
           try {
+            const userId = window.whatsappCRM?.currentUser?.id || window.authService?.getCurrentUser?.()?.id;
+            const storageKey = userId ? `wa_crm_${userId}_tags` : `wa_crm_tags`;
             if (window.whatsappCRM?.loadData) {
               const tags = window.whatsappCRM.loadData('tags', []);
-              console.log('[LabelsBar] 📋 Etiquetas desde localStorage:', tags);
+              // loadData ya usa namespace por usuario tras la edición en sidebar-no-modules.js
+              if (tags && tags.length) return tags;
+            } else {
+              const raw = localStorage.getItem(storageKey);
+              const tags = raw ? JSON.parse(raw) : [];
               if (tags && tags.length) return tags;
             }
           } catch (e) {
-            console.warn('[LabelsBar] No se pudo leer etiquetas desde localStorage:', e);
+            console.warn('[LabelsBar] No se pudo leer etiquetas desde localStorage namespaced:', e);
           }
 
           return [];
@@ -230,6 +236,14 @@ class WhatsAppLabelsTopBar {
           const filteredLabels = labels.filter(l => l.id !== labelId);
           if (window.whatsappCRM?.saveData) {
             window.whatsappCRM.saveData('tags', filteredLabels);
+          } else {
+            try {
+              const userId = window.whatsappCRM?.currentUser?.id || window.authService?.getCurrentUser?.()?.id;
+              const storageKey = userId ? `wa_crm_${userId}_tags` : `wa_crm_tags`;
+              localStorage.setItem(storageKey, JSON.stringify(filteredLabels));
+            } catch (err) {
+              console.warn('[LabelsBar] No se pudo guardar etiquetas filtradas en localStorage:', err);
+            }
           }
           console.log('[LabelsBar] ✅ Etiqueta eliminada:', labelId);
           return true;
@@ -260,18 +274,27 @@ class WhatsAppLabelsTopBar {
         console.error('[LabelsBar] Error con whatsappLabelsService.getLabels:', e);
       }
 
-      // Respaldo localStorage
+      // Respaldo localStorage namespaced por usuario
       if (!labels || labels.length === 0) {
         try {
           if (window.whatsappCRM?.loadData) {
             const stored = window.whatsappCRM.loadData('tags', []);
             if (stored && stored.length) {
-              console.log('[LabelsBar] 📋 Usando respaldo de localStorage:', stored);
+              console.log('[LabelsBar] 📋 Usando respaldo de localStorage namespaced:', stored);
+              labels = stored;
+            }
+          } else {
+            const userId = window.whatsappCRM?.currentUser?.id || window.authService?.getCurrentUser?.()?.id;
+            const storageKey = userId ? `wa_crm_${userId}_tags` : `wa_crm_tags`;
+            const raw = localStorage.getItem(storageKey);
+            const stored = raw ? JSON.parse(raw) : [];
+            if (stored && stored.length) {
+              console.log('[LabelsBar] 📋 Usando respaldo de localStorage namespaced (fallback):', stored);
               labels = stored;
             }
           }
         } catch (e) {
-          console.warn('[LabelsBar] No se pudo leer respaldo de localStorage:', e);
+          console.warn('[LabelsBar] No se pudo leer respaldo de localStorage namespaced:', e);
         }
       }
 

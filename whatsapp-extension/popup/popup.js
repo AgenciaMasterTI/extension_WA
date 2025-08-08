@@ -24,14 +24,15 @@ class CRMPopup {
 
     async loadCRMData() {
         try {
-            // Obtener datos del localStorage del CRM
-            const contacts = this.getLocalStorageData('wa_crm_contacts', []);
-            const tags = this.getLocalStorageData('wa_crm_tags', []);
-            const templates = this.getLocalStorageData('wa_crm_templates', []);
-            const settings = this.getLocalStorageData('wa_crm_settings', {});
-            
-            // Obtener información de autenticación
+            // Obtener información de autenticación primero para namespacing
             const session = await this.getStoredSession();
+            const userId = session?.user?.id || null;
+
+            // Obtener datos del localStorage del CRM
+            const contacts = this.getLocalStorageData(userId ? `wa_crm_${userId}_contacts` : 'wa_crm_contacts', []);
+            const tags = this.getLocalStorageData(userId ? `wa_crm_${userId}_tags` : 'wa_crm_tags', []);
+            const templates = this.getLocalStorageData(userId ? `wa_crm_${userId}_templates` : 'wa_crm_templates', []);
+            const settings = this.getLocalStorageData(userId ? `wa_crm_${userId}_settings` : 'wa_crm_settings', {});
             
             this.crmData = {
                 contacts: contacts,
