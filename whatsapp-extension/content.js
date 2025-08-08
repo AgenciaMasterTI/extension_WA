@@ -156,6 +156,9 @@ class WhatsAppCRMContent {
       link.href = chrome.runtime.getURL('topbar.css');
       document.head.appendChild(link);
 
+      // Esperar un momento para que el DOM se actualice
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Inyectar wa-js wrapper ANTES de cargar la TopBar para disponer de APIs de etiquetas
       try {
         await this.injectWaJsWrapper();

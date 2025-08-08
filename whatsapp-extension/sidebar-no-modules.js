@@ -391,10 +391,18 @@ class AuthService {
   }
 
   onAuthStateChange(callback) {
+    if (typeof callback !== 'function') {
+      console.error('[AuthService] Error: callback is not a function', typeof callback);
+      return;
+    }
     this.callbacks.push(callback);
     // Llamar inmediatamente si ya hay usuario
     if (this.user) {
-      callback('SIGNED_IN', { user: this.user });
+      try {
+        callback('SIGNED_IN', { user: this.user });
+      } catch (error) {
+        console.error('[AuthService] Error ejecutando callback inmediato:', error);
+      }
     }
   }
 
@@ -402,7 +410,11 @@ class AuthService {
   notifyAuthStateChange(event, data) {
     this.callbacks.forEach(callback => {
       try {
-        callback(event, data);
+        if (typeof callback === 'function') {
+          callback(event, data);
+        } else {
+          console.error('[AuthService] Callback no es una función:', typeof callback);
+        }
       } catch (error) {
         console.error('[AuthService] Error en callback:', error);
       }
@@ -888,6 +900,9 @@ class WhatsAppCRM {
             const authContainer = document.getElementById('authContainer');
             if (authContainer) {
                 authContainer.appendChild(errorElement);
+            } else {
+                console.warn('[WhatsAppCRM] authContainer no encontrado, añadiendo authConnectionError al body');
+                document.body.appendChild(errorElement);
             }
         }
         

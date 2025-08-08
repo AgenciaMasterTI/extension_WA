@@ -227,9 +227,12 @@
   }
 
   async function getLabels() {
-    if (!isWhatsAppBusiness()) {
-      Logger.warn('Not WhatsApp Business, skipping labels');
-      return [];
+    const isBusiness = isWhatsAppBusiness();
+    Logger.log('Getting labels, isWhatsAppBusiness:', isBusiness);
+    
+    if (!isBusiness) {
+      Logger.warn('Not WhatsApp Business, checking if labels exist anyway...');
+      // Even if not detected as business, try to get labels anyway
     }
 
     // Prefer WPP
@@ -274,7 +277,7 @@
       return domLabels;
     }
 
-    Logger.warn('No labels found');
+    Logger.warn('No labels found via API, this might be normal for regular WhatsApp or if labels are not yet loaded');
     return [];
   }
 
@@ -392,9 +395,14 @@
         const labels = await getLabels();
         post('WA_CRM_LABELS', { labels });
         if (!Array.isArray(labels) || labels.length === 0) {
-          startLabelsPoll(3000, 10);
+          Logger.log('Starting labels poll since no labels found initially');
+          startLabelsPoll(2000, 15); // More attempts, shorter interval
         }
-      } catch (_) {}
+      } catch (e) {
+        Logger.warn('Error in initial labels fetch:', e);
+        // Start polling anyway in case labels become available later
+        startLabelsPoll(3000, 10);
+      }
 
       Logger.log('Injected bridge initialized');
     } catch (e) {

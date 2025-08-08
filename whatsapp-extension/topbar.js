@@ -6,8 +6,8 @@
 // Función de inicialización
 function initializeLabelsTopBar() {
   let initAttempts = 0;
-  const maxAttempts = 3;
-  const retryDelay = 2000;
+  const maxAttempts = 5; // Increase attempts
+  const retryDelay = 1500; // Reduce delay
 
   function attemptInit() {
     initAttempts++;
@@ -26,11 +26,20 @@ function initializeLabelsTopBar() {
       
       if (missingElements.length > 0) {
         console.warn(`[LabelsBar] Elementos faltantes: ${missingElements.join(', ')}`);
+        
+        // Try to wait a bit longer for DOM to be ready
+        if (initAttempts === 1) {
+          console.log('[LabelsBar] Primer intento fallido, esperando más tiempo para el DOM...');
+          setTimeout(attemptInit, 3000); // Wait longer on first retry
+          return;
+        }
+        
         if (initAttempts < maxAttempts) {
           setTimeout(attemptInit, retryDelay);
           return;
         } else {
           console.error('[LabelsBar] Máximo de intentos alcanzado, elementos del DOM no disponibles');
+          console.error('[LabelsBar] Esto indica que topbar.html no se cargó correctamente');
           return;
         }
       }
@@ -105,8 +114,14 @@ class WhatsAppLabelsTopBar {
   initializeElements() {
     console.log('[LabelsBar] 🔍 Inicializando elementos DOM...');
     
+    // Verificar que el contenedor principal existe
+    const topbar = document.getElementById('waLabelsTopbar');
+    if (!topbar) {
+      throw new Error('Elemento waLabelsTopbar no encontrado. HTML no cargado.');
+    }
+    
     this.elements = {
-      topbar: document.getElementById('waLabelsTopbar'),
+      topbar: topbar,
       labelsContainer: document.getElementById('labelsContainer'),
       allLabelsChip: document.getElementById('allLabelsChip'),
       allCount: document.getElementById('allCount'),
