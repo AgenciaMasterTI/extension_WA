@@ -2786,10 +2786,10 @@ class WhatsAppCRM {
             // Ajustar el ancho del sidebar y WhatsApp
             if (isCollapsed) {
                 // Sidebar contraído
-                sidebar.style.width = '60px';
+                sidebar.style.width = '0';
                 if (whatsappApp) {
-                    whatsappApp.style.marginLeft = '60px';
-                    whatsappApp.style.width = 'calc(100vw - 60px)';
+                    whatsappApp.style.marginLeft = '0';
+                    whatsappApp.style.width = '100vw';
                 }
             } else {
                 // Sidebar expandido
@@ -2825,7 +2825,7 @@ class WhatsAppCRM {
                 window.whatsappLabelsTopBar.notifySidebarStateChange(isCollapsed);
             }
             
-            console.log(`📐 Sidebar ${isCollapsed ? 'contraído' : 'expandido'} - Ancho: ${isCollapsed ? '60px' : '380px'}`);
+            console.log(`📐 Sidebar ${isCollapsed ? 'contraído' : 'expandido'} - Ancho: ${isCollapsed ? '0px' : '380px'}`);
             
         } catch (error) {
             console.error('[toggleSidebar] Error:', error);
@@ -2840,11 +2840,11 @@ class WhatsAppCRM {
             
             if (sidebar && isCollapsed) {
                 sidebar.classList.add('collapsed');
-                sidebar.style.width = '60px';
-                
+                sidebar.style.width = '0';
+
                 if (whatsappApp) {
-                    whatsappApp.style.marginLeft = '60px';
-                    whatsappApp.style.width = 'calc(100vw - 60px)';
+                    whatsappApp.style.marginLeft = '0';
+                    whatsappApp.style.width = '100vw';
                 }
                 
                 const toggleIcon = document.querySelector('#sidebarToggle .toggle-icon');
@@ -2857,7 +2857,7 @@ class WhatsAppCRM {
                     window.whatsappLabelsTopBar.notifySidebarStateChange(true);
                 }
                 
-                console.log('📐 Estado del sidebar restaurado: contraído (60px)');
+                console.log('📐 Estado del sidebar restaurado: contraído (0px)');
             } else if (sidebar) {
                 // Notificar al topbar del estado expandido
                 if (window.whatsappLabelsTopBar && typeof window.whatsappLabelsTopBar.notifySidebarStateChange === 'function') {
