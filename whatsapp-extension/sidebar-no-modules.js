@@ -34,32 +34,57 @@ class TagsService {
 
     async getTags(options = {}) {
         console.log('[TagsService] Obteniendo etiquetas...');
-        // Usar wa-js wrapper para obtener etiquetas reales
-        if (window.whatsappLabelsService) {
+
+        if (window.whatsappLabelsService?.getLabels) {
             try {
                 const labels = await window.whatsappLabelsService.getLabels();
                 return labels;
             } catch (error) {
                 console.error('[TagsService] Error obteniendo etiquetas:', error);
-                return [];
             }
         }
-        return [];
+
+        return await new Promise((resolve) => {
+            const handler = (event) => {
+                if (event?.data?.type === 'WA_CRM_LABELS') {
+                    window.removeEventListener('message', handler);
+                    resolve(event.data.payload?.labels || []);
+                }
+            };
+            window.addEventListener('message', handler, false);
+            window.postMessage({ type: 'WA_CRM_GET_LABELS' }, '*');
+            setTimeout(() => {
+                window.removeEventListener('message', handler);
+                resolve([]);
+            }, 3000);
+        });
     }
 
     async getChatsByTag(tagId) {
         console.log('[TagsService] Obteniendo chats por etiqueta:', tagId);
-        // Usar wa-js wrapper para obtener chats reales
-        if (window.whatsappLabelsService) {
+
+        if (window.whatsappLabelsService?.getChatsByLabel) {
             try {
-                const chats = await window.whatsappLabelsService.getChatsByLabel(tagId);
-                return chats;
+                return await window.whatsappLabelsService.getChatsByLabel(tagId);
             } catch (error) {
                 console.error('[TagsService] Error obteniendo chats por etiqueta:', error);
-                return [];
             }
         }
-        return [];
+
+        return await new Promise((resolve) => {
+            const handler = (event) => {
+                if (event?.data?.type === 'WA_CRM_CHATS_BY_LABEL' && event.data.payload?.labelId === tagId) {
+                    window.removeEventListener('message', handler);
+                    resolve(event.data.payload?.chats || []);
+                }
+            };
+            window.addEventListener('message', handler, false);
+            window.postMessage({ type: 'WA_CRM_GET_CHATS_BY_LABEL', payload: { labelId: tagId } }, '*');
+            setTimeout(() => {
+                window.removeEventListener('message', handler);
+                resolve([]);
+            }, 3000);
+        });
     }
 
     async assignTagToChat(tagId, chatName, chatPhone) {
@@ -737,7 +762,7 @@ class WhatsAppCRM {
             this.bindAllEvents();
             
             // Cargar contenido inicial
-            this.loadInitialData();
+            await this.loadInitialData();
             
             // Restaurar estado del sidebar
             this.restoreSidebarState();
@@ -1616,7 +1641,7 @@ class WhatsAppCRM {
         }
     }
 
-    loadInitialData() {
+    async loadInitialData() {
         console.log('Loading initial data...');
         
         // Verificar autenticación antes de cargar datos
@@ -1627,7 +1652,7 @@ class WhatsAppCRM {
         
         // Cargar datos iniciales
         this.loadContacts();
-        this.loadTags();
+        await this.loadTags();
         this.loadTemplates();
         this.loadSettings();
         this.updateDashboard();
@@ -1710,7 +1735,7 @@ class WhatsAppCRM {
                     this.ensureAddContactBtnContacts();
                     break;
                 case 'tags':
-                    this.loadTags();
+                    await this.loadTags();
                     break;
                 case 'templates':
                     this.loadTemplates();
@@ -2371,10 +2396,20 @@ class WhatsAppCRM {
     // MÉTODOS DE ETIQUETAS
     // ===========================================
 
-    loadTags() {
+    async loadTags() {
         const tagsContainer = document.getElementById('tagsContainer');
         if (!tagsContainer) return;
-        
+
+        try {
+            const fetched = await this.tagsService.getTags();
+            if (Array.isArray(fetched) && fetched.length > 0) {
+                this.tags = fetched;
+                this.saveData('tags', this.tags);
+            }
+        } catch (error) {
+            console.error('[loadTags] Error obteniendo etiquetas:', error);
+        }
+
         if (this.tags.length === 0) {
             tagsContainer.innerHTML = `
                 <div class="empty-state">
