@@ -396,6 +396,145 @@ class TagsService {
   }
 
   /**
+   * Obtener chats asociados a una etiqueta
+   */
+  async getChatsByTag(tagId) {
+    try {
+      // Obtener las asignaciones de chat para esta etiqueta
+      const { data: chatTags, error } = await this.supabase
+        .from('chat_tags')
+        .select('chat_name, chat_phone')
+        .eq('user_id', this.currentUser.id)
+        .eq('tag_id', tagId);
+
+      if (error) throw error;
+
+      if (!chatTags || chatTags.length === 0) {
+        return [];
+      }
+
+      // Obtener información de los contactos relacionados
+      const chatNames = chatTags.map(c => c.chat_name);
+      const { data: contacts, error: contactsError } = await this.supabase
+        .from('contacts')
+        .select('*')
+        .eq('user_id', this.currentUser.id)
+        .in('name', chatNames);
+
+      if (contactsError) throw contactsError;
+
+      const contactsMap = new Map((contacts || []).map(c => [c.name, c]));
+
+      return chatTags.map(ct => ({
+        chat_name: ct.chat_name,
+        chat_phone: ct.chat_phone,
+        contact: contactsMap.get(ct.chat_name) || null
+      }));
+    } catch (error) {
+      console.error('[TagsService] Error obteniendo chats por etiqueta:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Obtener etiquetas asignadas a un chat específico
+   */
+  async getChatTags(chatName) {
+    try {
+      const { data: assignments, error } = await this.supabase
+        .from('chat_tags')
+        .select('tag_id')
+        .eq('user_id', this.currentUser.id)
+        .eq('chat_name', chatName);
+
+      if (error) throw error;
+
+      if (!assignments || assignments.length === 0) {
+        return [];
+      }
+
+      const tagIds = assignments.map(a => a.tag_id);
+      const { data: tags, error: tagsError } = await this.supabase
+        .from('tags')
+        .select('*')
+        .in('id', tagIds)
+        .eq('is_archived', false);
+
+      if (tagsError) throw tagsError;
+
+      return tags || [];
+    } catch (error) {
+      console.error('[TagsService] Error obteniendo etiquetas del chat:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Asignar una etiqueta a un chat
+   */
+  async assignTagToChat(tagId, chatName, phone = null) {
+    try {
+      // Verificar si ya existe la relación
+      const { data: existing, error: existingError } = await this.supabase
+        .from('chat_tags')
+        .select('id')
+        .eq('user_id', this.currentUser.id)
+        .eq('tag_id', tagId)
+        .eq('chat_name', chatName);
+
+      if (existingError) throw existingError;
+      if (existing && existing.length > 0) {
+        return existing[0];
+      }
+
+      // Crear la relación
+      const { data, error } = await this.supabase
+        .from('chat_tags')
+        .insert({
+          user_id: this.currentUser.id,
+          tag_id: tagId,
+          chat_name: chatName,
+          chat_phone: phone
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Incrementar contador de uso y limpiar caché
+      await this.incrementTagUsage(tagId);
+      this.invalidateCache('tags');
+
+      return data;
+    } catch (error) {
+      console.error('[TagsService] Error asignando etiqueta al chat:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remover una etiqueta de un chat
+   */
+  async removeTagFromChat(tagId, chatName) {
+    try {
+      const { error } = await this.supabase
+        .from('chat_tags')
+        .delete()
+        .eq('user_id', this.currentUser.id)
+        .eq('tag_id', tagId)
+        .eq('chat_name', chatName);
+
+      if (error) throw error;
+
+      this.invalidateCache('tags');
+      return true;
+    } catch (error) {
+      console.error('[TagsService] Error removiendo etiqueta del chat:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Buscar etiquetas por nombre (optimizado)
    */
   async searchTags(query, limit = 20) {
@@ -603,4 +742,4 @@ class TagsService {
 
 // Exportar instancia singleton
 const tagsService = new TagsService();
-export default tagsService; 
+export default tagsService;
