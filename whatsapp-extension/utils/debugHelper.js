@@ -125,12 +125,14 @@ class DebugHelper {
       };
     }
 
-    if (window.whatsappLabelsService) {
-      services.labelsService = {
-        available: true,
-        methods: Object.keys(window.whatsappLabelsService)
-      };
-    }
+    try {
+      if (window.whatsappLabelsService) {
+        services.labelsService = {
+          available: true,
+          methods: Object.keys(window.whatsappLabelsService)
+        };
+      }
+    } catch (_) {}
 
     return services;
   }

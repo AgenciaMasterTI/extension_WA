@@ -44,9 +44,7 @@
     {
       "resources": [
         "sidebar.html",
-        "topbar.html",
-        "topbar.css",
-        "topbar.js",
+            
         "config/*",
         "services/*",
         "utils/*",

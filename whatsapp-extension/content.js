@@ -72,7 +72,7 @@ class WhatsAppCRMContent {
   waitForWhatsAppLoad() {
     // Espera fija de 15s sin chequeos de DOM para evitar bloqueos
     return new Promise((resolve) => {
-      const delayMs = 15000; // 15 segundos
+      const delayMs = 1000; // 15 segundos
       logger.log(`⏳ Espera fija de ${delayMs / 1000}s antes de iniciar CRM`);
       setTimeout(resolve, delayMs);
     });
@@ -139,72 +139,24 @@ class WhatsAppCRMContent {
       logger.log('🏷️ Inyectando top bar de filtros...');
       
       // Cargar el HTML de la top bar
-      const response = await fetch(chrome.runtime.getURL('topbar.html'));
-      const topbarHTML = await response.text();
+      // Eliminado: carga de topbar.html
+      const topbarHTML = ''; // etiquetas removidas
 
       // Crear contenedor de la top bar
-      const topbarContainer = document.createElement('div');
-      topbarContainer.id = 'whatsapp-crm-topbar-wrapper';
-      topbarContainer.innerHTML = topbarHTML;
+      const topbarContainer = null; // removido
 
-      // Insertar la top bar en el body
-      document.body.appendChild(topbarContainer);
-
-      // Cargar el CSS de la top bar
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = chrome.runtime.getURL('topbar.css');
-      document.head.appendChild(link);
+      // Configurar comunicación entre sidebar y labels top bar
+      const getSelectedTopbarLabel = () => 'all'; // removido
+      const setSelectedTopbarLabel = (labelId) => {}; // removido
+      const refreshTopbarLabels = () => {}; // removido
 
       // Esperar un momento para que el DOM se actualice
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Inyectar wa-js wrapper ANTES de cargar la TopBar para disponer de APIs de etiquetas
-      try {
-        await this.injectWaJsWrapper();
-      } catch (e) {
-        logger.error('No se pudo inyectar wa-js wrapper previo a TopBar:', e);
-      }
+      // Eliminado: wa-js wrapper y servicio de etiquetas
+      // try { await this.injectWaJsWrapper(); } catch (e) { logger.error('No se pudo inyectar wa-js wrapper previo a TopBar:', e); }
+      // try { await this.initializeWhatsAppLabelsService(); } catch (e) { logger.error('No se pudo inicializar el servicio de etiquetas antes de TopBar:', e); }
 
-      // 🆕 Inicializar el servicio de etiquetas ANTES de cargar la TopBar
-      try {
-        await this.initializeWhatsAppLabelsService();
-      } catch (e) {
-        logger.error('No se pudo inicializar el servicio de etiquetas antes de TopBar:', e);
-      }
-
-      // Función para cargar scripts secuencialmente con verificación
-      const loadScriptWithCheck = (src, checkFn, name) => {
-        return new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = chrome.runtime.getURL(src);
-          script.type = 'text/javascript';
-          
-          script.onload = () => {
-            // Esperar un poco para que el script se ejecute completamente
-            setTimeout(() => {
-              if (checkFn && checkFn()) {
-                logger.log(`✅ ${name} cargado y verificado`);
-                resolve();
-              } else if (!checkFn) {
-                logger.log(`✅ ${name} cargado`);
-                resolve();
-              } else {
-                logger.error(`❌ ${name} cargado pero no disponible`);
-                reject(new Error(`${name} no disponible`));
-              }
-            }, 100);
-          };
-          
-          script.onerror = () => {
-            logger.error(`❌ Error cargando ${name}`);
-            reject(new Error(`Error cargando ${name}`));
-          };
-          
-          document.head.appendChild(script);
-        });
-      };
-      
       // Cargar scripts en secuencia
       const initializeTopBar = async () => {
         try {
@@ -218,48 +170,13 @@ class WhatsAppCRMContent {
           } catch (error) {
             logger.log('⚠️ Debug Helper no disponible, continuando...');
           }
-          
-          // 1. Cargar labels top bar (obligatorio)
-          await loadScriptWithCheck(
-            'topbar.js',
-            () => window.WhatsAppLabelsTopBar,
-            'Labels Top Bar'
-          );
-          
-          // 4. Verificar inicialización
-          setTimeout(() => {
-            if (window.whatsappLabelsTopBar) {
-              logger.log('🚀 WhatsApp Labels Top Bar inicializada correctamente');
-              
-              // Ejecutar diagnóstico automático en modo debug
-              if (window.DebugHelper && console.log) {
-                logger.log('🔍 Ejecutando diagnóstico automático...');
-                window.DebugHelper.diagnoseExtension();
-              }
-            } else {
-              logger.error('❌ WhatsApp Labels Top Bar no se inicializó');
-              
-              // Mostrar ayuda de debug si está disponible
-              if (window.DebugHelper) {
-                logger.log('🔧 Usa repairWhatsAppCRM() para intentar reparar');
-              }
-            }
-          }, 2000);
-          
+
+          // Eliminado: carga de labels top bar
+          // await loadScriptWithCheck('topbar.js', () => window.WhatsAppLabelsTopBar, 'Labels Top Bar');
+
+          // Verificación suprimida (no topbar)
         } catch (error) {
           logger.error('❌ Error en inicialización de Top Bar:', error);
-          
-          // Fallback: cargar solo topbar sin dependencias
-          try {
-            await loadScriptWithCheck('topbar.js', null, 'Top Bar (fallback)');
-          } catch (fallbackError) {
-            logger.error('❌ Error crítico cargando Top Bar:', fallbackError);
-            
-            // Si debug helper está disponible, mostrar ayuda
-            if (window.DebugHelper) {
-              logger.log('🔧 Debug helper disponible. Usa debugWhatsAppCRM() para más información');
-            }
-          }
         }
       };
       
@@ -481,14 +398,10 @@ class WhatsAppCRMContent {
     }
   }
 
-  async initializeWhatsAppLabelsService() {
+  /* etiquetas removidas */ async initializeWhatsAppLabelsService_REMOVED() {
     try {
       logger.log('🚀 Inicializando servicio de etiquetas (delegando al bridge inyectado)...');
-      // Asegurar que el bridge está cargado
-      await this.injectInjectedBridge();
-      // Solicitar etiquetas proactivamente al bridge (contexto página)
-      try { window.postMessage({ type: 'WA_CRM_GET_LABELS' }, '*'); } catch (_) {}
-      logger.log('✅ Solicitud de etiquetas enviada al bridge');
+      // Removido
     } catch (error) {
       logger.error('❌ Error inicializando servicio de etiquetas (bridge):', error);
     }
@@ -561,35 +474,13 @@ class WhatsAppCRMContent {
         // Configurar listeners de mensajes desde injected.js
         window.addEventListener('message', (event) => {
           try {
-            if (!event || !event.data || event.source !== window) return;
-            const { source, type, payload } = event.data;
-            if (source !== 'wa_crm_injected') return;
-
-            if (type === 'WA_CRM_READY') {
-              logger.log('🔌 Bridge listo:', payload);
-              // Solicitar etiquetas de forma proactiva para evitar condiciones de carrera
-              try { window.postMessage({ type: 'WA_CRM_GET_LABELS' }, '*'); } catch (_) {}
-            } else if (type === 'WA_CRM_LABELS') {
-              const labels = payload?.labels || [];
-              logger.log(`🏷️ Etiquetas recibidas (${labels.length})`);
-              // Guardar tanto id como originalId para filtros posteriores
-              try {
-                window.whatsappCRM = window.whatsappCRM || {};
-                if (window.whatsappCRM.saveData) {
-                  window.whatsappCRM.saveData('tags', labels);
-                }
-              } catch (e) {}
-
-              // Si la labels topbar está lista, recargar etiquetas
-              if (window.whatsappLabelsTopBar && typeof window.whatsappLabelsTopBar.refreshLabels === 'function') {
-                window.whatsappLabelsTopBar.refreshLabels();
-              }
-            } else if (type === 'WA_CRM_CHATS_BY_LABEL') {
-              // Se puede usar para depurar o cachear si se desea
-              logger.log('📥 Chats por etiqueta recibidos:', payload?.labelId, payload?.chats?.length || 0);
-            }
-          } catch (err) {
-            logger.error('Error manejando mensaje del bridge:', err);
+            if (!event || event.source !== window) return;
+            const { type, payload } = event.data || {};
+            // Eliminado: manejo de etiquetas
+            // if (type === 'WA_CRM_LABELS') { /* ... */ }
+            // if (type === 'WA_CRM_CHATS_BY_LABEL') { /* ... */ }
+          } catch (e) {
+            logger.error('Error en manejador de mensajes:', e);
           }
         });
       } catch (e) {
