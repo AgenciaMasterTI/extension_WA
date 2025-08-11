@@ -162,28 +162,132 @@
     return `#${r}${g}${b}`;
   }
 
+  // Helpers para extracción DOM 2025
+  function isElementVisible(el) {
+    try {
+      if (!el) return false;
+      if (el.getAttribute('aria-hidden') === 'true') return false;
+      if (el.offsetParent === null) return false;
+      const style = getComputedStyle(el);
+      return style.visibility !== 'hidden' && style.display !== 'none' && style.opacity !== '0';
+    } catch (_) {
+      return true;
+    }
+  }
+
+  function getEffectiveColorFromElement(el) {
+    try {
+      let current = el;
+      for (let i = 0; i < 5 && current; i++) {
+        const cs = getComputedStyle(current);
+        const bg = cs.backgroundColor;
+        const fg = cs.color;
+        if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+          return rgbToHex(bg);
+        }
+        if (fg && fg !== 'rgba(0, 0, 0, 0)' && fg !== 'transparent') {
+          // Guardar como fallback si no encontramos bg no transparente
+          var fallbackFg = rgbToHex(fg);
+        }
+        current = current.parentElement;
+      }
+      return fallbackFg || '#3b82f6';
+    } catch (_) {
+      return '#3b82f6';
+    }
+  }
+
+  function normalizeLabelName(raw) {
+    const n = (raw || '').replace(/\s+/g, ' ').trim();
+    // Quitar prefijos comunes como "Etiqueta:" si existen
+    const parts = n.split(':');
+    const cleaned = parts.length > 1 ? parts.slice(1).join(':').trim() : n;
+    return cleaned;
+  }
+
+  function getNearbyText(el) {
+    try {
+      // Buscar atributos del propio elemento primero
+      const direct = el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent;
+      if (direct && direct.trim()) return normalizeLabelName(direct);
+
+      // Buscar hermanos cercanos con texto/aria/ title
+      const parent = el.parentElement;
+      if (parent) {
+        const sib = parent.querySelector('span[aria-label], span[title], span');
+        const sibText = sib && (sib.getAttribute('aria-label') || sib.getAttribute('title') || sib.textContent);
+        if (sibText && sibText.trim()) return normalizeLabelName(sibText);
+      }
+
+      // Subir un nivel más si no hay
+      const gp = parent && parent.parentElement;
+      if (gp) {
+        const sib2 = gp.querySelector('span[aria-label], span[title], span');
+        const sib2Text = sib2 && (sib2.getAttribute('aria-label') || sib2.getAttribute('title') || sib2.textContent);
+        if (sib2Text && sib2Text.trim()) return normalizeLabelName(sib2Text);
+      }
+
+      return '';
+    } catch (_) {
+      return '';
+    }
+  }
+
   function extractLabelsFromDOM() {
-    const labels = [];
-    const selectors = [
-      '[data-testid="label"]', '.label', '[aria-label*="label"]', '[title*="label"]', '.tag', '[data-label]',
-      '[role="button"][title*="etiqueta"]', '[role="button"][title*="label"]'
-    ];
-    selectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach((el, index) => {
-        const name = el.textContent?.trim() || el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('data-label') || `Etiqueta ${index+1}`;
-        const color = (() => {
-          const cs = getComputedStyle(el);
-          const bg = cs.backgroundColor; const fg = cs.color;
-          if (bg && bg !== 'rgba(0, 0, 0, 0)') return rgbToHex(bg);
-          if (fg && fg !== 'rgba(0, 0, 0, 0)') return rgbToHex(fg);
-          return '#3b82f6';
-        })();
-        labels.push({ id: `dom_${index}_${Date.now()}`, name, color, source: 'dom_extraction', createdAt: new Date().toISOString() });
-      });
-    });
-    // unique by name
-    return labels.filter((l, i, self) => i === self.findIndex(x => x.name === l.name));
+    const resultsMap = new Map();
+    try {
+      const root = document.getElementById('app') || document.body;
+      if (!root) return [];
+
+      const selectors = [
+        // Español y genérico, case-insensitive
+        '#app :is(span,div)[aria-label*="etiqueta" i]',
+        '#app :is(span,div)[title*="etiqueta" i]',
+        '#app [role="button"][aria-label*="etiqueta" i]',
+        // Inglés como respaldo
+        '#app :is(span,div)[aria-label*="label" i]',
+        '#app :is(span,div)[title*="label" i]'
+      ];
+
+      const pushLabel = (name, color, index) => {
+        const normalized = normalizeLabelName(name);
+        if (!normalized) return;
+        const key = normalized.toLowerCase();
+        if (!resultsMap.has(key)) {
+          resultsMap.set(key, {
+            id: `dom_${index}_${Date.now()}`,
+            name: normalized,
+            color: color || '#3b82f6',
+            source: 'dom_extraction',
+            createdAt: new Date().toISOString()
+          });
+        }
+      };
+
+      let idx = 0;
+      for (const sel of selectors) {
+        const elements = root.querySelectorAll(sel);
+        elements.forEach((el) => {
+          if (!isElementVisible(el)) return;
+
+          // Intentar obtener nombre directo o cercano
+          const name = normalizeLabelName(
+            el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent || getNearbyText(el)
+          );
+          if (!name) return;
+
+          // Heurístico de tamaño para chips/puntos pequeños: si no hay texto, buscar hermano
+          // (ya cubierto en getNearbyText)
+
+          const color = getEffectiveColorFromElement(el);
+          pushLabel(name, color, idx++);
+        });
+      }
+
+      return Array.from(resultsMap.values());
+    } catch (e) {
+      return Array.from(resultsMap.values());
+    }
   }
 
   function normalizeLabels(labels, source) {
