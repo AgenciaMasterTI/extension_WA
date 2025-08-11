@@ -2354,19 +2354,85 @@ class WhatsAppCRM {
     // MÉTODOS DE ETIQUETAS
     // ===========================================
 
+    injectWappBridgeOnce() {
+        try {
+            if (window.waBridge && typeof window.waBridge.getLabels === 'function') return true;
+            if (document.getElementById('wa-bridge-script')) return true;
+            const s = document.createElement('script');
+            s.id = 'wa-bridge-script';
+            s.src = chrome.runtime.getURL('utils/wapp-bridge.js');
+            s.type = 'text/javascript';
+            document.documentElement.appendChild(s);
+            return true;
+        } catch (e) {
+            console.warn('[Tags] No se pudo inyectar bridge:', e);
+            return false;
+        }
+    }
+
     async loadTags() {
-        // Eliminado: gestión de etiquetas
         const tagsContainer = document.getElementById('tagsContainer');
-        if (tagsContainer) {
+        if (!tagsContainer) return;
+
+        // Inyectar bridge y esperar disponibilidad
+        this.injectWappBridgeOnce();
+        const waitForBridge = async (maxMs = 3000) => {
+            const start = Date.now();
+            while (Date.now() - start < maxMs) {
+                if (window.waBridge && typeof window.waBridge.getLabels === 'function') return true;
+                await new Promise(r => setTimeout(r, 150));
+            }
+            return false;
+        };
+
+        const bridgeReady = await waitForBridge();
+        if (!bridgeReady) {
             tagsContainer.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon">🏷️</div>
-                    <div class="empty-state-text">Etiquetas deshabilitadas</div>
-                    <div class="empty-state-subtext">Este módulo fue removido</div>
+                    <div class="empty-state-text">No se pudo inicializar el detector</div>
+                    <div class="empty-state-subtext">Asegúrate de tener WhatsApp Web abierto</div>
                 </div>
             `;
+            this.tags = [];
+            return;
         }
-        this.tags = [];
+
+        try {
+            const labels = await window.waBridge.getLabels();
+            const list = Array.isArray(labels) ? labels : [];
+            this.tags = list;
+
+            if (list.length === 0) {
+                tagsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏷️</div>
+                        <div class="empty-state-text">No se detectaron etiquetas</div>
+                        <div class="empty-state-subtext">Cuando WhatsApp muestre etiquetas, aparecerán aquí</div>
+                    </div>
+                `;
+                return;
+            }
+
+            tagsContainer.innerHTML = list.map(tag => `
+                <div class="tag-item">
+                    <div class="tag-color" style="background: ${tag.color};"></div>
+                    <div class="tag-info">
+                        <div class="tag-name">${tag.name}</div>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('[loadTags] Error obteniendo etiquetas:', error);
+            tagsContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">⚠️</div>
+                    <div class="empty-state-text">Error detectando etiquetas</div>
+                    <div class="empty-state-subtext">Intenta refrescar más tarde</div>
+                </div>
+            `;
+            this.tags = [];
+        }
     }
 
     showTagModal() { /* removido */ }

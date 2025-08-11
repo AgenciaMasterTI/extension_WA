@@ -47,10 +47,10 @@
             
         "config/*",
         "services/*",
-        "utils/*",
-        "assets/*",
-        "utils/injected.js"
-      ],
+                 "utils/*",
+         "assets/*",
+         "utils/wapp-bridge.js"
+       ],
       "matches": ["https://web.whatsapp.com/*"]
     }
   ],
