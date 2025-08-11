@@ -32,10 +32,13 @@
   }
   function isVisible(el) {
     if (!el) return false;
-    if (el.getAttribute('aria-hidden') === 'true') return false;
-    if (el.offsetParent === null) return false;
-    const cs = getComputedStyle(el);
-    return cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0';
+    try {
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
+    } catch (_) {}
+    // No usar offsetParent, para no filtrar items virtualizados
+    if (el.getAttribute && el.getAttribute('aria-hidden') === 'true') return false;
+    return true;
   }
   function getEffectiveColor(el) {
     let cur = el;
@@ -55,14 +58,51 @@
     const parts = n.split(':');
     return parts.length>1 ? parts.slice(1).join(':').trim() : n;
   }
+  function sanitizeDomTextName(raw) {
+    let n = normalizeName(raw);
+    // Quitar prefijos internos y contadores
+    n = n.replace(/\blabel[-_ ]?(filled|unfilled)?\b/ig, '');
+    n = n.replace(/\b\d+\s*(elemento|elementos|item|items)\b/ig, '');
+    n = n.replace(/\b(abrir el menú contextual del chat)\b/ig, '');
+    n = n.replace(/\b(eti\s*quetas|etiquetas)\b/ig, (m, p1, offset) => offset === 0 ? '' : m);
+    n = n.replace(/\s+/g, ' ').trim();
+    return n;
+  }
+  const BLOCKED_TEXTS = [
+    'Etiquetas',
+    'Añadir etiqueta nueva',
+    'Añadir etiqueta',
+    'Agregar etiqueta',
+    'Nueva etiqueta',
+    'New label',
+    'Add label'
+  ].map(t => t.toLowerCase());
+  function isBlockedText(t) {
+    const s = (t || '').toLowerCase().trim();
+    return BLOCKED_TEXTS.includes(s) || /abrir el menú contextual del chat/i.test(s);
+  }
   function extractLabelsFromDOM() {
     const root = document.getElementById('app') || document.body;
     const selectors = [
+      // Accesibles por aria/role en distintos idiomas
       '#app :is(span,div)[aria-label*="etiqueta" i]',
       '#app :is(span,div)[title*="etiqueta" i]',
       '#app [role="button"][aria-label*="etiqueta" i]',
+      '#app :is(span,div)[aria-label*="etiquetas" i]',
+      '#app :is(span,div)[title*="etiquetas" i]',
       '#app :is(span,div)[aria-label*="label" i]',
-      '#app :is(span,div)[title*="label" i]'
+      '#app :is(span,div)[title*="label" i]',
+      '#app :is(span,div)[aria-label*="labels" i]',
+      '#app :is(span,div)[title*="labels" i]',
+      // data-testid/data-icon usados por WhatsApp Web
+      '#app [data-testid*="label" i]',
+      '#app [data-qatestid*="label" i]',
+      '#app [data-icon*="label" i]',
+      // Chips dentro del panel de info (lado derecho)
+      '#app [data-testid="conversation-info"] [role="listitem"]',
+      '#app [data-testid="chat-info-drawer"] [role="listitem"]',
+      // Filtros/Badges en lista de chats
+      '#app [data-testid="chatlist-panel"] [data-testid*="label" i]'
     ];
     const map = new Map();
     let idx = 0;
@@ -71,8 +111,8 @@
       els.forEach(el => {
         if (!isVisible(el)) return;
         const raw = el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent;
-        const name = normalizeName(raw);
-        if (!name) return;
+        let name = sanitizeDomTextName(raw);
+        if (!name || isBlockedText(name)) return;
         const key = name.toLowerCase();
         if (!map.has(key)) {
           map.set(key, {
@@ -86,7 +126,62 @@
         }
       });
     }
-    return Array.from(map.values());
+
+    // Extractor genérico para la vista de "Etiquetas" (lista izquierda)
+    try {
+      const listCandidates = root.querySelectorAll('#app [role="listitem"], #app li, #app [data-testid*="list-item"]');
+      listCandidates.forEach(li => {
+        if (!isVisible(li)) return;
+        const text = (li.textContent || '').replace(/\s+/g,' ').trim();
+        if (!text) return;
+        // Filtrar filas que muestran el contador "elemento/s" en español/inglés
+        const hasCounter = /(elemento|elementos|item|items)/i.test(text);
+        if (!hasCounter) return;
+        // Extraer el nombre limpio
+        let name = sanitizeDomTextName(text.replace(/\b(\d+\s*(elemento|elementos|item|items))\b.*/i, '').trim());
+        if (!name || name.length > 60 || isBlockedText(name)) return;
+        const key = name.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, {
+            id: `dom_${idx++}_${Date.now()}`,
+            name,
+            color: getEffectiveColor(li),
+            source: 'dom_list',
+            originalId: null,
+            createdAt: new Date().toISOString()
+          });
+        }
+      });
+    } catch (_) {}
+
+    // Fallback explícito solicitado: usar span[title] y filtrar por texto visible
+    try {
+      const spans = root.querySelectorAll('span[title]');
+      const seen = new Set();
+      spans.forEach(span => {
+        if (!isVisible(span)) return;
+        const txt = (span.innerText || '').trim();
+        if (!txt || isBlockedText(txt)) return;
+        const name = sanitizeDomTextName(txt);
+        const key = name.toLowerCase();
+        if (seen.has(key) || !name) return;
+        seen.add(key);
+        if (!map.has(key)) {
+          map.set(key, {
+            id: `dom_${idx++}_${Date.now()}`,
+            name,
+            color: getEffectiveColor(span),
+            source: 'dom_span',
+            originalId: null,
+            createdAt: new Date().toISOString()
+          });
+        }
+      });
+    } catch (_) {}
+
+    // Orden alfabético (es-ES, insensitive)
+    const arr = Array.from(map.values()).sort((a,b) => (a.name||'').localeCompare(b.name||'', 'es', { sensitivity: 'base' }));
+    return arr;
   }
 
   async function getLabels() {
@@ -119,6 +214,26 @@
     // DOM fallback
     return extractLabelsFromDOM();
   }
+
+  // Bridge via postMessage para content scripts (MV3 isolated worlds)
+  try {
+    window.addEventListener('message', (event) => {
+      try {
+        if (!event || event.source !== window) return;
+        const data = event.data || {};
+        if (data && data.type === 'WA_CRM_GET_LABELS') {
+          Promise.resolve()
+            .then(() => getLabels())
+            .then((labels) => {
+              window.postMessage({ type: 'WA_CRM_LABELS', payload: Array.isArray(labels) ? labels : [] }, '*');
+            })
+            .catch((err) => {
+              window.postMessage({ type: 'WA_CRM_LABELS', payload: [], error: String(err && err.message || err) }, '*');
+            });
+        }
+      } catch (_) {}
+    }, false);
+  } catch (_) {}
 
   window.waBridge = {
     getLabels

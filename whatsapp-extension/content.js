@@ -21,6 +21,31 @@ const logger = {
   }
 };
 
+// Helper: carga un script del paquete y verifica su disponibilidad
+async function loadScriptWithCheck(relativePath, checkFn, label = 'script', timeoutMs = 5000) {
+  try {
+    if (typeof checkFn === 'function' && checkFn()) return true;
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = chrome.runtime.getURL(relativePath);
+      s.type = 'text/javascript';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error(`No se pudo cargar ${label}: ${relativePath}`));
+      (document.head || document.documentElement).appendChild(s);
+    });
+    // Pequeño delay para que el script inyectado inicialice globals
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      if (typeof checkFn !== 'function' || checkFn()) return true;
+      await new Promise(r => setTimeout(r, 100));
+    }
+    return true; // no bloquear si no pasa el check
+  } catch (e) {
+    logger.error(`Error cargando ${label}`, e);
+    return false;
+  }
+}
+
 class WhatsAppCRMContent {
   constructor() {
     try {
@@ -72,7 +97,7 @@ class WhatsAppCRMContent {
   waitForWhatsAppLoad() {
     // Espera fija de 15s sin chequeos de DOM para evitar bloqueos
     return new Promise((resolve) => {
-      const delayMs = 1000; // 15 segundos
+      const delayMs = 15000; // 15 segundos
       logger.log(`⏳ Espera fija de ${delayMs / 1000}s antes de iniciar CRM`);
       setTimeout(resolve, delayMs);
     });
@@ -171,8 +196,17 @@ class WhatsAppCRMContent {
             logger.log('⚠️ Debug Helper no disponible, continuando...');
           }
 
-          // Eliminado: carga de labels top bar
-          // await loadScriptWithCheck('topbar.js', () => window.WhatsAppLabelsTopBar, 'Labels Top Bar');
+          // 1. Cargar labels-bridge (content context)
+          try {
+            await loadScriptWithCheck(
+              'utils/labels-bridge.js',
+              () => window.WALabels && typeof window.WALabels.sync === 'function',
+              'Labels Bridge'
+            );
+            logger.log('✅ Labels Bridge cargado');
+          } catch (e) {
+            logger.error('❌ No se pudo cargar Labels Bridge', e);
+          }
 
           // Verificación suprimida (no topbar)
         } catch (error) {
@@ -476,13 +510,25 @@ class WhatsAppCRMContent {
           try {
             if (!event || event.source !== window) return;
             const { type, payload } = event.data || {};
-            // Eliminado: manejo de etiquetas
-            // if (type === 'WA_CRM_LABELS') { /* ... */ }
-            // if (type === 'WA_CRM_CHATS_BY_LABEL') { /* ... */ }
+            // Pasarela de etiquetas para el sidebar
+            if (type === 'WA_CRM_LABELS') {
+              window.__waLabelsCache = Array.isArray(payload) ? payload : [];
+              window.dispatchEvent(new CustomEvent('waLabelsUpdated', { detail: { labels: window.__waLabelsCache } }));
+            }
           } catch (e) {
             logger.error('Error en manejador de mensajes:', e);
           }
         });
+
+        // Exponer helper para solicitar etiquetas bajo demanda
+        window.whatsappCRM = window.whatsappCRM || {};
+        window.whatsappCRM.requestBusinessLabels = () => {
+          try {
+            window.postMessage({ type: 'WA_CRM_GET_LABELS' }, '*');
+          } catch (e) {
+            logger.error('No se pudo solicitar etiquetas:', e);
+          }
+        };
       } catch (e) {
         reject(e);
       }

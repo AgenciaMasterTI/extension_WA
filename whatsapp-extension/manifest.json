@@ -16,7 +16,7 @@
   "content_scripts": [
     {
       "matches": ["https://web.whatsapp.com/*"],
-      "js": ["sidebar-no-modules.js", "content.js"],
+      "js": ["utils/labels-bridge.js", "sidebar-no-modules.js", "content.js"],
       "css": ["sidebar.css"],
       "run_at": "document_end"
     }

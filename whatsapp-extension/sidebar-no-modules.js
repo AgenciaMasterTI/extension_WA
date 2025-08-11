@@ -320,7 +320,7 @@ class AuthService {
         console.log('[AuthService] ✅ Sesión restaurada:', this.user.email);
         
         // Notificar cambio de estado
-        this.onAuthStateChange('SIGNED_IN', { user: this.user });
+        this.notifyAuthStateChange('SIGNED_IN', { user: this.user });
       } else {
         console.log('[AuthService] 📭 No hay sesión almacenada');
       }
@@ -1694,6 +1694,12 @@ class WhatsAppCRM {
                     break;
                 case 'tags':
                     await this.loadTags();
+                    // Intentar segunda lectura por si el puente aún no estaba listo
+                    setTimeout(() => {
+                        if (!this.tags || this.tags.length === 0) {
+                            this.loadTags();
+                        }
+                    }, 1000);
                     break;
                 case 'templates':
                     this.loadTemplates();
@@ -2379,31 +2385,18 @@ class WhatsAppCRM {
         const waitForBridge = async (maxMs = 3000) => {
             const start = Date.now();
             while (Date.now() - start < maxMs) {
-                if (window.waBridge && typeof window.waBridge.getLabels === 'function') return true;
+                if (window.waBridge && typeof window.waBridge.getLabels === 'function') return 'direct';
                 await new Promise(r => setTimeout(r, 150));
             }
-            return false;
+            return 'message';
         };
 
-        const bridgeReady = await waitForBridge();
-        if (!bridgeReady) {
-            tagsContainer.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">🏷️</div>
-                    <div class="empty-state-text">No se pudo inicializar el detector</div>
-                    <div class="empty-state-subtext">Asegúrate de tener WhatsApp Web abierto</div>
-                </div>
-            `;
-            this.tags = [];
-            return;
-        }
+        const mode = await waitForBridge();
 
-        try {
-            const labels = await window.waBridge.getLabels();
-            const list = Array.isArray(labels) ? labels : [];
-            this.tags = list;
-
-            if (list.length === 0) {
+        const render = (list) => {
+            const labels = Array.isArray(list) ? list : [];
+            this.tags = labels;
+            if (labels.length === 0) {
                 tagsContainer.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">🏷️</div>
@@ -2413,8 +2406,7 @@ class WhatsAppCRM {
                 `;
                 return;
             }
-
-            tagsContainer.innerHTML = list.map(tag => `
+            tagsContainer.innerHTML = labels.map(tag => `
                 <div class="tag-item">
                     <div class="tag-color" style="background: ${tag.color};"></div>
                     <div class="tag-info">
@@ -2422,6 +2414,44 @@ class WhatsAppCRM {
                     </div>
                 </div>
             `).join('');
+        };
+
+        try {
+            if (mode === 'direct') {
+                const labels = await window.waBridge.getLabels();
+                render(labels);
+            } else {
+                // Fallback via postMessage bridge
+                const handler = (ev) => {
+                    try {
+                        if (!ev || !ev.detail || !Array.isArray(ev.detail.labels)) return;
+                        window.removeEventListener('waLabelsUpdated', handler);
+                        render(ev.detail.labels);
+                    } catch (_) {}
+                };
+                window.addEventListener('waLabelsUpdated', handler);
+                // Solicitar etiquetas al content script -> injected bridge
+                if (window.whatsappCRM && typeof window.whatsappCRM.requestBusinessLabels === 'function') {
+                    window.whatsappCRM.requestBusinessLabels();
+                } else {
+                    // Intento suave tras un pequeño delay por si aún no está listo
+                    setTimeout(() => {
+                        try { window.whatsappCRM?.requestBusinessLabels?.(); } catch(_) {}
+                    }, 250);
+                }
+
+                // Timeout de seguridad para no dejar el panel vacío
+                setTimeout(() => {
+                    if (!this.tags || this.tags.length === 0) {
+                        tagsContainer.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🏷️</div>
+                                <div class="empty-state-text">No se detectaron etiquetas</div>
+                                <div class="empty-state-subtext">Asegúrate de tener WhatsApp Web abierto y con etiquetas visibles</div>
+                            </div>`;
+                    }
+                }, 4000);
+            }
         } catch (error) {
             console.error('[loadTags] Error obteniendo etiquetas:', error);
             tagsContainer.innerHTML = `
