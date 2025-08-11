@@ -22,86 +22,171 @@ try {
 // Definición básica de TagsService para evitar errores
 class TagsService {
     constructor() {
-        this.supabaseClient = null;
         this.user = null;
-    }
-
-    async init(supabaseClient, user) {
-        this.supabaseClient = supabaseClient;
-        this.user = user;
-        console.log('[TagsService] Inicializado');
-    }
-
-    async getTags(options = {}) {
-        console.log('[TagsService] Obteniendo etiquetas...');
-
-        if (window.whatsappLabelsService?.getLabels) {
+        this.namespace = (key) => {
             try {
-                const labels = await window.whatsappLabelsService.getLabels();
-                return labels;
-            } catch (error) {
-                console.error('[TagsService] Error obteniendo etiquetas:', error);
+                const userId = window.whatsappCRM?.currentUser?.id || null;
+                return userId ? `wa_crm_${userId}_${key}` : `wa_crm_${key}`;
+            } catch (_) {
+                return `wa_crm_${key}`;
             }
-        }
-
-        return await new Promise((resolve) => {
-            const handler = (event) => {
-                if (event?.data?.type === 'WA_CRM_LABELS') {
-                    window.removeEventListener('message', handler);
-                    resolve(event.data.payload?.labels || []);
-                }
-            };
-            window.addEventListener('message', handler, false);
-            window.postMessage({ type: 'WA_CRM_GET_LABELS' }, '*');
-            setTimeout(() => {
-                window.removeEventListener('message', handler);
-                resolve([]);
-            }, 3000);
-        });
+        };
     }
 
+    async init(_supabaseClient, user) {
+        this.user = user || window.whatsappCRM?.currentUser || null;
+        console.log('[TagsService] Inicializado (no-modules)');
+    }
+
+    // Obtiene etiquetas desde storage namespaced
+    getStoredTags() {
+        try {
+            const raw = localStorage.getItem(this.namespace('tags'));
+            const tags = raw ? JSON.parse(raw) : [];
+            return Array.isArray(tags) ? tags : [];
+        } catch (e) {
+            console.warn('[TagsService] No se pudo leer tags de storage:', e);
+            return [];
+        }
+    }
+
+    // Guarda etiquetas en storage namespaced
+    saveStoredTags(tags) {
+        try {
+            localStorage.setItem(this.namespace('tags'), JSON.stringify(tags || []));
+        } catch (e) {
+            console.warn('[TagsService] No se pudo guardar tags en storage:', e);
+        }
+    }
+
+    // Sincroniza etiquetas desde WhatsApp (WPP/Store/DOM) y persiste localmente con source='whatsapp'
+    async syncFromWhatsApp() {
+        try {
+            const canRead = !!window.whatsappLabelsService?.getLabels;
+            if (!canRead) {
+                console.log('[TagsService] whatsappLabelsService no disponible');
+                return this.getStoredTags();
+            }
+
+            const waLabels = await window.whatsappLabelsService.getLabels();
+            const normalized = (waLabels || []).map(l => ({
+                id: l.id || `wa_${l.originalId || Math.random().toString(36).slice(2)}`,
+                name: l.name || 'Sin nombre',
+                color: l.color || '#00a884',
+                description: l.description || '',
+                createdAt: l.createdAt || new Date().toISOString(),
+                usage_count: l.usage_count || 0,
+                source: l.source || 'whatsapp',
+                originalId: l.originalId || l.id || null,
+                index: l.index || 0
+            }));
+
+            // Merge por originalId o nombre (case-insensitive)
+            const existing = this.getStoredTags();
+            const byKey = (t) => (t.originalId ? `oid:${t.originalId}` : `name:${(t.name || '').trim().toLowerCase()}`);
+            const map = new Map(existing.map(t => [byKey(t), t]));
+
+            for (const tag of normalized) {
+                const key = byKey(tag);
+                if (map.has(key)) {
+                    const prev = map.get(key);
+                    map.set(key, {
+                        ...prev,
+                        name: tag.name || prev.name,
+                        color: tag.color || prev.color,
+                        source: 'whatsapp',
+                        originalId: tag.originalId || prev.originalId,
+                        index: tag.index ?? prev.index
+                    });
+                } else {
+                    map.set(key, tag);
+                }
+            }
+
+            const merged = Array.from(map.values());
+            this.saveStoredTags(merged);
+            console.log(`[TagsService] Sync desde WhatsApp completado: ${merged.length} etiquetas`);
+            return merged;
+        } catch (error) {
+            console.error('[TagsService] Error en syncFromWhatsApp:', error);
+            return this.getStoredTags();
+        }
+    }
+
+    // API pública
+    async getTags({ forceRefresh = false } = {}) {
+        if (forceRefresh) {
+            await this.syncFromWhatsApp();
+        }
+        return this.getStoredTags();
+    }
+
+    // Crear etiqueta "propia" (no WhatsApp)
+    async createTag(tagData) {
+        const { name, color = '#00a884', description = '' } = tagData || {};
+        if (!name || !name.trim()) throw new Error('El nombre de la etiqueta es requerido');
+        const tags = this.getStoredTags();
+        const newTag = {
+            id: `tag_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+            name: name.trim(),
+            color,
+            description: description.trim(),
+            createdAt: new Date().toISOString(),
+            usage_count: 0,
+            source: 'crm',
+            originalId: null
+        };
+        this.saveStoredTags([...tags, newTag]);
+        return newTag;
+    }
+
+    // Actualizar etiqueta (solo si no es de WhatsApp)
+    async updateTag(tagId, updates) {
+        const tags = this.getStoredTags();
+        const idx = tags.findIndex(t => t.id === tagId);
+        if (idx === -1) throw new Error('Etiqueta no encontrada');
+        if (tags[idx].source === 'whatsapp') throw new Error('No se puede editar una etiqueta importada de WhatsApp');
+        tags[idx] = { ...tags[idx], ...updates, updatedAt: new Date().toISOString() };
+        this.saveStoredTags(tags);
+        return tags[idx];
+    }
+
+    // Eliminar etiqueta (solo si no es de WhatsApp)
+    async deleteTag(tagId) {
+        const tags = this.getStoredTags();
+        const tag = tags.find(t => t.id === tagId);
+        if (!tag) return true;
+        if (tag.source === 'whatsapp') throw new Error('No se puede eliminar una etiqueta importada de WhatsApp');
+        this.saveStoredTags(tags.filter(t => t.id !== tagId));
+        return true;
+    }
+
+    // Consultas complementarias
+    async searchTags(query) {
+        const term = (query || '').trim().toLowerCase();
+        const tags = this.getStoredTags();
+        if (!term) return tags;
+        return tags.filter(t => (t.name || '').toLowerCase().includes(term));
+    }
+
+    // Stubs de asignación (persistencia futura si se conecta a backend)
     async getChatsByTag(tagId) {
-        console.log('[TagsService] Obteniendo chats por etiqueta:', tagId);
-
-        if (window.whatsappLabelsService?.getChatsByLabel) {
-            try {
-                return await window.whatsappLabelsService.getChatsByLabel(tagId);
-            } catch (error) {
-                console.error('[TagsService] Error obteniendo chats por etiqueta:', error);
-            }
-        }
-
-        return await new Promise((resolve) => {
-            const handler = (event) => {
-                if (event?.data?.type === 'WA_CRM_CHATS_BY_LABEL' && event.data.payload?.labelId === tagId) {
-                    window.removeEventListener('message', handler);
-                    resolve(event.data.payload?.chats || []);
-                }
-            };
-            window.addEventListener('message', handler, false);
-            window.postMessage({ type: 'WA_CRM_GET_CHATS_BY_LABEL', payload: { labelId: tagId } }, '*');
-            setTimeout(() => {
-                window.removeEventListener('message', handler);
-                resolve([]);
-            }, 3000);
-        });
+        console.log('[TagsService] getChatsByTag (stub):', tagId);
+        return [];
     }
 
     async assignTagToChat(tagId, chatName, chatPhone) {
-        console.log('[TagsService] Asignando etiqueta:', { tagId, chatName, chatPhone });
-        // Implementar asignación real cuando sea necesario
+        console.log('[TagsService] assignTagToChat (stub):', { tagId, chatName, chatPhone });
         return true;
     }
 
     async removeTagFromChat(tagId, chatName) {
-        console.log('[TagsService] Removiendo etiqueta:', { tagId, chatName });
-        // Implementar remoción real cuando sea necesario
+        console.log('[TagsService] removeTagFromChat (stub):', { tagId, chatName });
         return true;
     }
 
     async getChatTags(chatName) {
-        console.log('[TagsService] Obteniendo etiquetas del chat:', chatName);
-        // Implementar obtención real cuando sea necesario
+        console.log('[TagsService] getChatTags (stub):', chatName);
         return [];
     }
 }
@@ -2444,6 +2529,10 @@ class WhatsAppCRM {
         if (!tagsContainer) return;
 
         try {
+            // Sincronizar primero desde WhatsApp para traer catálogo
+            if (this.tagsService?.syncFromWhatsApp) {
+                await this.tagsService.syncFromWhatsApp();
+            }
             const fetched = await this.tagsService.getTags();
             if (Array.isArray(fetched) && fetched.length > 0) {
                 this.tags = fetched;
@@ -2467,12 +2556,12 @@ class WhatsAppCRM {
                     <div class="tag-color" style="background: ${tag.color};"></div>
                     <div class="tag-info">
                         <div class="tag-name">${tag.name}</div>
-                        <div class="tag-description">${tag.description || 'Sin descripción'}</div>
+                        <div class="tag-description">${tag.description || 'Sin descripción'} ${tag.source === 'whatsapp' ? '(WhatsApp)' : ''}</div>
                         <div class="tag-count">${this.getContactsByTag(tag.id).length} contactos</div>
                     </div>
                     <div class="tag-actions">
-                        <button class="tag-btn" onclick="this.editTag('${tag.id}')">✏️</button>
-                        <button class="tag-btn" onclick="this.deleteTag('${tag.id}')">🗑️</button>
+                        ${tag.source === 'whatsapp' ? '' : `<button class="tag-btn" onclick="this.editTag('${tag.id}')">✏️</button>`}
+                        ${tag.source === 'whatsapp' ? '' : `<button class="tag-btn" onclick="this.deleteTag('${tag.id}')">🗑️</button>`}
                     </div>
                 </div>
             `).join('');
@@ -2536,29 +2625,30 @@ class WhatsAppCRM {
         const nameInput = document.getElementById('tagName');
         const colorInput = document.getElementById('tagColor');
         const descriptionInput = document.getElementById('tagDescription');
-        
+
         const tagData = {
             name: nameInput.value.trim(),
             color: colorInput.value,
             description: descriptionInput.value.trim(),
-            createdAt: new Date().toISOString()
         };
-        
+
         if (!tagData.name) {
             this.showNotification('El nombre de la etiqueta es requerido', 'error');
             return;
         }
-        
-        // Generar ID único
-        tagData.id = 'tag_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        
-        this.tags.push(tagData);
-        this.saveData('tags', this.tags);
-        
-        this.closeTagModal();
-        this.showNotification('Etiqueta guardada exitosamente', 'success');
-        this.loadTags();
-        this.updateDashboard();
+
+        // Crear etiqueta vía servicio centralizado
+        this.tagsService.createTag(tagData)
+            .then(() => {
+                this.closeTagModal();
+                this.showNotification('Etiqueta guardada exitosamente', 'success');
+                this.loadTags();
+                this.updateDashboard();
+            })
+            .catch((e) => {
+                console.error('[saveTag] Error:', e);
+                this.showNotification(e.message || 'Error al guardar etiqueta', 'error');
+            });
     }
 
     // ===========================================

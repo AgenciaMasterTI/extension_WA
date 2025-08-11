@@ -179,74 +179,36 @@ class WhatsAppLabelsTopBar {
     try {
       console.log('[LabelsBar] 🔧 Inicializando servicios...');
 
-      // Servicio de etiquetas
+      // Servicio de lectura simple (sin CRUD local)
       this.labelsService = {
         async getLabels() {
           // 1) API real desde whatsappLabelsService
           try {
             if (window.whatsappLabelsService?.getLabels) {
               const labels = await window.whatsappLabelsService.getLabels();
-              console.log('[LabelsBar] 📡 Etiquetas desde whatsappLabelsService:', labels);
               if (labels && labels.length) return labels;
             }
           } catch (err) {
             console.error('[LabelsBar] Error obteniendo etiquetas desde API:', err);
           }
 
-          // 2) Respaldo localStorage con namespace por usuario
+          // 2) Respaldo: catálogo mantenido por el Sidebar
           try {
-            const userId = window.whatsappCRM?.currentUser?.id || window.authService?.getCurrentUser?.()?.id;
-            const storageKey = userId ? `wa_crm_${userId}_tags` : `wa_crm_tags`;
             if (window.whatsappCRM?.loadData) {
               const tags = window.whatsappCRM.loadData('tags', []);
-              // loadData ya usa namespace por usuario tras la edición en sidebar-no-modules.js
               if (tags && tags.length) return tags;
             } else {
+              const userId = window.whatsappCRM?.currentUser?.id || window.authService?.getCurrentUser?.()?.id;
+              const storageKey = userId ? `wa_crm_${userId}_tags` : `wa_crm_tags`;
               const raw = localStorage.getItem(storageKey);
               const tags = raw ? JSON.parse(raw) : [];
               if (tags && tags.length) return tags;
             }
           } catch (e) {
-            console.warn('[LabelsBar] No se pudo leer etiquetas desde localStorage namespaced:', e);
+            console.warn('[LabelsBar] No se pudo leer etiquetas desde respaldo:', e);
           }
 
           return [];
-        },
-
-        async createLabel(labelData) {
-          const labels = await this.getLabels();
-          const newLabel = {
-            id: `label_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            name: labelData.name,
-            color: labelData.color || '#00a884',
-            description: labelData.description || '',
-            createdAt: new Date().toISOString(),
-            usage_count: 0
-          };
-          const updated = [...labels, newLabel];
-          if (window.whatsappCRM?.saveData) {
-            window.whatsappCRM.saveData('tags', updated);
-          }
-          console.log('[LabelsBar] ✅ Nueva etiqueta creada:', newLabel);
-          return newLabel;
-        },
-
-        async deleteLabel(labelId) {
-          const labels = await this.getLabels();
-          const filteredLabels = labels.filter(l => l.id !== labelId);
-          if (window.whatsappCRM?.saveData) {
-            window.whatsappCRM.saveData('tags', filteredLabels);
-          } else {
-            try {
-              const userId = window.whatsappCRM?.currentUser?.id || window.authService?.getCurrentUser?.()?.id;
-              const storageKey = userId ? `wa_crm_${userId}_tags` : `wa_crm_tags`;
-              localStorage.setItem(storageKey, JSON.stringify(filteredLabels));
-            } catch (err) {
-              console.warn('[LabelsBar] No se pudo guardar etiquetas filtradas en localStorage:', err);
-            }
-          }
-          console.log('[LabelsBar] ✅ Etiqueta eliminada:', labelId);
-          return true;
         }
       };
 
@@ -639,143 +601,13 @@ class WhatsAppLabelsTopBar {
             <span class="label-name">${label.name}</span>
             <span class="usage-count">${label.usage_count || 0} usos</span>
           </div>
-          <div class="label-actions">
-            <button class="btn-delete" data-label-id="${label.id}" title="Eliminar etiqueta">🗑️</button>
-          </div>
         </div>
       `).join('');
-      
-      // Agregar event listeners
-      this.bindLabelActions();
       
     } catch (error) {
       console.error('[LabelsBar] Error cargando etiquetas existentes:', error);
       this.elements.existingLabelsList.innerHTML = '<p>Error al cargar etiquetas</p>';
     }
-  }
-
-  bindLabelActions() {
-    this.elements.existingLabelsList.querySelectorAll('.btn-delete').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const labelId = btn.dataset.labelId;
-        this.deleteLabel(labelId);
-      });
-    });
-  }
-
-  async deleteLabel(labelId) {
-    try {
-      if (!confirm('¿Estás seguro de que quieres eliminar esta etiqueta?')) {
-        return;
-      }
-
-      await this.labelsService.deleteLabel(labelId);
-      
-      // Recargar
-      await this.loadLabels();
-      await this.loadExistingLabels();
-      
-      this.showNotification('Etiqueta eliminada correctamente');
-      
-    } catch (error) {
-      console.error('[LabelsBar] Error eliminando etiqueta:', error);
-      this.showError('Error al eliminar etiqueta');
-    }
-  }
-
-  async handleCreateLabel(event) {
-    event.preventDefault();
-    
-    try {
-      const name = this.elements.newLabelName.value.trim();
-      const color = this.elements.newLabelColor.value;
-      
-      if (!name) {
-        this.showError('El nombre de la etiqueta es requerido');
-        return;
-      }
-
-      if (!this.labelsService) {
-        this.showError('Servicio de etiquetas no disponible');
-        return;
-      }
-
-      // Crear etiqueta
-      await this.labelsService.createLabel({ name, color });
-      
-      // Recargar
-      await this.loadLabels();
-      await this.loadExistingLabels();
-      
-      // Limpiar formulario
-      this.elements.createLabelForm.reset();
-      
-      this.showNotification('Etiqueta creada correctamente');
-      
-    } catch (error) {
-      console.error('[LabelsBar] Error creando etiqueta:', error);
-      this.showError('Error al crear etiqueta');
-    }
-  }
-
-  showNotification(message) {
-    const notification = document.createElement('div');
-    notification.textContent = message;
-    notification.style.cssText = `
-      position: fixed;
-      top: 60px;
-      right: 20px;
-      background: var(--wa-primary);
-      color: white;
-      padding: 12px 16px;
-      border-radius: 8px;
-      z-index: 10001;
-      font-size: 14px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
-  }
-
-  showError(message) {
-    const notification = document.createElement('div');
-    notification.textContent = message;
-    notification.style.cssText = `
-      position: fixed;
-      top: 60px;
-      right: 20px;
-      background: #f56565;
-      color: white;
-      padding: 12px 16px;
-      border-radius: 8px;
-      z-index: 10001;
-      font-size: 14px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
-  }
-
-  // Métodos públicos para integración
-  getSelectedLabel() {
-    return this.selectedLabelId;
-  }
-
-  setSelectedLabel(labelId) {
-    this.selectLabel(labelId);
-  }
-
-  refreshLabels() {
-    this.loadLabels();
   }
 
   // Método público para notificar cambios del sidebar
