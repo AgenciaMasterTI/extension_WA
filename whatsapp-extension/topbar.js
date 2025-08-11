@@ -158,7 +158,7 @@ class WhatsAppLabelsTopBar {
     // Gestión de etiquetas
     this.elements.manageLabelsBtn?.addEventListener('click', () => this.showLabelsModal());
     this.elements.closeLabelsModal?.addEventListener('click', () => this.hideLabelsModal());
-    this.elements.createLabelForm?.addEventListener('submit', (e) => this.handleCreateLabel(e));
+    // Crear etiquetas se realiza en el sidebar; aquí solo listado
     
     // Cerrar modal al hacer clic fuera
     this.elements.labelsModal?.addEventListener('click', (e) => {
