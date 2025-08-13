@@ -6,15 +6,17 @@
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "tabs"
   ],
   "host_permissions": [
-    "https://web.whatsapp.com/*"
+    "https://web.whatsapp.com/*",
+    "https://*.supabase.co/*"
   ],
   "content_scripts": [
     {
       "matches": ["https://web.whatsapp.com/*"],
-      "js": ["content.js", "sidebar.js", "test-extension.js"],
+      "js": ["utils/labels-bridge.js", "sidebar-no-modules.js", "content.js"],
       "css": ["sidebar.css"],
       "run_at": "document_end"
     }
@@ -40,7 +42,15 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["sidebar.html", "sidebar.js", "services/*", "utils/*", "assets/*"],
+      "resources": [
+        "sidebar.html",
+            
+        "config/*",
+        "services/*",
+                 "utils/*",
+         "assets/*",
+         "utils/wapp-bridge.js"
+       ],
       "matches": ["https://web.whatsapp.com/*"]
     }
   ],

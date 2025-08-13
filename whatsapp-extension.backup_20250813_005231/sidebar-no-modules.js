@@ -2150,6 +2150,9 @@ class WhatsAppCRM {
                                         </div>
                                     </div>
                                 `).join('')}
+                                <div class="kanban-add-contact" data-tag-id="${tag.id}">
+                                    <span>+ Añadir Contacto</span>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -2394,19 +2397,30 @@ class WhatsAppCRM {
         const mode = await waitForBridge();
 
         const render = (list) => {
-            const labels = Array.isArray(list) ? list : [];
-            this.tags = labels;
-            if (labels.length === 0) {
+            const waLabels = Array.isArray(list) ? list : [];
+            const localTags = Array.isArray(this.tags) ? this.tags : [];
+            const map = new Map();
+            localTags.forEach(t => {
+                if (t && t.name) map.set(String(t.name).toLowerCase(), t);
+            });
+            waLabels.forEach(t => {
+                if (!t || !t.name) return;
+                const key = String(t.name).toLowerCase();
+                if (!map.has(key)) map.set(key, t);
+            });
+            this.tags = Array.from(map.values());
+            this.saveData('tags', this.tags);
+            if (this.tags.length === 0) {
                 tagsContainer.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">🏷️</div>
                         <div class="empty-state-text">No se detectaron etiquetas</div>
-                        <div class="empty-state-subtext">Cuando WhatsApp muestre etiquetas, aparecerán aquí</div>
+                        <div class="empty-state-subtext">Crea una nueva etiqueta para comenzar</div>
                     </div>
                 `;
                 return;
             }
-            tagsContainer.innerHTML = labels.map(tag => `
+            tagsContainer.innerHTML = this.tags.map(tag => `
                 <div class="tag-item">
                     <div class="tag-color" style="background: ${tag.color};"></div>
                     <div class="tag-info">
@@ -2420,37 +2434,45 @@ class WhatsAppCRM {
             if (mode === 'direct') {
                 const labels = await window.waBridge.getLabels();
                 render(labels);
+                return this.tags;
             } else {
-                // Fallback via postMessage bridge
-                const handler = (ev) => {
-                    try {
-                        if (!ev || !ev.detail || !Array.isArray(ev.detail.labels)) return;
-                        window.removeEventListener('waLabelsUpdated', handler);
-                        render(ev.detail.labels);
-                    } catch (_) {}
-                };
-                window.addEventListener('waLabelsUpdated', handler);
-                // Solicitar etiquetas al content script -> injected bridge
-                if (window.whatsappCRM && typeof window.whatsappCRM.requestBusinessLabels === 'function') {
-                    window.whatsappCRM.requestBusinessLabels();
-                } else {
-                    // Intento suave tras un pequeño delay por si aún no está listo
-                    setTimeout(() => {
-                        try { window.whatsappCRM?.requestBusinessLabels?.(); } catch(_) {}
-                    }, 250);
-                }
-
-                // Timeout de seguridad para no dejar el panel vacío
-                setTimeout(() => {
-                    if (!this.tags || this.tags.length === 0) {
-                        tagsContainer.innerHTML = `
-                            <div class="empty-state">
-                                <div class="empty-state-icon">🏷️</div>
-                                <div class="empty-state-text">No se detectaron etiquetas</div>
-                                <div class="empty-state-subtext">Asegúrate de tener WhatsApp Web abierto y con etiquetas visibles</div>
-                            </div>`;
+                // Fallback via postMessage bridge y esperar respuesta
+                await new Promise((resolve) => {
+                    const handler = (ev) => {
+                        try {
+                            if (!ev || !ev.detail || !Array.isArray(ev.detail.labels)) return;
+                            window.removeEventListener('waLabelsUpdated', handler);
+                            render(ev.detail.labels);
+                            resolve(true);
+                        } catch (_) {
+                            resolve(false);
+                        }
+                    };
+                    window.addEventListener('waLabelsUpdated', handler);
+                    // Solicitar etiquetas al content script -> injected bridge
+                    if (window.whatsappCRM && typeof window.whatsappCRM.requestBusinessLabels === 'function') {
+                        window.whatsappCRM.requestBusinessLabels();
+                    } else {
+                        // Intento suave tras un pequeño delay por si aún no está listo
+                        setTimeout(() => {
+                            try { window.whatsappCRM?.requestBusinessLabels?.(); } catch(_) {}
+                        }, 250);
                     }
-                }, 4000);
+                    // Timeout de seguridad
+                    setTimeout(() => {
+                        window.removeEventListener('waLabelsUpdated', handler);
+                        if (!this.tags || this.tags.length === 0) {
+                            tagsContainer.innerHTML = `
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">🏷️</div>
+                                    <div class="empty-state-text">No se detectaron etiquetas</div>
+                                    <div class="empty-state-subtext">Asegúrate de tener WhatsApp Web abierto y con etiquetas visibles</div>
+                                </div>`;
+                        }
+                        resolve(false);
+                    }, 4000);
+                });
+                return this.tags;
             }
         } catch (error) {
             console.error('[loadTags] Error obteniendo etiquetas:', error);
@@ -2465,9 +2487,103 @@ class WhatsAppCRM {
         }
     }
 
-    showTagModal() { /* removido */ }
-    closeTagModal() { /* removido */ }
-    saveTag() { /* removido */ }
+    showTagModal() {
+        try {
+            const modal = document.getElementById('tagModal');
+            const title = document.getElementById('tagModalTitle');
+            const nameInput = document.getElementById('tagName');
+            const colorInput = document.getElementById('tagColor');
+            const descInput = document.getElementById('tagDescription');
+
+            if (title) title.textContent = 'Nueva Etiqueta';
+            if (nameInput) nameInput.value = '';
+            if (colorInput) colorInput.value = '#00a884';
+            if (descInput) descInput.value = '';
+            if (modal) modal.style.display = 'flex';
+        } catch (error) {
+            console.error('[showTagModal] Error:', error);
+        }
+    }
+
+    closeTagModal() {
+        try {
+            const modal = document.getElementById('tagModal');
+            if (modal) modal.style.display = 'none';
+        } catch (error) {
+            console.error('[closeTagModal] Error:', error);
+        }
+    }
+
+    async saveTag() {
+        try {
+            const nameInput = document.getElementById('tagName');
+            const colorInput = document.getElementById('tagColor');
+            const descInput = document.getElementById('tagDescription');
+
+            const name = (nameInput?.value || '').trim();
+            const color = (colorInput?.value || '#00a884').trim();
+            const description = (descInput?.value || '').trim();
+
+            if (!name) {
+                this.showNotification('El nombre de la etiqueta es requerido', 'error');
+                return;
+            }
+
+            const exists = (this.tags || []).some(t => String(t.name || '').toLowerCase() === name.toLowerCase());
+            if (exists) {
+                this.showNotification('Ya existe una etiqueta con ese nombre', 'error');
+                return;
+            }
+
+            const newTag = {
+                id: 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9),
+                name,
+                color,
+                description,
+                createdAt: new Date().toISOString(),
+                source: 'local'
+            };
+
+            this.tags = Array.isArray(this.tags) ? this.tags : [];
+            this.tags.push(newTag);
+            this.saveData('tags', this.tags);
+
+            // Intentar guardar en Supabase si hay sesión
+            try {
+                if (this.isAuthenticated && this.currentUser) {
+                    const token = this.authService.getAuthToken();
+                    if (token) {
+                        await fetch(`${SUPABASE_CONFIG.url}/rest/v1/tags`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': SUPABASE_CONFIG.anonKey,
+                                'Authorization': `Bearer ${token}`,
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({
+                                user_id: this.currentUser.id,
+                                name: newTag.name,
+                                color: newTag.color,
+                                description: newTag.description || null
+                            })
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn('[saveTag] No se pudo guardar la etiqueta en Supabase:', e);
+            }
+
+            this.closeTagModal();
+            this.showNotification('Etiqueta creada', 'success');
+            this.loadTags();
+            if (typeof this.updateDashboard === 'function') this.updateDashboard();
+            if (typeof this.refreshKanban === 'function') this.refreshKanban();
+        } catch (error) {
+            console.error('[saveTag] Error:', error);
+            this.showNotification('Error al crear la etiqueta', 'error');
+        }
+    }
 
     // ===========================================
     // MÉTODOS DE PLANTILLAS
@@ -3006,28 +3122,41 @@ class WhatsAppCRM {
         try {
             console.log('[WhatsAppCRM] 🏷️ Renderizando kanban con datos reales...');
             
-            // Obtener etiquetas reales desde el servicio de etiquetas
-            const tags = await this.tagsService.getTags();
-            if (Array.isArray(tags)) {
-                this.tags = tags;
+            // Obtener etiquetas disponibles desde estado local; fallback a loadTags si está vacío
+            let tags = Array.isArray(this.tags) ? this.tags : [];
+            if (!tags.length) {
+                try { await this.loadTags(); } catch (_) {}
+                tags = Array.isArray(this.tags) ? this.tags : [];
             }
 
+            // Fallback: crear etiquetas por defecto si sigue vacío (modo solo fullscreen)
+            if (!tags || tags.length === 0) {
+                const defaults = [
+                    { id: 'tag_lead', name: 'Lead', color: '#f59e0b', source: 'default', createdAt: new Date().toISOString() },
+                    { id: 'tag_en_proceso', name: 'En Proceso', color: '#3b82f6', source: 'default', createdAt: new Date().toISOString() },
+                    { id: 'tag_clientes', name: 'Clientes', color: '#10b981', source: 'default', createdAt: new Date().toISOString() }
+                ];
+                this.tags = defaults;
+                this.saveData('tags', this.tags);
+                tags = this.tags;
+            }
+            
             if (!tags || tags.length === 0) {
                 container.innerHTML = `
                     <div class="kanban-empty-state">
                         <div class="empty-state-icon">🏷️</div>
                         <div class="empty-state-text">No hay etiquetas disponibles</div>
-                        <div class="empty-state-subtext">Las etiquetas aparecerán cuando estén disponibles en WhatsApp Business</div>
+                        <div class="empty-state-subtext">Crea etiquetas para organizar tus contactos</div>
                     </div>
                 `;
                 return;
             }
-
+            
             // Generar columnas con tarjetas reales por etiqueta
             const columnsHTML = await Promise.all(tags.map(async (tag) => {
                 try {
                     const contactsInTag = await this.getContactsByTag(tag.id);
-
+                    
                     return `
                         <div class="kanban-fullscreen-column" data-tag-id="${tag.id}" droppable="true">
                             <div class="kanban-fullscreen-column-header">

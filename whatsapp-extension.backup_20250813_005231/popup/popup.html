@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp CRM Info</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <!-- Header -->
+        <div class="popup-header">
+            <div class="logo">
+                <div class="logo-icon">💬</div>
+                <span class="logo-text">CRM Pro</span>
+            </div>
+            <div class="version">v1.0.0</div>
+        </div>
+
+        <!-- Información del CRM -->
+        <div class="popup-content">
+            <div class="info-section">
+                <h3>🚀 WhatsApp CRM Professional</h3>
+                <p class="description">
+                    Gestiona tus contactos de WhatsApp de manera profesional con nuestro CRM integrado.
+                </p>
+            </div>
+
+            <!-- Estadísticas rápidas -->
+            <div class="stats-section">
+                <h4>📊 Estadísticas</h4>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number" id="totalContacts">0</span>
+                        <span class="stat-label">Contactos</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="totalTags">0</span>
+                        <span class="stat-label">Etiquetas</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="totalTemplates">0</span>
+                        <span class="stat-label">Plantillas</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado de autenticación -->
+            <div class="auth-status" id="authStatus">
+                <div class="status-item">
+                    <span class="status-icon">🔐</span>
+                    <span class="status-text">No autenticado</span>
+                </div>
+            </div>
+
+            <!-- Funcionalidades -->
+            <div class="features-section">
+                <h4>✨ Funcionalidades</h4>
+                <ul class="features-list">
+                    <li>📋 Gestión de contactos</li>
+                    <li>🏷️ Sistema de etiquetas</li>
+                    <li>📄 Plantillas de mensajes</li>
+                    <li>📊 Dashboard analítico</li>
+                    <li>🔄 Sincronización en la nube</li>
+                    <li>⚙️ Configuración personalizable</li>
+                </ul>
+            </div>
+
+            <!-- Acciones rápidas -->
+            <div class="actions-section">
+                <h4>⚡ Acciones Rápidas</h4>
+                <div class="action-buttons">
+                    <button class="action-btn" id="openSidebarBtn">
+                        <span class="btn-icon">📱</span>
+                        <span class="btn-text">Abrir CRM</span>
+                    </button>
+                    <button class="action-btn" id="syncDataBtn">
+                        <span class="btn-icon">🔄</span>
+                        <span class="btn-text">Sincronizar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Información del usuario -->
+            <div class="user-section" id="userSection" style="display: none;">
+                <h4>👤 Usuario</h4>
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">👤</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Usuario</div>
+                        <div class="user-email" id="userEmail">usuario@email.com</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="popup-footer">
+            <div class="footer-links">
+                <a href="#" id="helpLink">❓ Ayuda</a>
+                <a href="#" id="settingsLink">⚙️ Configuración</a>
+            </div>
+            <div class="footer-text">
+                Desarrollado con ❤️ para WhatsApp
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html> 

@@ -1,0 +1,3657 @@
+/* WhatsApp CRM Extension - Professional Design (Modo Oscuro) */
+
+/* Variables CSS para modo oscuro por defecto */
+:root {
+  --primary-color: #00a884;
+  --primary-dark: #008c73;
+  --primary-light: #00bf9f;
+  --secondary-color: #667781;
+  --accent-color: #25d366;
+  
+  /* Tema oscuro como predeterminado */
+  --background-color: #0b1426;
+  --surface-color: #1a2332;
+  --surface-hover: #253142;
+  --card-background: #1e2a3a;
+  --border-color: #2a3441;
+  --border-light: #364152;
+  --text-primary: #e4e6ea;
+  --text-secondary: #b0b3b8;
+  --text-tertiary: #8a8d91;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.6);
+  
+  /* Gradientes para modo oscuro */
+  --gradient-primary: linear-gradient(135deg, #00a884 0%, #00bf9f 100%);
+  --gradient-card: linear-gradient(145deg, #1e2a3a 0%, #1a2332 100%);
+  --gradient-hover: linear-gradient(145deg, #253142 0%, #1e2a3a 100%);
+  
+  /* Transiciones */
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Espaciado */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+  
+  /* Bordes */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+}
+
+/* Reset y base */
+.wa-crm-sidebar * {
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Contenedor principal integrado */
+.wa-crm-sidebar {
+  position: relative !important;
+  width: 380px !important;
+  height: 100vh !important;
+  background: var(--background-color) !important;
+  border-right: 1px solid var(--border-color) !important;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: var(--text-primary) !important;
+  transition: var(--transition-normal) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  flex-shrink: 0 !important;
+}
+
+/* Estilos para integración directa con WhatsApp Web */
+body:has(.wa-crm-sidebar) {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+/* WhatsApp Web ajustado para trabajar junto al sidebar */
+body:has(.wa-crm-sidebar) #app {
+  flex: 1 !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+}
+
+/* Ajustes para contenedores hijos de app */
+body:has(.wa-crm-sidebar) #app > div:first-child {
+  flex: 1 !important;
+  height: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Fallback para navegadores que no soportan :has() */
+body.whatsapp-crm-active {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+body.whatsapp-crm-active #app {
+  flex: 1 !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+}
+
+body.whatsapp-crm-active #app > div:first-child {
+  flex: 1 !important;
+  height: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Responsive: ocultar sidebar en pantallas pequeñas */
+@media (max-width: 1200px) {
+  .wa-crm-sidebar {
+    width: 320px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .wa-crm-sidebar {
+    width: 280px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .wa-crm-sidebar.collapsed {
+    width: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+  }
+  
+  .wa-crm-sidebar:not(.collapsed) {
+    width: 100vw !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 999999 !important;
+    background: var(--background-color) !important;
+  }
+}
+
+.wa-crm-sidebar.collapsed {
+  width: 95px !important;
+}
+
+.wa-crm-sidebar-container {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100% !important;
+  background: var(--gradient-card) !important;
+}
+
+/* Para Firefox */
+.wa-crm-sidebar {
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--border-color) var(--surface-color) !important;
+}
+
+/* Header rediseñado */
+.sidebar-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: var(--spacing-xl) !important;
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.sidebar-header::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%) !important;
+  pointer-events: none !important;
+}
+
+.logo {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-md) !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  z-index: 1 !important;
+  position: relative !important;
+}
+
+.logo-icon {
+  width: 32px !important;
+  height: 32px !important;
+  background: rgba(255,255,255,0.2) !important;
+  border-radius: var(--radius-md) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.logo-text {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.5px !important;
+  transition: var(--transition-fast) !important;
+}
+
+.wa-crm-sidebar.collapsed .logo-text {
+  display: none !important;
+}
+
+.toggle-btn {
+  background: rgba(255,255,255,0.15) !important;
+  border: none !important;
+  cursor: pointer !important;
+  padding: var(--spacing-sm) !important;
+  border-radius: var(--radius-md) !important;
+  color: white !important;
+  transition: var(--transition-fast) !important;
+  backdrop-filter: blur(10px) !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+  position: relative !important;
+  z-index: 9999 !important;
+}
+
+.toggle-btn:hover {
+  background: rgba(255,255,255,0.25) !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+.toggle-btn:active {
+  transform: scale(0.95) !important;
+}
+
+.toggle-icon {
+  font-size: 18px !important;
+  font-weight: bold !important;
+  transition: transform 0.3s ease !important;
+}
+
+.toggle-icon.rotate {
+  animation: rotateIcon 0.3s ease !important;
+}
+
+@keyframes rotateIcon {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(180deg); }
+}
+
+/* Pestañas tipo WhatsApp - Sistema dinámico */
+.tabs-section {
+  background: var(--surface-color) !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  padding: var(--spacing-md) !important;
+}
+
+.search-row {
+  margin-bottom: var(--spacing-md) !important;
+}
+
+.search-input {
+  width: 100% !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--card-background) !important;
+  color: var(--text-primary) !important;
+  font-size: 14px !important;
+  transition: var(--transition-fast) !important;
+  outline: none !important;
+}
+
+.search-input:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.1) !important;
+}
+
+/* Contenedor de pestañas con scroll horizontal */
+.tabs-container {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-sm) !important;
+  overflow: hidden !important;
+}
+
+.tabs-scroll {
+  display: flex !important;
+  gap: var(--spacing-xs) !important;
+  overflow-x: auto !important;
+  flex: 1 !important;
+  padding: 2px !important;
+  scroll-behavior: smooth !important;
+  /* Ocultar scrollbar pero mantener funcionalidad */
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.tabs-scroll::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Pestañas individuales tipo WhatsApp */
+.tab-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-sm) !important;
+  padding: 8px 12px !important;
+  background: transparent !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 20px !important;
+  cursor: pointer !important;
+  transition: var(--transition-fast) !important;
+  white-space: nowrap !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--text-secondary) !important;
+  min-height: 32px !important;
+  flex-shrink: 0 !important;
+}
+
+.tab-item:hover {
+  background: var(--surface-hover) !important;
+  border-color: var(--primary-color) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(0, 168, 132, 0.15) !important;
+}
+
+.tab-item.active {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 12px rgba(0, 168, 132, 0.3) !important;
+}
+
+.tab-text {
+  font-weight: inherit !important;
+  color: inherit !important;
+}
+
+.tab-count {
+  background: rgba(255, 255, 255, 0.2) !important;
+  padding: 2px 6px !important;
+  border-radius: 10px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  min-width: 18px !important;
+  text-align: center !important;
+  color: inherit !important;
+}
+
+.tab-item.active .tab-count {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+}
+
+.tab-item:not(.active) .tab-count {
+  background: var(--surface-color) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Botón para agregar nueva etiqueta */
+.tab-add-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: var(--border-color) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  cursor: pointer !important;
+  transition: var(--transition-fast) !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.tab-add-btn:hover {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: white !important;
+  transform: scale(1.1) !important;
+}
+
+/* Animaciones para pestañas */
+@keyframes tabSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.tab-item.new {
+  animation: tabSlideIn 0.3s ease-out !important;
+}
+
+/* Responsive para pestañas */
+@media (max-width: 768px) {
+  .tabs-section {
+    padding: var(--spacing-sm) !important;
+  }
+  
+  .tab-item {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+  
+  .tab-count {
+    font-size: 10px !important;
+    padding: 1px 4px !important;
+  }
+}
+
+/* Navegación rediseñada */
+.sidebar-nav {
+  padding: var(--spacing-lg) var(--spacing-md) !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  background: var(--surface-color) !important;
+}
+
+.nav-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-md) !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  margin-bottom: var(--spacing-xs) !important;
+  border-radius: var(--radius-lg) !important;
+  cursor: pointer !important;
+  transition: var(--transition-fast) !important;
+  color: var(--text-secondary) !important;
+  font-weight: 500 !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.nav-item::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: var(--gradient-hover) !important;
+  opacity: 0 !important;
+  transition: var(--transition-fast) !important;
+}
+
+.nav-item:hover::before {
+  opacity: 1 !important;
+}
+
+.nav-item:hover {
+  color: var(--text-primary) !important;
+  transform: translateX(4px) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+.nav-item.active {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.nav-item.active::before {
+  display: none !important;
+}
+
+.nav-icon {
+  font-size: 18px !important;
+  min-width: 18px !important;
+  text-align: center !important;
+  z-index: 1 !important;
+  position: relative !important;
+}
+
+.nav-text {
+  font-weight: inherit !important;
+  transition: var(--transition-fast) !important;
+  z-index: 1 !important;
+  position: relative !important;
+}
+
+.wa-crm-sidebar.collapsed .nav-text {
+  display: none !important;
+}
+
+.wa-crm-sidebar.collapsed .nav-item {
+  justify-content: center !important;
+  padding: var(--spacing-md) !important;
+}
+
+/* Contenido principal */
+.sidebar-content {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  background: var(--background-color) !important;
+  padding: var(--spacing-lg) !important;
+}
+
+.content-section {
+  display: none !important;
+}
+
+.content-section.active {
+  display: block !important;
+  animation: fadeInUp 0.3s ease-out !important;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0 !important;
+    transform: translateY(20px) !important;
+  }
+  to {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+}
+
+.section-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: var(--spacing-2xl) !important;
+  padding-bottom: var(--spacing-lg) !important;
+  border-bottom: 2px solid var(--border-light) !important;
+}
+
+.section-header h3 {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  letter-spacing: -0.5px !important;
+}
+
+.section-body {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-lg) !important;
+  max-height: calc(100vh - 200px) !important;
+  overflow-y: auto !important;
+}
+
+/* Dashboard Cards */
+.stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important;
+  gap: var(--spacing-lg) !important;
+  margin-bottom: var(--spacing-2xl) !important;
+}
+
+.stat-card {
+  background: var(--gradient-card) !important;
+  padding: var(--spacing-xl) !important;
+  border-radius: var(--radius-xl) !important;
+  border: 1px solid var(--border-color) !important;
+  text-align: center !important;
+  transition: var(--transition-normal) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.stat-card::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 3px !important;
+  background: var(--gradient-primary) !important;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.stat-number {
+  display: block !important;
+  font-size: 32px !important;
+  font-weight: 800 !important;
+  color: var(--primary-color) !important;
+  margin-bottom: var(--spacing-sm) !important;
+  line-height: 1 !important;
+}
+
+.stat-label {
+  font-size: 12px !important;
+  color: var(--text-secondary) !important;
+  text-transform: uppercase !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Kanban Header Principal */
+.kanban-header-main {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: var(--spacing-xl) var(--spacing-lg) !important;
+  background: #1a1a1a !important;
+  color: white !important;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+  margin: -var(--spacing-lg) -var(--spacing-lg) 0 -var(--spacing-lg) !important;
+}
+
+.kanban-header-main h2 {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  color: white !important;
+}
+
+.kanban-actions {
+  display: flex !important;
+  gap: var(--spacing-sm) !important;
+}
+
+.btn-sm {
+  padding: var(--spacing-sm) var(--spacing-md) !important;
+  font-size: 12px !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+/* Kanban Wrapper */
+.kanban-wrapper {
+  margin-top: var(--spacing-lg) !important;
+  padding: var(--spacing-md) !important;
+  background: var(--background-color) !important;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg) !important;
+  overflow: hidden !important;
+}
+
+/* Kanban Container - Responsive Design */
+.kanban-container {
+  display: flex !important;
+  gap: var(--spacing-md) !important;
+  overflow-x: auto !important;
+  padding: var(--spacing-sm) !important;
+  scroll-behavior: smooth !important;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1200px) {
+  .kanban-container {
+    gap: var(--spacing-sm) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .kanban-container {
+    gap: 6px !important;
+    padding: 4px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kanban-container {
+    gap: 4px !important;
+    padding: 2px !important;
+  }
+}
+
+/* Kanban Columns - Ultra Responsive */
+.kanban-column {
+  min-width: 220px !important;
+  max-width: 280px !important;
+  background: var(--card-background) !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-sm) !important;
+  flex-shrink: 0 !important;
+  transition: var(--transition-fast) !important;
+}
+
+/* Responsive column widths */
+@media (max-width: 1200px) {
+  .kanban-column {
+    min-width: 200px !important;
+    max-width: 240px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .kanban-column {
+    min-width: 180px !important;
+    max-width: 200px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kanban-column {
+    min-width: 160px !important;
+    max-width: 180px !important;
+  }
+}
+
+/* Column Headers - Identical to image */
+.kanban-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
+  margin: -1px -1px 0 -1px !important;
+  position: relative !important;
+  flex-wrap: wrap !important;
+  gap: var(--spacing-xs) !important;
+}
+
+@media (max-width: 768px) {
+  .kanban-header {
+    padding: var(--spacing-sm) var(--spacing-md) !important;
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kanban-header {
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+}
+
+.kanban-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: white !important;
+  flex: 1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+@media (max-width: 768px) {
+  .kanban-title {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kanban-title {
+    font-size: 10px !important;
+  }
+}
+
+.kanban-count {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  padding: 2px 6px !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  min-width: 20px !important;
+  text-align: center !important;
+}
+
+@media (max-width: 768px) {
+  .kanban-count {
+    font-size: 10px !important;
+    padding: 1px 4px !important;
+  }
+}
+
+.kanban-subtitle {
+  font-size: 11px !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-weight: 400 !important;
+}
+
+@media (max-width: 768px) {
+  .kanban-subtitle {
+    font-size: 9px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kanban-subtitle {
+    display: none !important;
+  }
+}
+
+/* Kanban Cards Container */
+.kanban-cards {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-sm) !important;
+  padding: var(--spacing-md) !important;
+  min-height: 100px !important;
+  max-height: calc(100vh - 300px) !important;
+  overflow-y: auto !important;
+}
+
+@media (max-width: 768px) {
+  .kanban-cards {
+    padding: var(--spacing-sm) !important;
+    gap: 6px !important;
+    max-height: calc(100vh - 250px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kanban-cards {
+    padding: 6px !important;
+    gap: 4px !important;
+    max-height: calc(100vh - 200px) !important;
+  }
+}
+
+/* Contact Cards - Identical to image design */
+.contact-card {
+  background: var(--card-background) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  padding: var(--spacing-md) !important;
+  margin-bottom: var(--spacing-sm) !important;
+  transition: var(--transition-fast) !important;
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Kanban Contact Cards - Estilo exacto de las imágenes */
+.kanban-contact-card {
+  background: #1a1a1a !important;
+  border: 1px solid #333 !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  margin-bottom: 8px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  position: relative !important;
+}
+
+.kanban-contact-card:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  border-color: #555 !important;
+}
+
+.kanban-contact-card .contact-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 8px !important;
+}
+
+.kanban-contact-card .contact-info {
+  flex: 1 !important;
+  margin-left: 12px !important;
+  min-width: 0 !important;
+}
+
+.kanban-contact-card .contact-name {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #e6edf3 !important;
+  margin-bottom: 2px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.kanban-contact-card .contact-time {
+  font-size: 12px !important;
+  color: #8b949e !important;
+  font-family: monospace !important;
+}
+
+.contact-actions-kanban {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.remove-tag-btn {
+  background: none !important;
+  border: none !important;
+  cursor: pointer !important;
+  padding: 4px !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.remove-tag-btn:hover {
+  background: rgba(248, 81, 73, 0.1) !important;
+  transform: scale(1.1) !important;
+}
+
+.kanban-contact-card .contact-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+  border-top: 1px solid #333 !important;
+}
+
+/* Responsive card padding */
+@media (max-width: 768px) {
+  .contact-card {
+    padding: var(--spacing-sm) !important;
+    margin-bottom: 4px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-card {
+    padding: 6px !important;
+    margin-bottom: 2px !important;
+  }
+}
+
+.contact-card:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.contact-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-sm) !important;
+  margin-bottom: var(--spacing-sm) !important;
+}
+
+@media (max-width: 768px) {
+  .contact-header {
+    gap: 6px !important;
+    margin-bottom: 6px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-header {
+    gap: 4px !important;
+    margin-bottom: 4px !important;
+  }
+}
+
+/* Avatar más compacto como en la imagen */
+.contact-avatar {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: var(--gradient-primary) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: white !important;
+  flex-shrink: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .contact-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-avatar {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 10px !important;
+  }
+}
+
+.contact-info {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+/* Nombre más compacto */
+.contact-name {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 2px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+@media (max-width: 768px) {
+  .contact-name {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-name {
+    font-size: 11px !important;
+  }
+}
+
+/* Teléfono más compacto */
+.contact-phone {
+  font-size: 12px !important;
+  color: var(--text-secondary) !important;
+  font-family: 'SF Mono', Consolas, monospace !important;
+  margin-bottom: var(--spacing-xs) !important;
+}
+
+@media (max-width: 768px) {
+  .contact-phone {
+    font-size: 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-phone {
+    font-size: 9px !important;
+  }
+}
+
+/* Status/description text como en la imagen */
+.contact-status {
+  font-size: 11px !important;
+  color: var(--text-tertiary) !important;
+  margin-bottom: var(--spacing-sm) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+@media (max-width: 768px) {
+  .contact-status {
+    font-size: 10px !important;
+    margin-bottom: 4px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-status {
+    font-size: 9px !important;
+    margin-bottom: 2px !important;
+  }
+}
+
+/* Action buttons como en la imagen */
+.contact-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 4px !important;
+  margin-top: var(--spacing-xs) !important;
+}
+
+@media (max-width: 768px) {
+  .contact-actions {
+    gap: 2px !important;
+    margin-top: 4px !important;
+  }
+}
+
+.contact-action-btn {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: var(--surface-hover) !important;
+  color: var(--text-secondary) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  transition: var(--transition-fast) !important;
+}
+
+@media (max-width: 768px) {
+  .contact-action-btn {
+    width: 20px !important;
+    height: 20px !important;
+    font-size: 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-action-btn {
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 9px !important;
+  }
+}
+
+.contact-action-btn:hover {
+  background: var(--primary-color) !important;
+  color: white !important;
+  transform: scale(1.1) !important;
+}
+
+.contact-action-btn.whatsapp:hover {
+  background: #25d366 !important;
+}
+
+.contact-action-btn.call:hover {
+  background: #0891b2 !important;
+}
+
+.contact-tags {
+  display: flex !important;
+  gap: var(--spacing-xs) !important;
+  flex-wrap: wrap !important;
+  margin-top: var(--spacing-md) !important;
+}
+
+.contact-tag {
+  background: var(--primary-color) !important;
+  color: white !important;
+  padding: var(--spacing-xs) var(--spacing-sm) !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.contact-meta {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-top: var(--spacing-md) !important;
+  padding-top: var(--spacing-md) !important;
+  border-top: 1px solid var(--border-light) !important;
+  font-size: 12px !important;
+  color: var(--text-tertiary) !important;
+}
+
+/* Info del chat actual mejorada */
+.current-chat-info {
+  background: var(--surface-color) !important;
+  padding: var(--spacing-lg) !important;
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--border-color) !important;
+  margin-bottom: var(--spacing-lg) !important;
+}
+
+/* Contenedores de contenido mejorados */
+.tags-container,
+.templates-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-md) !important;
+  max-height: 400px !important;
+  overflow-y: auto !important;
+}
+
+.recent-activity {
+  margin-top: var(--spacing-2xl) !important;
+}
+
+/* Configuración mejorada */
+.setting-group {
+  background: var(--surface-color) !important;
+  padding: var(--spacing-xl) !important;
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.setting-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: var(--spacing-md) 0 !important;
+  border-bottom: 1px solid var(--border-light) !important;
+}
+
+.setting-item:last-child {
+  border-bottom: none !important;
+}
+
+.setting-item label {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  font-weight: 500 !important;
+  color: var(--text-primary) !important;
+  cursor: pointer !important;
+}
+
+/* Botones mejorados */
+.btn-primary,
+.btn-secondary {
+  padding: var(--spacing-md) var(--spacing-xl) !important;
+  border-radius: var(--radius-lg) !important;
+  border: none !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  transition: var(--transition-normal) !important;
+  outline: none !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--spacing-sm) !important;
+}
+
+.btn-primary {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  box-shadow: var(--shadow) !important;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.btn-primary:active {
+  transform: translateY(0) !important;
+}
+
+.btn-secondary {
+  background: var(--surface-color) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.btn-secondary:hover {
+  background: var(--surface-hover) !important;
+  border-color: var(--primary-color) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Modales mejorados - POPUP CENTRADO EN TODA LA PANTALLA */
+.modal {
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  z-index: 999999999 !important;
+  backdrop-filter: blur(15px) !important;
+  animation: fadeIn 0.3s ease-out !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.modal.active {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.modal-content {
+  background: var(--card-background) !important;
+  border-radius: var(--radius-2xl) !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6) !important;
+  width: 500px !important;
+  max-width: 95vw !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border-color) !important;
+  animation: slideInUp 0.3s ease-out !important;
+  position: relative !important;
+  margin: auto !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* =====================================================
+   SECCIÓN DE AUTENTICACIÓN
+   ===================================================== */
+
+.auth-section {
+  background: var(--surface-color) !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  padding: var(--spacing-lg) !important;
+}
+
+.auth-container {
+  position: relative !important;
+}
+
+/* Estado de carga */
+.auth-loading {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: var(--spacing-2xl) !important;
+  text-align: center !important;
+}
+
+.auth-loading-spinner {
+  width: 32px !important;
+  height: 32px !important;
+  border: 3px solid var(--border-color) !important;
+  border-top: 3px solid var(--primary-color) !important;
+  border-radius: 50% !important;
+  animation: spin 1s linear infinite !important;
+  margin-bottom: var(--spacing-md) !important;
+}
+
+.auth-loading-text {
+  color: var(--text-secondary) !important;
+  font-size: 14px !important;
+}
+
+/* Formularios de autenticación */
+.auth-form {
+  animation: fadeIn 0.3s ease-in-out !important;
+}
+
+.auth-header {
+  text-align: center !important;
+  margin-bottom: var(--spacing-xl) !important;
+}
+
+.auth-logo {
+  width: 48px !important;
+  height: 48px !important;
+  background: var(--gradient-primary) !important;
+  border-radius: var(--radius-lg) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 24px !important;
+  margin: 0 auto var(--spacing-md) !important;
+}
+
+.auth-header h3 {
+  color: var(--text-primary) !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  margin-bottom: var(--spacing-sm) !important;
+}
+
+.auth-header p {
+  color: var(--text-secondary) !important;
+  font-size: 14px !important;
+}
+
+/* Grupos de formulario */
+.form-group {
+  margin-bottom: var(--spacing-lg) !important;
+}
+
+.form-group label {
+  display: block !important;
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+  margin-bottom: var(--spacing-sm) !important;
+  font-size: 14px !important;
+}
+
+.form-group input {
+  width: 100% !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--card-background) !important;
+  color: var(--text-primary) !important;
+  font-size: 14px !important;
+  transition: var(--transition-fast) !important;
+  outline: none !important;
+}
+
+.form-group input:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.1) !important;
+}
+
+.form-group input::placeholder {
+  color: var(--text-tertiary) !important;
+}
+
+/* Botones de formulario */
+.btn-full {
+  width: 100% !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.btn-loading {
+  position: absolute !important;
+  right: var(--spacing-md) !important;
+  animation: spin 1s linear infinite !important;
+}
+
+/* Footer de autenticación */
+.auth-footer {
+  margin-top: var(--spacing-xl) !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-md) !important;
+}
+
+.btn-link {
+  background: none !important;
+  border: none !important;
+  color: var(--primary-color) !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: var(--transition-fast) !important;
+  text-decoration: underline !important;
+  padding: var(--spacing-sm) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.btn-link:hover {
+  color: var(--primary-light) !important;
+  background: rgba(0, 168, 132, 0.1) !important;
+}
+
+/* Usuario autenticado */
+.auth-user {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: var(--spacing-md) !important;
+  background: var(--card-background) !important;
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--border-color) !important;
+  animation: fadeIn 0.3s ease-in-out !important;
+}
+
+.user-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-md) !important;
+  flex: 1 !important;
+}
+
+.user-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  background: var(--gradient-primary) !important;
+  border-radius: var(--radius-md) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: white !important;
+}
+
+.user-details {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.user-name {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  margin-bottom: var(--spacing-xs) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.user-plan {
+  color: var(--text-secondary) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.user-actions {
+  display: flex !important;
+  gap: var(--spacing-sm) !important;
+}
+
+/* Responsive para autenticación */
+@media (max-width: 768px) {
+  .auth-section {
+    padding: var(--spacing-md) !important;
+  }
+  
+  .auth-user {
+    flex-direction: column !important;
+    gap: var(--spacing-md) !important;
+    text-align: center !important;
+  }
+  
+  .user-actions {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* Estados de error y éxito */
+.auth-error {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+  padding: var(--spacing-md) !important;
+  border-radius: var(--radius-md) !important;
+  margin-bottom: var(--spacing-lg) !important;
+  font-size: 14px !important;
+}
+
+.auth-success {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  color: #6ee7b7 !important;
+  padding: var(--spacing-md) !important;
+  border-radius: var(--radius-md) !important;
+  margin-bottom: var(--spacing-lg) !important;
+  font-size: 14px !important;
+}
+
+.auth-error-content {
+  text-align: center !important;
+  padding: var(--spacing-xl) !important;
+}
+
+.auth-error-icon {
+  font-size: 48px !important;
+  margin-bottom: var(--spacing-md) !important;
+}
+
+.auth-error-content h3 {
+  color: var(--text-primary) !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  margin-bottom: var(--spacing-sm) !important;
+}
+
+.auth-error-content p {
+  color: var(--text-secondary) !important;
+  font-size: 14px !important;
+  margin-bottom: var(--spacing-lg) !important;
+  line-height: 1.5 !important;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: var(--spacing-2xl) !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  background: var(--surface-color) !important;
+}
+
+.modal-header h3 {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+}
+
+.modal-close {
+  background: var(--surface-hover) !important;
+  border: none !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  color: var(--text-secondary) !important;
+  font-size: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: var(--transition-fast) !important;
+}
+
+.modal-close:hover {
+  background: var(--border-color) !important;
+  color: var(--text-primary) !important;
+  transform: scale(1.1) !important;
+}
+
+/* Cuerpo del modal de contacto mejorado */
+#contactModal .modal-body {
+  padding: 32px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
+  background: var(--card-background) !important;
+}
+
+/* Grupo de campos mejorado */
+#contactModal .form-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+#contactModal .form-group label {
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  font-size: 14px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  opacity: 0.9 !important;
+}
+
+#contactModal .modal-body input,
+#contactModal .modal-body textarea,
+#contactModal .modal-body select {
+  padding: 16px 20px !important;
+  border: 2px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  background: var(--surface-color) !important;
+  color: var(--text-primary) !important;
+  font-size: 16px !important;
+  font-family: inherit !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  resize: vertical !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+#contactModal .modal-body input:focus,
+#contactModal .modal-body textarea:focus,
+#contactModal .modal-body select:focus {
+  outline: none !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(0,0,0,0.1),
+    0 0 0 4px rgba(0, 168, 132, 0.15),
+    0 8px 20px rgba(0, 168, 132, 0.1) !important;
+  transform: translateY(-2px) !important;
+  background: var(--card-background) !important;
+}
+
+#contactModal .modal-body input::placeholder,
+#contactModal .modal-body textarea::placeholder {
+  color: var(--text-tertiary) !important;
+  opacity: 0.7 !important;
+}
+
+/* Footer del modal de contacto mejorado */
+#contactModal .modal-footer {
+  display: flex !important;
+  gap: 16px !important;
+  justify-content: flex-end !important;
+  padding: 28px 32px !important;
+  border-top: 1px solid var(--border-light) !important;
+  background: linear-gradient(180deg, var(--surface-color) 0%, var(--card-background) 100%) !important;
+}
+
+#contactModal .modal-footer .btn-secondary {
+  background: var(--surface-color) !important;
+  color: var(--text-secondary) !important;
+  border: 2px solid var(--border-color) !important;
+  padding: 14px 28px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  cursor: pointer !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+#contactModal .modal-footer .btn-secondary:hover {
+  background: var(--border-color) !important;
+  color: var(--text-primary) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2) !important;
+}
+
+#contactModal .modal-footer .btn-primary {
+  background: linear-gradient(135deg, #00a884 0%, #25d366 100%) !important;
+  color: white !important;
+  border: 2px solid transparent !important;
+  padding: 14px 32px !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  cursor: pointer !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  box-shadow: 0 4px 12px rgba(0, 168, 132, 0.3) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+#contactModal .modal-footer .btn-primary::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent) !important;
+  transition: all 0.5s ease !important;
+}
+
+#contactModal .modal-footer .btn-primary:hover::before {
+  left: 100% !important;
+}
+
+#contactModal .modal-footer .btn-primary:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 12px 28px rgba(0, 168, 132, 0.4) !important;
+  background: linear-gradient(135deg, #00bf9f 0%, #25d366 100%) !important;
+}
+
+/* Scrollbar personalizado */
+.wa-crm-sidebar::-webkit-scrollbar,
+.sidebar-content::-webkit-scrollbar,
+.kanban-container::-webkit-scrollbar,
+.tags-container::-webkit-scrollbar,
+.templates-container::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+.wa-crm-sidebar::-webkit-scrollbar-track,
+.sidebar-content::-webkit-scrollbar-track,
+.kanban-container::-webkit-scrollbar-track,
+.tags-container::-webkit-scrollbar-track,
+.templates-container::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.wa-crm-sidebar::-webkit-scrollbar-thumb,
+.sidebar-content::-webkit-scrollbar-thumb,
+.kanban-container::-webkit-scrollbar-thumb,
+.tags-container::-webkit-scrollbar-thumb,
+.templates-container::-webkit-scrollbar-thumb {
+  background: var(--border-color) !important;
+  border-radius: 3px !important;
+  transition: var(--transition-fast) !important;
+}
+
+.wa-crm-sidebar::-webkit-scrollbar-thumb:hover,
+.sidebar-content::-webkit-scrollbar-thumb:hover,
+.kanban-container::-webkit-scrollbar-thumb:hover,
+.tags-container::-webkit-scrollbar-thumb:hover,
+.templates-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary) !important;
+}
+
+/* Estados y mensajes */
+.coming-soon {
+  text-align: center !important;
+  color: var(--text-secondary) !important;
+  font-style: italic !important;
+  padding: var(--spacing-3xl) var(--spacing-xl) !important;
+  background: var(--surface-color) !important;
+  border-radius: var(--radius-xl) !important;
+  border: 2px dashed var(--border-color) !important;
+}
+
+.empty-state {
+  text-align: center !important;
+  padding: var(--spacing-3xl) !important;
+  color: var(--text-secondary) !important;
+}
+
+.empty-state-icon {
+  font-size: 48px !important;
+  margin-bottom: var(--spacing-lg) !important;
+  opacity: 0.5 !important;
+}
+
+.empty-state-text {
+  font-size: 16px !important;
+  margin-bottom: var(--spacing-md) !important;
+}
+
+.empty-state-subtext {
+  font-size: 14px !important;
+  color: var(--text-tertiary) !important;
+}
+
+/* Responsive Design - Ultra Responsive para todas las pantallas */
+@media (max-width: 1200px) {
+  .wa-crm-sidebar {
+    width: 340px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .wa-crm-sidebar {
+    width: 320px !important;
+  }
+  
+  .kanban-header-main {
+    padding: var(--spacing-md) !important;
+  }
+  
+  .kanban-header-main h2 {
+    font-size: 18px !important;
+  }
+  
+  .modal-content {
+    min-width: 300px !important;
+    margin: var(--spacing-md) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .wa-crm-sidebar {
+    width: 300px !important;
+  }
+  
+  .kanban-header-main {
+    padding: var(--spacing-sm) !important;
+    flex-direction: column !important;
+    gap: var(--spacing-sm) !important;
+    align-items: flex-start !important;
+  }
+  
+  .kanban-header-main h2 {
+    font-size: 16px !important;
+  }
+  
+  .kanban-actions {
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+  
+  .modal-content {
+    min-width: 280px !important;
+    margin: var(--spacing-sm) !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .wa-crm-sidebar {
+    width: 280px !important;
+  }
+  
+  .kanban-header-main h2 {
+    font-size: 14px !important;
+  }
+  
+  .btn-sm {
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+  }
+}
+
+/* Scrollbar en móvil */
+@media (max-width: 768px) {
+  .kanban-container::-webkit-scrollbar {
+    height: 4px !important;
+  }
+  
+  .kanban-cards::-webkit-scrollbar {
+    width: 4px !important;
+  }
+}
+
+/* Estados de carga */
+.loading {
+  opacity: 0.6 !important;
+  pointer-events: none !important;
+  position: relative !important;
+}
+
+.loading::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: 24px !important;
+  height: 24px !important;
+  border: 3px solid var(--border-color) !important;
+  border-top: 3px solid var(--primary-color) !important;
+  border-radius: 50% !important;
+  animation: spin 1s linear infinite !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg) !important; }
+  100% { transform: translate(-50%, -50%) rotate(360deg) !important; }
+}
+
+/* Efectos de hover mejorados */
+.interactive {
+  transition: var(--transition-normal) !important;
+}
+
+.interactive:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Badges y etiquetas */
+.badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: var(--spacing-xs) var(--spacing-sm) !important;
+  background: var(--primary-color) !important;
+  color: white !important;
+  border-radius: var(--radius-md) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.badge.success { background: #10b981 !important; }
+.badge.warning { background: #f59e0b !important; }
+.badge.error { background: #ef4444 !important; }
+.badge.info { background: #3b82f6 !important; }
+
+/* Modo compacto */
+.wa-crm-sidebar.compact {
+  font-size: 13px !important;
+}
+
+.wa-crm-sidebar.compact .contact-card {
+  padding: var(--spacing-md) !important;
+}
+
+.wa-crm-sidebar.compact .stat-card {
+  padding: var(--spacing-md) !important;
+}
+
+.wa-crm-sidebar.compact .stat-number {
+  font-size: 24px !important;
+}
+
+/* Filtros collapse cuando está minimizado */
+.wa-crm-sidebar.collapsed .filters-section {
+  display: none !important;
+}
+
+/* Animaciones adicionales */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Mejoras de accesibilidad */
+.nav-item:focus,
+.btn-primary:focus,
+.btn-secondary:focus,
+.filter-tag:focus {
+  outline: 2px solid var(--primary-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* Vista previa de plantillas mejorada */
+#templatePreview {
+  font-family: inherit !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+}
+
+/* MODAL DE CONTACTO - POPUP CENTRADO PERFECTO */
+#contactModal {
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.88) !important;
+  z-index: 999999999 !important;
+  backdrop-filter: blur(20px) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+}
+
+#contactModal.active {
+  display: flex !important;
+}
+
+#contactModal .modal-content {
+  background: var(--card-background) !important;
+  border-radius: 20px !important;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  width: 520px !important;
+  max-width: 95vw !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border-color) !important;
+  animation: modalSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  position: relative !important;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Header del modal de contacto mejorado */
+#contactModal .modal-header {
+  background: linear-gradient(135deg, #00a884 0%, #00bf9f 50%, #25d366 100%) !important;
+  color: white !important;
+  padding: 28px 32px !important;
+  border-bottom: none !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+#contactModal .modal-header::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%) !important;
+  animation: shimmer 3s infinite !important;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+#contactModal .modal-header h3 {
+  color: white !important;
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+  position: relative !important;
+  z-index: 1 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+#contactModal .modal-header h3::before {
+  content: '👤' !important;
+  font-size: 28px !important;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) !important;
+}
+
+#contactModal .modal-close {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: white !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  font-size: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  position: relative !important;
+  z-index: 2 !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+#contactModal .modal-close:hover {
+  background: rgba(248, 113, 113, 0.9) !important;
+  border-color: rgba(248, 113, 113, 1) !important;
+  transform: scale(1.15) rotate(90deg) !important;
+  box-shadow: 0 8px 20px rgba(248, 113, 113, 0.4) !important;
+}
+
+/* MODAL DE ETIQUETAS - POPUP CENTRADO PERFECTO */
+#tagModal {
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  z-index: 999999999 !important;
+  backdrop-filter: blur(10px) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
+}
+
+#tagModal.active {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+#tagModal .modal-content {
+  transform: scale(0.95) translateY(20px) !important;
+  transition: transform 0.3s ease !important;
+  opacity: 0 !important;
+}
+
+#tagModal.active .modal-content {
+  transform: scale(1) translateY(0) !important;
+  opacity: 1 !important;
+}
+
+/* Header del modal de etiquetas */
+#tagModal .modal-header {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%) !important;
+  color: white !important;
+  padding: 24px !important;
+  border-bottom: none !important;
+}
+
+#tagModal .modal-header h3 {
+  color: white !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+}
+
+#tagModal .modal-close {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  border: none !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  font-size: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+}
+
+#tagModal .modal-close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.1) !important;
+}
+
+/* KANBAN FULLSCREEN - DRAG AND DROP Y COLUMNA FIJA */
+
+/* Efectos de drag and drop */
+.contact-card-fullscreen[draggable="true"] {
+  cursor: grab !important;
+}
+
+.contact-card-fullscreen[draggable="true"]:active {
+  cursor: grabbing !important;
+}
+
+/* Columna sticky para "Todos os contatos" */
+.kanban-column-fullscreen[data-column-id="all"] {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 1000 !important;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.4) !important;
+}
+
+/* Asegurar que el scroll horizontal funcione correctamente */
+.kanban-fullscreen-container-custom {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scroll-behavior: smooth !important;
+}
+
+/* Mejorar el indicador visual de drag */
+.contact-card-fullscreen.dragging {
+  opacity: 0.5 !important;
+  transform: rotate(5deg) !important;
+  z-index: 1000 !important;
+}
+
+/* Hover states para mejor UX */
+.kanban-cards-fullscreen:hover {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  transition: background-color 0.2s ease !important;
+}
+
+/* Indicador visual de zona de drop activa - MEJORADO */
+.kanban-cards-fullscreen.drag-over {
+  background-color: rgba(88, 166, 255, 0.1) !important;
+  border: 2px dashed #58a6ff !important;
+  border-radius: 8px !important;
+  position: relative !important;
+}
+
+.kanban-cards-fullscreen.drag-over::before {
+  content: "📋 Soltar aquí" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background: linear-gradient(135deg, #58a6ff 0%, #0969da 100%) !important;
+  color: white !important;
+  padding: 20px 32px !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+  box-shadow: 0 8px 24px rgba(88, 166, 255, 0.4) !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  animation: dropIndicatorPulse 1s ease-in-out infinite !important;
+}
+
+@keyframes dropIndicatorPulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+/* Asegurar que el contenedor tenga posición relativa */
+.kanban-cards-fullscreen {
+  position: relative !important;
+}
+
+/* Animación para el contacto mientras se arrastra */
+.contact-card-fullscreen.dragging {
+  opacity: 0.7 !important;
+  transform: rotate(3deg) scale(1.05) !important;
+  z-index: 1000 !important;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.6) !important;
+  border-color: #58a6ff !important;
+}
+
+/* Pulso en las columnas cuando hay drag activo */
+@keyframes dragPulse {
+  0% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(88, 166, 255, 0.1); }
+  100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0); }
+}
+
+.kanban-column-fullscreen.drag-active {
+  animation: dragPulse 2s infinite !important;
+} 
+
+/* ========================================
+   KANBAN FULLSCREEN MODE - COMPLETE REPLACEMENT
+   ======================================== */
+
+/* Hide WhatsApp Web completely when kanban is active */
+body.kanban-fullscreen-mode #app,
+body.kanban-fullscreen-mode .wa-crm-sidebar,
+body:has(.kanban-fullscreen.active) #app,
+body:has(.kanban-fullscreen.active) .wa-crm-sidebar {
+  display: none !important;
+}
+
+/* Ensure kanban takes full screen */
+body.kanban-fullscreen-mode {
+  overflow: hidden !important;
+}
+
+/* Kanban Fullscreen - Complete Screen Replacement */
+.kanban-fullscreen {
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #0d1117 !important;
+  z-index: 999999999 !important;
+  overflow: hidden !important;
+  animation: fadeIn 0.3s ease-out !important;
+  color: #e6edf3 !important;
+}
+
+.kanban-fullscreen.active {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Ensure content is visible */
+.kanban-fullscreen * {
+  color: inherit !important;
+}
+
+/* Fullscreen Header - Complete Top Bar */
+.kanban-fullscreen-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: var(--spacing-xl) var(--spacing-2xl) !important;
+  background: #161b22 !important;
+  color: #e6edf3 !important;
+  border-bottom: 1px solid #21262d !important;
+  flex-shrink: 0 !important;
+  min-height: 80px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  width: 100% !important;
+}
+
+/* Ensure all buttons in header are visible */
+.kanban-fullscreen-header .btn-primary,
+.kanban-fullscreen-header .btn-secondary {
+  background: #238636 !important;
+  color: #ffffff !important;
+  border: 1px solid #30363d !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.kanban-fullscreen-header .btn-secondary {
+  background: #21262d !important;
+  color: #e6edf3 !important;
+}
+
+.kanban-fullscreen-header .btn-primary:hover,
+.kanban-fullscreen-header .btn-secondary:hover {
+  opacity: 0.8 !important;
+  transform: translateY(-1px) !important;
+}
+
+.kanban-fullscreen-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-lg) !important;
+}
+
+.kanban-fullscreen-title h1 {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  color: #e6edf3 !important;
+}
+
+.kanban-fullscreen-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-md) !important;
+}
+
+/* Back Button - Very Prominent */
+.kanban-back-btn {
+  background: #00a884 !important;
+  border: none !important;
+  color: #ffffff !important;
+  padding: var(--spacing-md) var(--spacing-xl) !important;
+  border-radius: var(--radius-lg) !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  transition: var(--transition-fast) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-md) !important;
+  margin-right: var(--spacing-xl) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
+  min-width: 120px !important;
+}
+
+.kanban-back-btn:hover {
+  background: var(--primary-dark) !important;
+  transform: scale(1.05) translateY(-1px) !important;
+  box-shadow: var(--shadow-xl) !important;
+}
+
+.kanban-close-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: none !important;
+  color: #ffffff !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+  transition: var(--transition-fast) !important;
+}
+
+.kanban-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1) !important;
+}
+
+/* Fullscreen Content - Full Screen Usage */
+.kanban-fullscreen-content {
+  flex: 1 !important;
+  overflow: hidden !important;
+  padding: var(--spacing-2xl) !important;
+  background: #0d1117 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Fullscreen Container - Optimized for Full Screen */
+.kanban-fullscreen-container {
+  display: flex !important;
+  gap: var(--spacing-xl) !important;
+  height: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: var(--spacing-lg) !important;
+  scroll-behavior: smooth !important;
+  width: 100% !important;
+}
+
+/* Fullscreen Columns - Optimized for Full Screen View */
+.kanban-fullscreen-column {
+  min-width: 350px !important;
+  max-width: 400px !important;
+  flex: 1 !important;
+  background: #161b22 !important;
+  border-radius: var(--radius-xl) !important;
+  border: 1px solid #21262d !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  height: fit-content !important;
+  max-height: calc(100vh - 200px) !important;
+}
+
+/* Fullscreen Column Headers - Larger */
+.kanban-fullscreen-column-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: var(--spacing-xl) var(--spacing-2xl) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
+  margin: -1px -1px 0 -1px !important;
+  flex-shrink: 0 !important;
+  min-height: 70px !important;
+}
+
+.kanban-fullscreen-column-title {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.kanban-fullscreen-column-count {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  padding: 6px 12px !important;
+  border-radius: var(--radius-md) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  min-width: 30px !important;
+  text-align: center !important;
+}
+
+.kanban-fullscreen-column-subtitle {
+  font-size: 13px !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-weight: 400 !important;
+  margin-left: var(--spacing-sm) !important;
+}
+
+/* Fullscreen Cards Container - Larger */
+.kanban-fullscreen-cards {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: var(--spacing-xl) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-lg) !important;
+}
+
+/* Fullscreen Contact Cards - Larger and More Detailed */
+.kanban-fullscreen-card {
+  background: #21262d !important;
+  border: 1px solid #30363d !important;
+  border-radius: var(--radius-xl) !important;
+  padding: var(--spacing-xl) !important;
+  transition: var(--transition-fast) !important;
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  color: #e6edf3 !important;
+}
+
+/* Ensure all text in cards is visible */
+.kanban-fullscreen-card * {
+  color: inherit !important;
+}
+
+.kanban-fullscreen-name {
+  color: #e6edf3 !important;
+  font-weight: 600 !important;
+}
+
+.kanban-fullscreen-phone {
+  color: #8b949e !important;
+  font-size: 12px !important;
+}
+
+.kanban-fullscreen-status {
+  color: #7d8590 !important;
+}
+
+.kanban-fullscreen-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* Drag & Drop Styles */
+.kanban-fullscreen-card[draggable="true"] {
+  cursor: move !important;
+}
+
+.kanban-fullscreen-card[draggable="true"]:hover {
+  border-color: #58a6ff !important;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3) !important;
+}
+
+.kanban-fullscreen-cards {
+  transition: background-color 0.2s ease !important;
+}
+
+.kanban-fullscreen-cards.drag-over {
+  background-color: rgba(88, 166, 255, 0.1) !important;
+  border: 2px dashed #58a6ff !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+.kanban-fullscreen-card-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-lg) !important;
+  margin-bottom: var(--spacing-lg) !important;
+}
+
+.kanban-fullscreen-avatar {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: white !important;
+  flex-shrink: 0 !important;
+}
+
+.kanban-fullscreen-info {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.kanban-fullscreen-name {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #f0f6fc !important;
+  margin-bottom: var(--spacing-sm) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.kanban-fullscreen-phone {
+  font-size: 14px !important;
+  color: #8b949e !important;
+  font-family: 'SF Mono', Consolas, monospace !important;
+  margin-bottom: var(--spacing-sm) !important;
+}
+
+.kanban-fullscreen-status {
+  font-size: 13px !important;
+  color: #8b949e !important;
+  margin-bottom: var(--spacing-lg) !important;
+  line-height: 1.5 !important;
+  display: -webkit-box !important;
+  line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+.kanban-fullscreen-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: var(--spacing-sm) !important;
+  margin-top: var(--spacing-lg) !important;
+  padding-top: var(--spacing-lg) !important;
+  border-top: 1px solid #30363d !important;
+}
+
+.kanban-fullscreen-action-btn {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: #30363d !important;
+  color: #8b949e !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  transition: var(--transition-fast) !important;
+}
+
+.kanban-fullscreen-action-btn:hover {
+  background: var(--primary-color) !important;
+  color: white !important;
+  transform: scale(1.1) !important;
+}
+
+.kanban-fullscreen-action-btn.whatsapp:hover {
+  background: #25d366 !important;
+}
+
+.kanban-fullscreen-action-btn.call:hover {
+  background: #0891b2 !important;
+}
+
+/* Add Contact Button in Columns */
+.kanban-add-contact {
+  padding: var(--spacing-lg) !important;
+  margin: var(--spacing-lg) !important;
+  background: #30363d !important;
+  border: 2px dashed #484f58 !important;
+  border-radius: var(--radius-lg) !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  transition: var(--transition-fast) !important;
+  color: #8b949e !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.kanban-add-contact:hover {
+  background: #21262d !important;
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Responsive for Full Screen */
+@media (max-width: 1600px) {
+  .kanban-fullscreen-column {
+    min-width: 300px !important;
+    max-width: 350px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  .kanban-fullscreen-column {
+    min-width: 280px !important;
+    max-width: 320px !important;
+  }
+  
+  .kanban-fullscreen-content {
+    padding: var(--spacing-lg) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .kanban-fullscreen-header {
+    padding: var(--spacing-lg) !important;
+    flex-direction: column !important;
+    gap: var(--spacing-md) !important;
+    align-items: flex-start !important;
+  }
+  
+  .kanban-fullscreen-title h1 {
+    font-size: 24px !important;
+  }
+  
+  .kanban-fullscreen-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+  
+  .kanban-fullscreen-column {
+    min-width: 250px !important;
+    max-width: 280px !important;
+  }
+}
+
+/* Scrollbar for fullscreen */
+.kanban-fullscreen-container::-webkit-scrollbar {
+  height: 8px !important;
+}
+
+.kanban-fullscreen-container::-webkit-scrollbar-track {
+  background: #21262d !important;
+  border-radius: 4px !important;
+}
+
+.kanban-fullscreen-container::-webkit-scrollbar-thumb {
+  background: #484f58 !important;
+  border-radius: 4px !important;
+}
+
+.kanban-fullscreen-container::-webkit-scrollbar-thumb:hover {
+  background: #6e7681 !important;
+}
+
+.kanban-fullscreen-cards::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.kanban-fullscreen-cards::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.kanban-fullscreen-cards::-webkit-scrollbar-thumb {
+  background: #484f58 !important;
+  border-radius: 3px !important;
+}
+
+.kanban-fullscreen-cards::-webkit-scrollbar-thumb:hover {
+  background: #6e7681 !important;
+}
+
+/* Kanban Summary in Sidebar */
+.kanban-summary {
+  padding: var(--spacing-lg) !important;
+  text-align: center !important;
+  background: var(--surface-color) !important;
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.kanban-summary p {
+  margin-bottom: var(--spacing-md) !important;
+  color: var(--text-primary) !important;
+  font-size: 14px !important;
+}
+
+.kanban-summary strong {
+  color: var(--primary-color) !important;
+  font-weight: 700 !important;
+}
+
+/* Animation for fullscreen */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* =====================================
+   KANBAN OVERLAY FULLSCREEN (no-modules)
+   ===================================== */
+#kanbanOverlay {
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #0d1117 !important;
+  z-index: 999999999 !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.kanban-overlay-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 20px 32px !important;
+  background: #161b22 !important;
+  border-bottom: 1px solid #21262d !important;
+  flex-shrink: 0 !important;
+}
+
+.kanban-overlay-title {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #e6edf3 !important;
+  margin: 0 !important;
+}
+
+.kanban-back-btn,
+.kanban-close-btn {
+  background: #00a884 !important;
+  border: none !important;
+  color: #ffffff !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  transition: transform 0.2s ease, opacity 0.2s ease !important;
+}
+
+.kanban-close-btn {
+  background: rgba(255,255,255,0.1) !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 18px !important;
+}
+
+.kanban-back-btn:hover,
+.kanban-close-btn:hover {
+  transform: scale(1.05) !important;
+  opacity: 0.9 !important;
+}
+
+.kanban-overlay-content {
+  flex: 1 !important;
+  display: flex !important;
+  gap: 24px !important;
+  overflow-x: auto !important;
+  padding: 24px !important;
+}
+
+.kanban-overlay-column {
+  min-width: 320px !important;
+  max-width: 380px !important;
+  background: #161b22 !important;
+  border: 1px solid #21262d !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: calc(100vh - 160px) !important;
+}
+
+.kanban-overlay-column-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 16px 20px !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.kanban-overlay-count {
+  background: rgba(255, 255, 255, 0.2) !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+}
+
+.kanban-overlay-cards {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  padding: 16px !important;
+}
+
+.kanban-overlay-card {
+  background: #21262d !important;
+  border: 1px solid #30363d !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+  transition: transform 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.kanban-overlay-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: #00a884 !important;
+}
+
+.ko-card-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  background: #00a884 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+.ko-card-info {
+  flex: 1 !important;
+  overflow: hidden !important;
+}
+
+.ko-card-name {
+  font-weight: 600 !important;
+  color: #e6edf3 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.ko-card-phone {
+  font-size: 12px !important;
+  color: #8b949e !important;
+}
+
+/* ===================================== */
+/* ===================================== */
+
+/* Usuario autenticado minimalista */
+.user-minimal {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  background: var(--surface-color) !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  padding: 8px 16px !important;
+  min-height: 48px !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+.user-minimal-avatar {
+  width: 32px !important;
+  height: 32px !important;
+  background: var(--gradient-primary) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+.user-minimal-email {
+  color: var(--text-primary) !important;
+  font-size: 13px !important;
+  max-width: 120px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.user-minimal-logout {
+  background: none !important;
+  border: none !important;
+  color: var(--primary-color) !important;
+  font-size: 18px !important;
+  cursor: pointer !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  transition: background 0.2s;
+}
+.user-minimal-logout:hover {
+  background: var(--primary-color) !important;
+  color: #fff !important;
+}
+@media (max-width: 600px) {
+  .user-minimal-email {
+    max-width: 60px !important;
+    font-size: 12px !important;
+  }
+  .user-minimal {
+    padding: 6px 8px !important;
+  }
+}
+
+/* Kanban Fullscreen - Estilo similar a la imagen */
+.kanban-fullscreen {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.kanban-fullscreen-column {
+    flex: 1;
+    background-color: #2c2c2c;
+    margin: 0 10px;
+    border-radius: 8px;
+    padding: 15px;
+    min-width: 250px;
+    max-width: 300px;
+    overflow-y: auto;
+}
+
+.kanban-fullscreen-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #3c3c3c;
+    padding-bottom: 10px;
+}
+
+.kanban-fullscreen-column-title {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.kanban-fullscreen-column-count {
+    background-color: #3c3c3c;
+    color: #8b8b8b;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.kanban-fullscreen-card {
+    background-color: #3c3c3c;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    cursor: move;
+    transition: transform 0.2s;
+}
+
+.kanban-fullscreen-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.kanban-fullscreen-card.dragging {
+    opacity: 0.7;
+    transform: rotate(3deg);
+}
+
+.kanban-fullscreen-card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.kanban-fullscreen-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+    overflow: hidden;
+}
+
+.kanban-fullscreen-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.kanban-fullscreen-info {
+    flex-grow: 1;
+}
+
+.kanban-fullscreen-name {
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.kanban-fullscreen-phone {
+    color: #8b8b8b;
+    font-size: 12px;
+}
+
+.kanban-fullscreen-status {
+    color: #8b8b8b;
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.kanban-fullscreen-actions {
+    display: flex;
+    justify-content: space-between;
+}
+
+.kanban-fullscreen-action-btn {
+    background-color: #4c4c4c;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.kanban-fullscreen-action-btn:hover {
+    background-color: #5c5c5c;
+}
+
+.kanban-fullscreen-column.drag-over {
+    border: 2px dashed #4c4c4c;
+}
+
+/* Kanban Fullscreen - Estilo mejorado */
+.kanban-fullscreen {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #121212;
+    z-index: 9999;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.kanban-fullscreen.active {
+    display: flex;
+    flex-direction: column;
+}
+
+.kanban-fullscreen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #1e1e1e;
+    border-bottom: 1px solid #2c2c2c;
+}
+
+.kanban-fullscreen-title h1 {
+    color: #ffffff;
+    margin: 0;
+    font-size: 24px;
+}
+
+.kanban-fullscreen-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.kanban-fullscreen-content {
+    display: flex;
+    flex-grow: 1;
+    overflow-x: auto;
+    padding: 20px;
+    gap: 20px;
+}
+
+.kanban-fullscreen-column {
+    flex: 1;
+    min-width: 280px;
+    max-width: 320px;
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.kanban-fullscreen-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: #2c2c2c;
+    border-bottom: 1px solid #3c3c3c;
+}
+
+.kanban-fullscreen-column-title {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.kanban-fullscreen-column-count {
+    background-color: #3c3c3c;
+    color: #8b8b8b;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.kanban-fullscreen-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.kanban-fullscreen-card {
+    background-color: #2c2c2c;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    cursor: move;
+    transition: all 0.2s ease;
+}
+
+.kanban-fullscreen-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.kanban-fullscreen-card.dragging {
+    opacity: 0.7;
+    transform: rotate(2deg);
+}
+
+.kanban-fullscreen-card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.kanban-fullscreen-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.kanban-fullscreen-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.kanban-fullscreen-info {
+    flex-grow: 1;
+}
+
+.kanban-fullscreen-name {
+    font-weight: bold;
+    color: #ffffff;
+    font-size: 16px;
+}
+
+.kanban-fullscreen-phone {
+    color: #8b8b8b;
+    font-size: 14px;
+}
+
+.kanban-fullscreen-status {
+    color: #8b8b8b;
+    font-size: 12px;
+}
+
+.kanban-fullscreen-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.kanban-fullscreen-action-btn {
+    background-color: #3c3c3c;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.kanban-fullscreen-action-btn:hover {
+    background-color: #4c4c4c;
+}
+
+.kanban-add-contact {
+    background-color: #2c2c2c;
+    border: 2px dashed #3c3c3c;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    color: #8b8b8b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.kanban-add-contact:hover {
+    background-color: #3c3c3c;
+    color: #ffffff;
+}
+
+.kanban-fullscreen-column.drag-over {
+    border: 2px dashed #4c4c4c;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .kanban-fullscreen-column {
+        min-width: 250px;
+        max-width: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    .kanban-fullscreen-content {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .kanban-fullscreen-column {
+        min-width: 100%;
+        max-width: 100%;
+    }
+}
+
+/* Kanban Fullscreen - Estilos corregidos */
+.kanban-fullscreen {
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: #121212 !important;
+    z-index: 99999 !important;
+    overflow: hidden !important;
+    transition: all 0.3s ease !important;
+    flex-direction: column !important;
+}
+
+.kanban-fullscreen.active {
+    display: flex !important;
+}
+
+.kanban-fullscreen-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 20px !important;
+    background-color: #1e1e1e !important;
+    border-bottom: 1px solid #2c2c2c !important;
+    flex-shrink: 0 !important;
+}
+
+.kanban-fullscreen-title h1 {
+    color: #ffffff !important;
+    margin: 0 !important;
+    font-size: 24px !important;
+}
+
+.kanban-fullscreen-actions {
+    display: flex !important;
+    gap: 10px !important;
+}
+
+.kanban-fullscreen-content {
+    display: flex !important;
+    flex: 1 !important;
+    overflow-x: auto !important;
+    padding: 20px !important;
+    gap: 20px !important;
+    min-height: 0 !important;
+}
+
+.kanban-fullscreen-column {
+    flex: 0 0 auto !important;
+    min-width: 280px !important;
+    max-width: 320px !important;
+    background-color: #1e1e1e !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.kanban-fullscreen-column-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 15px !important;
+    background-color: #2c2c2c !important;
+    border-bottom: 1px solid #3c3c3c !important;
+    flex-shrink: 0 !important;
+}
+
+.kanban-fullscreen-column-title {
+    font-weight: bold !important;
+    font-size: 16px !important;
+    color: #ffffff !important;
+}
+
+.kanban-fullscreen-column-count {
+    background-color: #3c3c3c !important;
+    color: #8b8b8b !important;
+    padding: 4px 10px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+}
+
+.tag-usage-stats {
+    font-size: 10px !important;
+    color: #666 !important;
+    margin-left: 5px !important;
+}
+
+.kanban-fullscreen-cards {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 15px !important;
+    flex: 1 !important;
+    overflow-y: auto !important;
+}
+
+.kanban-fullscreen-card {
+    background-color: #2c2c2c !important;
+    border-radius: 8px !important;
+    padding: 15px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    cursor: move !important;
+    transition: all 0.2s ease !important;
+}
+
+.kanban-fullscreen-card:hover {
+    transform: scale(1.02) !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
+}
+
+.kanban-fullscreen-card.dragging {
+    opacity: 0.7 !important;
+    transform: rotate(2deg) !important;
+}
+
+.kanban-fullscreen-card-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+}
+
+.kanban-fullscreen-avatar {
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+}
+
+.kanban-fullscreen-avatar img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
+.kanban-fullscreen-info {
+    flex-grow: 1 !important;
+}
+
+.kanban-fullscreen-name {
+    font-weight: bold !important;
+    color: #ffffff !important;
+    font-size: 16px !important;
+    margin-bottom: 4px !important;
+}
+
+.kanban-fullscreen-phone {
+    color: #8b8b8b !important;
+    font-size: 14px !important;
+}
+
+.kanban-fullscreen-status {
+    color: #8b8b8b !important;
+    font-size: 12px !important;
+    margin-bottom: 10px !important;
+}
+
+.kanban-fullscreen-actions {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-top: 10px !important;
+}
+
+.kanban-fullscreen-action-btn {
+    background-color: #3c3c3c !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 40px !important;
+    height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s !important;
+    font-size: 16px !important;
+}
+
+.kanban-fullscreen-action-btn:hover {
+    background-color: #4c4c4c !important;
+}
+
+.kanban-add-contact {
+    background-color: #2c2c2c !important;
+    border: 2px dashed #3c3c3c !important;
+    border-radius: 8px !important;
+    padding: 15px !important;
+    text-align: center !important;
+    color: #8b8b8b !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-size: 14px !important;
+}
+
+.kanban-add-contact:hover {
+    background-color: #3c3c3c !important;
+    color: #ffffff !important;
+}
+
+.kanban-fullscreen-column.drag-over {
+    border: 2px dashed #4c4c4c !important;
+}
+
+/* Estados especiales */
+.kanban-empty-state,
+.kanban-error-state {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+    text-align: center !important;
+    color: #8b8b8b !important;
+    padding: 40px !important;
+}
+
+.empty-state-icon,
+.error-icon {
+    font-size: 48px !important;
+    margin-bottom: 20px !important;
+}
+
+.empty-state-text,
+.error-text {
+    font-size: 18px !important;
+    font-weight: bold !important;
+    margin-bottom: 10px !important;
+    color: #ffffff !important;
+}
+
+.empty-state-subtext,
+.error-subtext {
+    font-size: 14px !important;
+    margin-bottom: 20px !important;
+    color: #8b8b8b !important;
+}
+
+/* Ocultar WhatsApp cuando está activo el Kanban */
+body.kanban-fullscreen-mode #app,
+body.kanban-fullscreen-mode .wa-crm-sidebar {
+    display: none !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .kanban-fullscreen-column {
+        min-width: 250px !important;
+        max-width: 280px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .kanban-fullscreen-content {
+        flex-direction: column !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+
+    .kanban-fullscreen-column {
+        min-width: 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 20px !important;
+    }
+
+    .kanban-fullscreen-header {
+        padding: 15px !important;
+    }
+
+    .kanban-fullscreen-title h1 {
+        font-size: 20px !important;
+    }
+}

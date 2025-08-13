@@ -137,7 +137,7 @@
         // Filtrar filas que muestran el contador "elemento/s" en español/inglés
         const hasCounter = /(elemento|elementos|item|items)/i.test(text);
         if (!hasCounter) return;
-        // Extraer el nombre limpio
+        // Extraer el nombre limpio ( no funciona como es :( )
         let name = sanitizeDomTextName(text.replace(/\b(\d+\s*(elemento|elementos|item|items))\b.*/i, '').trim());
         if (!name || name.length > 60 || isBlockedText(name)) return;
         const key = name.toLowerCase();
@@ -154,7 +154,7 @@
       });
     } catch (_) {}
 
-    // Fallback explícito solicitado: usar span[title] y filtrar por texto visible
+    // usar span[title] y filtrar por texto visible pero solo visual, solo extrae el texto 
     try {
       const spans = root.querySelectorAll('span[title]');
       const seen = new Set();
@@ -179,12 +179,141 @@
       });
     } catch (_) {}
 
-    // Orden alfabético (es-ES, insensitive)
+    // Orden alfabético
     const arr = Array.from(map.values()).sort((a,b) => (a.name||'').localeCompare(b.name||'', 'es', { sensitivity: 'base' }));
     return arr;
   }
 
+  // --- NUEVO: Extracción vía Webpack runtime ---
+  function getWebpackRequire() {
+    try {
+      const chunk = window.webpackChunkwhatsapp_web_client;
+      if (!Array.isArray(chunk) || typeof chunk.push !== 'function') return null;
+      let __webpack_require__ = null;
+      // Webpack 5 pattern: push with runtime callback to capture require
+      chunk.push([[Math.random()], {}, (req) => { __webpack_require__ = req; }]);
+      return __webpack_require__;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function isLikelyLabel(obj) {
+    try {
+      if (!obj || typeof obj !== 'object') return false;
+      const name = obj.name || obj.title;
+      const color = obj.hexColor || obj.color || obj.backgroundColor;
+      if (typeof name === 'string' && name.trim() && typeof color === 'string' && color.trim()) return true;
+      // Some builds keep color as numeric/int or object
+      if (typeof name === 'string' && name.trim() && (typeof color === 'number' || (color && typeof color === 'object'))) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function isLikelyLabelCollection(obj) {
+    try {
+      if (!obj) return false;
+      // Classic Backbone Collection style: .models is an array
+      if (Array.isArray(obj.models) && obj.models.length) return obj.models.every(m => isLikelyLabel(m) || isLikelyLabel(m?.attributes || m?.attrs || m?.data || {}));
+      // Some exports may expose getAll or toJSON returning labels
+      if (typeof obj.getAll === 'function') {
+        const arr = obj.getAll();
+        if (Array.isArray(arr) && arr.length) return arr.every(isLikelyLabel);
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function collectLabelsFromAny(any, source) {
+    const out = [];
+    try {
+      const pushNorm = (l) => { try { out.push(normalizeStoreLabel(l, source)); } catch (_) {} };
+      if (!any) return out;
+      if (Array.isArray(any)) {
+        any.forEach(l => { if (isLikelyLabel(l)) pushNorm(l); });
+        return out;
+      }
+      if (isLikelyLabelCollection(any)) {
+        const arr = Array.isArray(any.models) ? any.models : (typeof any.getAll === 'function' ? any.getAll() : []);
+        arr.forEach(l => { const obj = l?.attributes || l?.attrs || l?.data || l; if (isLikelyLabel(obj)) pushNorm(obj); });
+        return out;
+      }
+      if (typeof any === 'object') {
+        // Explore shallow properties
+        for (const k of Object.keys(any)) {
+          const v = any[k];
+          if (Array.isArray(v)) v.forEach(x => { if (isLikelyLabel(x)) pushNorm(x); });
+          if (isLikelyLabelCollection(v)) {
+            const arr = Array.isArray(v.models) ? v.models : (typeof v.getAll === 'function' ? v.getAll() : []);
+            arr.forEach(l => { const obj = l?.attributes || l?.attrs || l?.data || l; if (isLikelyLabel(obj)) pushNorm(obj); });
+          }
+        }
+      }
+    } catch (_) {}
+    return out;
+  }
+
+  function uniqByName(arr) {
+    const map = new Map();
+    arr.forEach(l => {
+      const key = String(l.name || '').toLowerCase();
+      if (key && !map.has(key)) map.set(key, l);
+    });
+    return Array.from(map.values());
+  }
+
+  async function getLabelsFromWebpack() {
+    try {
+      const req = getWebpackRequire();
+      if (!req) return [];
+
+      const results = [];
+
+      // 1) Revisar el caché existente
+      const cache = req.c || {};
+      for (const id in cache) {
+        try {
+          const exp = cache[id] && cache[id].exports;
+          if (!exp) continue;
+          results.push(...collectLabelsFromAny(exp, 'webpack_cache'));
+          if (exp.default) results.push(...collectLabelsFromAny(exp.default, 'webpack_cache_default'));
+          // Explorar propiedades enumerables
+          if (exp && typeof exp === 'object') {
+            for (const k of Object.keys(exp)) {
+              results.push(...collectLabelsFromAny(exp[k], 'webpack_cache_prop'));
+            }
+          }
+        } catch (_) {}
+      }
+
+      // 2) Si no hay suficientes resultados, intentar cargar algunos módulos por definición
+      if (results.length < 1 && req.m) {
+        const ids = Object.keys(req.m);
+        // Limitar para evitar sobrecarga: muestrear primeros N y últimos N
+        const sample = ids.slice(0, 500).concat(ids.slice(-200));
+        for (const id of sample) {
+          try {
+            const exp = req(id);
+            results.push(...collectLabelsFromAny(exp, 'webpack_mod'));
+            if (exp && exp.default) results.push(...collectLabelsFromAny(exp.default, 'webpack_mod_default'));
+          } catch (_) {}
+          if (results.length >= 10) break; // suficiente para mostrar
+        }
+      }
+
+      return uniqByName(results);
+    } catch (_) {
+      return [];
+    }
+  }
+
   async function getLabels() {
+    // Webpack runtime (preferente por datos completos y colores precisos)
+    try {
+      const wp = await getLabelsFromWebpack();
+      if (Array.isArray(wp) && wp.length) return wp;
+    } catch (_) {}
+
     // Prefer WPP
     if (window.WPP && window.WPP.labels && typeof window.WPP.labels.getAll === 'function') {
       try {
