@@ -36,6 +36,61 @@ class WhatsAppCRM {
 
     // ===========================================
     // INICIALIZACIÓN Y CONFIGURACIÓN
+
+    setupAuthUI() {
+        try {
+            if (!window.AuthService) return;
+            if (!this.authService) this.authService = new window.AuthService();
+            this.authService.init().then((isAuth) => {
+                if (!isAuth) this.showLoginOverlay();
+            });
+        } catch (e) { console.error('Auth UI error:', e); }
+    }
+
+    showLoginOverlay() {
+        if (document.getElementById('crmLoginOverlay')) return;
+        const overlay = document.createElement('div');
+        overlay.id = 'crmLoginOverlay';
+        overlay.style.cssText = `
+            position: fixed; inset: 0; z-index: 999999999;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+        `;
+        overlay.innerHTML = `
+            <div style="width: 360px; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,.5);">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                    <h3 style="margin:0; font-size:18px;">Iniciar sesión</h3>
+                    <button id="crmLoginClose" style="background:none; border:none; color:#8b949e; font-size:18px; cursor:pointer">✕</button>
+                </div>
+                <div style="display:grid; gap:10px;">
+                    <input id="crmLoginEmail" type="email" placeholder="Email" style="padding:10px; border-radius:8px; border:1px solid #30363d; background:#0b0f14; color:#c9d1d9;">
+                    <input id="crmLoginPassword" type="password" placeholder="Contraseña" style="padding:10px; border-radius:8px; border:1px solid #30363d; background:#0b0f14; color:#c9d1d9;">
+                    <button id="crmLoginBtn" class="btn-primary" style="padding:10px; border-radius:8px; cursor:pointer;">Entrar</button>
+                    <div id="crmLoginError" style="display:none; color:#f85149; font-size:12px;"></div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        const close = () => overlay.remove();
+        overlay.querySelector('#crmLoginClose').addEventListener('click', close);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+        overlay.querySelector('#crmLoginBtn').addEventListener('click', async () => {
+            const email = overlay.querySelector('#crmLoginEmail').value.trim();
+            const password = overlay.querySelector('#crmLoginPassword').value;
+            const errorEl = overlay.querySelector('#crmLoginError');
+            errorEl.style.display = 'none';
+            try {
+                const res = await this.authService.login(email, password);
+                if (!res.success) throw new Error(res.error || 'Error de autenticación');
+                overlay.remove();
+                this.showNotification('Sesión iniciada', 'success');
+                this.updateDashboard();
+            } catch (err) {
+                errorEl.textContent = err.message || 'Error iniciando sesión';
+                errorEl.style.display = 'block';
+            }
+        });
+    }
     // ===========================================
 
     init() {
@@ -66,6 +121,7 @@ class WhatsAppCRM {
             
             // Iniciar sincronización automática
             this.startPeriodicSync();
+            this.setupAuthUI();
             
             console.log('✅ CRM Professional iniciado correctamente');
             console.log('📊 Stats:', {
@@ -464,6 +520,23 @@ class WhatsAppCRM {
         }
 
         console.log(`✓ Dynamic tabs system initialized`);
+
+        // Botones auth en settings
+        const openLoginBtn = document.getElementById('openLoginOverlayBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const authStatus = document.getElementById('authStatusText');
+        if (openLoginBtn) openLoginBtn.addEventListener('click', () => this.showLoginOverlay());
+        if (logoutBtn) logoutBtn.addEventListener('click', async () => {
+            if (!this.authService) this.authService = new window.AuthService();
+            await this.authService.init();
+            const res = await this.authService.logout();
+            if (res.success) {
+                this.showNotification('Sesión cerrada', 'info');
+                authStatus && (authStatus.textContent = 'Sesión cerrada');
+                this.setupAuthUI();
+            }
+        });
+        if (authStatus && this.authService?.isUserAuthenticated()) authStatus.textContent = `Conectado: ${this.authService.getCurrentUser()?.email || ''}`;
     }
 
     // Generar pestañas dinámicas basadas en etiquetas
