@@ -12,6 +12,7 @@
             <div class="logo">
                 <div class="logo-icon">💬</div>
                 <span class="logo-text">CRM Pro</span>
+                <span id="groupName" class="group-name" title="Organización/Grupo" style="margin-left:8px; font-size:12px; color:#8b949e; background:#0b0f14; border:1px solid #30363d; padding:2px 6px; border-radius:8px;">—</span>
             </div>
             <button class="toggle-btn" id="sidebarToggle" title="Contraer/Expandir">
                 <span class="toggle-icon">⟨</span>
@@ -80,6 +81,10 @@
             <div class="nav-item" data-section="settings" title="Configuración">
                 <span class="nav-icon">⚙️</span>
                 <span class="nav-text">Configuración</span>
+            </div>
+            <div class="nav-item" data-section="team" title="Equipo">
+                <span class="nav-icon">👤</span>
+                <span class="nav-text">Equipo</span>
             </div>
         </nav>
 
@@ -317,6 +322,18 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Team Section -->
+            <div class="content-section" id="team">
+                <div class="section-header">
+                    <h3>Sesiones y Nicknames</h3>
+                    <button class="btn-primary" id="refreshTeam">🔄 Actualizar</button>
+                </div>
+                <div class="section-body">
+                    <div id="teamList" class="list" style="display:grid; gap:8px;"></div>
+                    <div class="hint" style="margin-top:8px; font-size:12px; color:#8b949e;">Doble click en una fila para editar el nickname.</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -338,6 +355,24 @@
             <div class="modal-footer">
                 <button class="btn-secondary" id="cancelTagBtn">Cancelar</button>
                 <button class="btn-primary" id="saveTagBtn">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay de notas de contacto -->
+    <div class="modal" id="contactNotesOverlay">
+        <div class="modal-content" style="max-width:560px;">
+            <div class="modal-header">
+                <h3 id="contactNotesTitle">Notas del contacto</h3>
+                <button class="modal-close" id="closeContactNotesOverlay">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="contactNotesInfo" style="font-size:12px; color: var(--text-secondary); margin-bottom:8px;"></div>
+                <textarea id="contactNotesTextarea" rows="8" placeholder="Escribe tus notas aquí..." style="width:100%;"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelContactNotesBtn">Cancelar</button>
+                <button class="btn-primary" id="saveContactNotesBtn">Guardar</button>
             </div>
         </div>
     </div>

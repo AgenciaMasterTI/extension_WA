@@ -667,8 +667,7 @@ class WhatsAppCRM {
             // Mostrar interfaz principal
             this.showMainInterface();
             
-            // Crear datos de ejemplo si no existen
-            this.createSampleDataIfEmpty();
+            // Datos de ejemplo deshabilitados
             this.migrateOldStatusToTags();
             
             // Cargar configuraciones

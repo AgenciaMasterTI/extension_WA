@@ -26,9 +26,19 @@ class AuthService {
 			const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
 			if (sessionError) throw sessionError;
 			if (session) {
-				this.authToken = session.access_token;
-				this.currentUser = session.user;
-				this.isAuthenticated = true;
+				// Validar que la sesión sea realmente válida
+				const { data: { user }, error: userError } = await this.supabase.auth.getUser();
+				if (userError || !user) {
+					console.warn('[AuthService] Sesión inválida. Cerrando sesión.');
+					try { await this.supabase.auth.signOut(); } catch (_) {}
+					this.authToken = null;
+					this.currentUser = null;
+					this.isAuthenticated = false;
+				} else {
+					this.authToken = session.access_token;
+					this.currentUser = user;
+					this.isAuthenticated = true;
+				}
 			}
 			this.supabase.auth.onAuthStateChange((event, session) => {
 				if (event === 'SIGNED_IN' && session) {

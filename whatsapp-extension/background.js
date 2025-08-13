@@ -50,6 +50,47 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return true;
 });
 
+// Programar recordatorios con chrome.alarms y notificaciones
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request?.action === 'scheduleReminder' && request?.data) {
+    try {
+      const { id, fireAt, contactId, note } = request.data;
+      const when = new Date(fireAt);
+      if (!isNaN(when.getTime())) {
+        chrome.alarms.create(`reminder_${id}`, { when: when.getTime() });
+        chrome.storage.local.set({ [`reminder_${id}`]: { id, fireAt, contactId, note } });
+        sendResponse && sendResponse({ success: true });
+      } else {
+        sendResponse && sendResponse({ error: 'Fecha inválida' });
+      }
+    } catch (e) {
+      console.error('scheduleReminder error', e);
+      sendResponse && sendResponse({ error: e.message });
+    }
+    return true;
+  }
+});
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  try {
+    if (!alarm?.name?.startsWith('reminder_')) return;
+    const key = alarm.name;
+    const data = await chrome.storage.local.get(key);
+    const rem = data[key];
+    if (!rem) return;
+
+    // Mostrar notificación
+    const title = 'Recordatorio CRM';
+    const message = rem.note ? rem.note : 'Tienes un recordatorio programado.';
+    try { await chrome.notifications.create(key, { type: 'basic', iconUrl: 'assets/icon128.png', title, message }); } catch (_) {}
+
+    // Limpiar almacenamiento del recordatorio disparado
+    await chrome.storage.local.remove(key);
+  } catch (e) {
+    console.error('onAlarm error', e);
+  }
+});
+
 // Guardar datos en storage local
 async function handleSaveData(data, sendResponse) {
   try {

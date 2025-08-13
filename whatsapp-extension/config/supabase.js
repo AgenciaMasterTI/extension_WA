@@ -13,7 +13,7 @@ window.SUPABASE_CONFIG = {
 window.APP_CONFIG = {
   name: 'WhatsApp CRM Extension',
   version: '1.0.0',
-  debug: true // Cambiar a false en producción
+  debug: false
 };
 
 // Configuración de autenticación

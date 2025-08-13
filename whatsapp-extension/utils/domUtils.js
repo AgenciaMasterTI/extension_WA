@@ -1,60 +1,140 @@
 /**
- * DOM Utils - Utilidades para manipulación del DOM de WhatsApp Web
- * Funciones auxiliares para interactuar con elementos de WhatsApp
+ * DOM Utils - Optimizado para WhatsApp Web y WhatsApp Business Web
+ * Incluye soporte para extracción de etiquetas (labels) y detección de versión Business
  */
 
 const DOMUtils = {
-  
+
   /**
-   * Selectores comunes de WhatsApp Web
+   * Selectores comunes
    */
   selectors: {
     // Chat principal
     conversationPanel: '[data-testid="conversation-panel-body"]',
     messageInput: '[data-testid="conversation-compose-box-input"]',
     sendButton: '[data-testid="compose-btn-send"]',
-    
+    attachmentButton: '[data-testid="clip"], [data-testid="attach"], [data-testid="compose-attach-button"]',
+    composeBox: '[data-testid="conversation-compose-box"]',
+    // Botones de la barra del composer (variantes conocidas)
+    emojiButtonCandidates: '[data-testid="smiley"], [data-testid="emoji-picker-button"], [data-testid="compose-emoji-button"], [data-icon="smiley"], [aria-label*="emoji" i], [aria-label*="expresiones" i], [title*="emoji" i]'
+,
     // Header del chat
     chatHeader: '[data-testid="conversation-header"]',
     chatTitle: '[data-testid="conversation-info-header-chat-title"]',
     chatSubtitle: '[data-testid="conversation-info-header-chat-subtitle"]',
-    
+
     // Lista de chats
     chatList: '[data-testid="chat-list"]',
-    chatItem: '[data-testid="list-item-"]',
-    
+    chatItem: '[data-testid^="list-item"]',
+
     // Mensajes
     messageList: '[data-testid="conversation-panel-messages"]',
     messageContainer: '[data-testid="msg-container"]',
-    
-    // Otros elementos
+
+    // Otros
     searchBox: '[data-testid="chat-list-search"]',
     profilePanel: '[data-testid="drawer-right"]'
   },
 
   /**
-   * Esperar a que un elemento aparezca en el DOM
+   * Selectores específicos de WhatsApp Business
+   */
+  businessSelectors: {
+    labelFilterMenu: '[data-testid="chatlist-filter-labels-dropdown"]',
+    labelListItem: '[data-testid^="label-list-item"]',
+    labelName: '[data-testid="label-name"]',
+    // Contenedor general del panel de etiquetas de Business (heurísticos)
+    labelsPanel: '[data-testid="labels-panel"], [aria-label*="Etiqueta" i]'
+  },
+
+  _labelsContainer: null,
+  _labelsObserver: null,
+
+  /**
+   * Fijar/descubrir el contenedor de etiquetas de Business
+   */
+  setLabelsContainer(elementOrSelector) {
+    if (!elementOrSelector) return null;
+    const el = typeof elementOrSelector === 'string'
+      ? document.querySelector(elementOrSelector)
+      : elementOrSelector;
+    if (el) this._labelsContainer = el;
+    return this._labelsContainer;
+  },
+
+  detectLabelsContainer() {
+    if (this._labelsContainer && document.body.contains(this._labelsContainer)) {
+      return this._labelsContainer;
+    }
+    const candidates = [
+      this.businessSelectors.labelsPanel,
+      '#app [data-testid="pane-side"] ~ div [role="region"] [data-testid^="label"]',
+      '[role="menu"] [data-testid^="label-"]'
+    ];
+    for (const sel of candidates) {
+      try {
+        const found = document.querySelector(sel);
+        if (found) {
+          this._labelsContainer = found;
+          break;
+        }
+      } catch (_) {}
+    }
+    return this._labelsContainer;
+  },
+
+  /**
+   * Observar cambios en el contenedor de etiquetas (altas/bajas/ediciones)
+   */
+  observeBusinessLabels(callback, options = { debounceMs: 250 }) {
+    const container = this.detectLabelsContainer();
+    if (!container) return null;
+
+    if (this._labelsObserver) {
+      this._labelsObserver.disconnect();
+    }
+
+    let t = null;
+    this._labelsObserver = new MutationObserver(() => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        try {
+          const labels = this.getActiveLabels();
+          callback && callback(labels);
+        } catch (e) {
+          console.warn('observeBusinessLabels callback error:', e);
+        }
+      }, options.debounceMs || 250);
+    });
+
+    this._labelsObserver.observe(container, { childList: true, subtree: true, attributes: true });
+    return this._labelsObserver;
+  },
+
+  /**
+   * Detectar si es la versión Business
+   */
+  isBusinessVersion() {
+    return !!document.querySelector(this.businessSelectors.labelFilterMenu);
+  },
+
+  /**
+   * Esperar elemento en DOM
    */
   waitForElement(selector, timeout = 10000) {
     return new Promise((resolve, reject) => {
       const element = document.querySelector(selector);
-      if (element) {
-        resolve(element);
-        return;
-      }
+      if (element) return resolve(element);
 
-      const observer = new MutationObserver((mutations, obs) => {
-        const element = document.querySelector(selector);
-        if (element) {
-          obs.disconnect();
-          resolve(element);
+      const observer = new MutationObserver(() => {
+        const el = document.querySelector(selector);
+        if (el) {
+          observer.disconnect();
+          resolve(el);
         }
       });
 
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
+      observer.observe(document.body, { childList: true, subtree: true });
 
       setTimeout(() => {
         observer.disconnect();
@@ -64,7 +144,56 @@ const DOMUtils = {
   },
 
   /**
-   * Obtener el nombre del chat actual
+   * Obtener etiquetas activas
+   */
+  getActiveLabels() {
+    // Primero intentar con la API interna
+    try {
+      if (window.WAWebLabelCollection?.LabelCollection?.getChatLabelsWithUnarchivedAssociations) {
+        return window.WAWebLabelCollection.LabelCollection.getChatLabelsWithUnarchivedAssociations();
+      }
+    } catch (err) {
+      console.warn("⚠️ No se pudo acceder a WAWebLabelCollection:", err);
+    }
+
+    // Fallback: buscar en DOM (solo Business)
+    if (this.isBusinessVersion()) {
+      const labels = [];
+      const scope = this.detectLabelsContainer() || document;
+      const candidates = scope.querySelectorAll(
+        this.businessSelectors.labelListItem +
+        ', [role="menuitem"][data-testid*="label"], [data-testid*="label"][aria-label], ' +
+        '[data-testid="labels-panel"] [data-testid^="label-"], [data-testid="labels-panel"] [role="menuitem"]'
+      );
+      candidates.forEach(item => {
+        const nameEl = item.querySelector(this.businessSelectors.labelName) || item.querySelector('[title]') || item.querySelector('span');
+        const name = nameEl?.textContent?.trim();
+        if (name) {
+          labels.push({
+            id: item.getAttribute('data-testid') || item.getAttribute('aria-label') || null,
+            name,
+            color: nameEl?.style?.backgroundColor || item.style?.backgroundColor || null
+          });
+        }
+      });
+      return labels;
+    }
+
+    return [];
+  },
+
+  /**
+   * Detener observador de etiquetas
+   */
+  disconnectLabelsObserver() {
+    if (this._labelsObserver) {
+      this._labelsObserver.disconnect();
+      this._labelsObserver = null;
+    }
+  },
+
+  /**
+   * Obtener nombre del chat actual
    */
   getCurrentChatName() {
     const selectors = [
@@ -73,19 +202,15 @@ const DOMUtils = {
       'header span[title]',
       'header h1'
     ];
-
     for (const selector of selectors) {
-      const element = document.querySelector(selector);
-      if (element && element.textContent?.trim()) {
-        return element.textContent.trim();
-      }
+      const el = document.querySelector(selector);
+      if (el?.textContent?.trim()) return el.textContent.trim();
     }
-
     return null;
   },
 
   /**
-   * Obtener el input de mensaje
+   * Obtener input de mensaje
    */
   getMessageInput() {
     const selectors = [
@@ -93,327 +218,153 @@ const DOMUtils = {
       'div[contenteditable="true"][data-tab="10"]',
       'div[contenteditable="true"]'
     ];
-
     for (const selector of selectors) {
-      const element = document.querySelector(selector);
-      if (element) {
-        return element;
-      }
+      const el = document.querySelector(selector);
+      if (el) return el;
     }
-
     return null;
   },
 
   /**
-   * Insertar texto en el input de mensaje
+   * Insertar texto en el input
    */
   insertTextInMessageInput(text) {
     const input = this.getMessageInput();
-    if (!input) {
-      throw new Error('Input de mensaje no encontrado');
-    }
+    if (!input) throw new Error('Input de mensaje no encontrado');
 
-    // Enfocar el input
     input.focus();
-    
-    // Insertar el texto
     if (input.contentEditable === 'true') {
-      // Para elementos contenteditable
       input.textContent = text;
-      
-      // Simular eventos de input
-      const inputEvent = new Event('input', { bubbles: true });
-      input.dispatchEvent(inputEvent);
-      
-      // Mover cursor al final
+      input.dispatchEvent(new Event('input', { bubbles: true }));
       this.moveCursorToEnd(input);
     } else {
-      // Para inputs normales
       input.value = text;
-      const inputEvent = new Event('input', { bubbles: true });
-      input.dispatchEvent(inputEvent);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
     }
-
     return true;
   },
 
-  /**
-   * Mover cursor al final de un elemento contenteditable
-   */
   moveCursorToEnd(element) {
     const range = document.createRange();
-    const selection = window.getSelection();
-    
+    const sel = window.getSelection();
     range.selectNodeContents(element);
     range.collapse(false);
-    selection.removeAllRanges();
-    selection.addRange(range);
-  },
-
-  /**
-   * Verificar si hay un chat abierto
-   */
-  isChatOpen() {
-    const conversationPanel = document.querySelector(this.selectors.conversationPanel);
-    return !!conversationPanel;
-  },
-
-  /**
-   * Obtener información del chat actual
-   */
-  getCurrentChatInfo() {
-    const chatName = this.getCurrentChatName();
-    const isGroup = this.isCurrentChatGroup();
-    const participantCount = this.getGroupParticipantCount();
-
-    return {
-      name: chatName,
-      isGroup,
-      participantCount,
-      isOpen: this.isChatOpen()
-    };
-  },
-
-  /**
-   * Verificar si el chat actual es un grupo
-   */
-  isCurrentChatGroup() {
-    // Los grupos suelen tener un subtitle con el número de participantes
-    const subtitle = document.querySelector(this.selectors.chatSubtitle);
-    if (subtitle) {
-      const text = subtitle.textContent.toLowerCase();
-      return text.includes('participante') || text.includes('member');
-    }
-    return false;
-  },
-
-  /**
-   * Obtener número de participantes del grupo
-   */
-  getGroupParticipantCount() {
-    if (!this.isCurrentChatGroup()) return null;
-
-    const subtitle = document.querySelector(this.selectors.chatSubtitle);
-    if (subtitle) {
-      const match = subtitle.textContent.match(/(\d+)/);
-      return match ? parseInt(match[1]) : null;
-    }
-    return null;
+    sel.removeAllRanges();
+    sel.addRange(range);
   },
 
   /**
    * Obtener lista de chats
    */
   getChatList() {
-    const chatListContainer = document.querySelector(this.selectors.chatList);
-    if (!chatListContainer) return [];
-
-    const chatItems = chatListContainer.querySelectorAll('[data-testid*="list-item"]');
-    const chats = [];
-
-    chatItems.forEach(item => {
-      const nameElement = item.querySelector('span[title]');
-      const lastMessageElement = item.querySelector('span[title] + div span');
-      
-      if (nameElement) {
-        chats.push({
-          name: nameElement.textContent.trim(),
-          lastMessage: lastMessageElement?.textContent?.trim() || '',
-          element: item
-        });
-      }
-    });
-
-    return chats;
-  },
-
-  /**
-   * Buscar chat por nombre
-   */
-  async searchChat(chatName) {
-    const searchBox = document.querySelector(this.selectors.searchBox);
-    if (!searchBox) {
-      throw new Error('Caja de búsqueda no encontrada');
-    }
-
-    // Hacer clic en la caja de búsqueda
-    searchBox.click();
-    
-    // Insertar texto de búsqueda
-    searchBox.value = chatName;
-    searchBox.dispatchEvent(new Event('input', { bubbles: true }));
-
-    // Esperar a que aparezcan los resultados
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    return this.getChatList();
-  },
-
-  /**
-   * Hacer clic en un chat específico
-   */
-  clickChat(chatName) {
-    const chats = this.getChatList();
-    const targetChat = chats.find(chat => 
-      chat.name.toLowerCase().includes(chatName.toLowerCase())
-    );
-
-    if (targetChat) {
-      targetChat.element.click();
-      return true;
-    }
-
-    return false;
-  },
-
-  /**
-   * Obtener últimos mensajes del chat actual
-   */
-  getLastMessages(count = 5) {
-    const messageList = document.querySelector(this.selectors.messageList);
-    if (!messageList) return [];
-
-    const messages = messageList.querySelectorAll(this.selectors.messageContainer);
-    const lastMessages = Array.from(messages).slice(-count);
-
-    return lastMessages.map(msg => {
-      const textElement = msg.querySelector('span.copyable-text');
-      const timeElement = msg.querySelector('[data-testid="msg-meta"] span');
-      const isOutgoing = msg.classList.contains('message-out');
-
-      return {
-        text: textElement?.textContent?.trim() || '',
-        time: timeElement?.textContent?.trim() || '',
-        isOutgoing,
-        element: msg
-      };
+    const container = document.querySelector(this.selectors.chatList);
+    if (!container) return [];
+    const items = container.querySelectorAll(this.selectors.chatItem);
+    return Array.from(items).map(item => {
+      const name = item.querySelector('span[title]')?.textContent?.trim() || '';
+      const lastMessage = item.querySelector('span[title] + div span')?.textContent?.trim() || '';
+      return { name, lastMessage, element: item };
     });
   },
 
-  /**
-   * Crear elemento con clases CSS seguras
-   */
-  createElement(tag, className, content = '') {
-    const element = document.createElement(tag);
-    if (className) {
-      element.className = className;
-    }
-    if (content) {
-      element.textContent = content;
-    }
-    return element;
-  },
 
   /**
-   * Aplicar estilos de forma segura
+   * Buscar el chat propio ("Mensaje a ti mismo") en la lista
    */
-  applyStyles(element, styles) {
-    Object.entries(styles).forEach(([property, value]) => {
-      element.style.setProperty(property, value, 'important');
-    });
-  },
+  
 
   /**
-   * Verificar si WhatsApp Web está completamente cargado
+   * Abrir un chat haciendo click en su elemento
    */
-  isWhatsAppLoaded() {
-    const indicators = [
-      this.selectors.chatList,
-      '[data-testid="app-wrapper-chat-list"]',
-      '#app > div > div'
-    ];
-
-    return indicators.some(selector => document.querySelector(selector));
-  },
-
-  /**
-   * Observar cambios en el chat actual
-   */
-  observeChatChanges(callback) {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach(mutation => {
-        if (mutation.type === 'childList') {
-          const chatInfo = this.getCurrentChatInfo();
-          callback(chatInfo);
-        }
-      });
-    });
-
-    const chatArea = document.querySelector(this.selectors.conversationPanel) ||
-                    document.querySelector('#app');
-
-    if (chatArea) {
-      observer.observe(chatArea, {
-        childList: true,
-        subtree: true
-      });
-    }
-
-    return observer;
-  },
-
-  /**
-   * Limpiar observers
-   */
-  disconnectObserver(observer) {
-    if (observer) {
-      observer.disconnect();
-    }
-  },
-
-  /**
-   * Verificar si un elemento está visible
-   */
-  isElementVisible(element) {
+  openChatElement(element) {
     if (!element) return false;
-    
-    const rect = element.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0 && 
-           rect.top >= 0 && rect.left >= 0 &&
-           rect.bottom <= window.innerHeight &&
-           rect.right <= window.innerWidth;
+    try { element.click(); return true; } catch (_) { return false; }
   },
 
   /**
-   * Scroll hacia un elemento
+   * Enviar mensaje al chat actual
    */
-  scrollToElement(element, behavior = 'smooth') {
-    if (element) {
-      element.scrollIntoView({ behavior, block: 'center' });
-    }
+  async sendMessageToCurrentChat(text) {
+    try {
+      this.insertTextInMessageInput(text);
+      const sendBtn = document.querySelector(this.selectors.sendButton);
+      if (sendBtn) { sendBtn.click(); return true; }
+      return false;
+    } catch (_) { return false; }
   },
 
   /**
-   * Debounce para eventos frecuentes
+   * Buscar el mejor ancla en la barra del composer (junto al botón de expresiones/emoji)
    */
-  debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
+  findComposeAnchorButton() {
+    try {
+      const emojiBtn = document.querySelector(this.selectors.emojiButtonCandidates);
+      if (emojiBtn) return emojiBtn;
+      const clipBtn = document.querySelector(this.selectors.attachmentButton);
+      if (clipBtn) return clipBtn;
+      const sendBtn = document.querySelector(this.selectors.sendButton);
+      if (sendBtn) return sendBtn;
+      return null;
+    } catch (_) { return null; }
+  },
+
+  /**
+   * Insertar botón de firma junto al botón de expresiones/emoji
+   */
+  ensureFloatingToggleButton({ id = 'wa-crm-nickname-toggle', titleOn = 'Nickname activo', titleOff = 'Nickname inactivo', initialOn = true, onToggle = null } = {}) {
+    try {
+      const existing = document.getElementById(id);
+      if (existing && document.body.contains(existing)) return existing;
+
+      const anchor = this.findComposeAnchorButton();
+      const input = this.getMessageInput();
+      const compose = document.querySelector(this.selectors.composeBox) || input?.closest('[data-testid]');
+
+      const btn = document.createElement('button');
+      btn.id = id;
+      btn.type = 'button';
+      btn.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:1px solid #30363d;background:#0b0f14;color:#e6edf3;margin-left:6px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35);';
+      btn.setAttribute('aria-pressed', initialOn ? 'true' : 'false');
+      btn.title = initialOn ? titleOn : titleOff;
+      btn.textContent = '✎';
+
+      const applyState = (on) => {
+        btn.style.opacity = on ? '1' : '0.5';
+        btn.title = on ? titleOn : titleOff;
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
       };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  },
+      applyState(initialOn);
 
-  /**
-   * Throttle para eventos muy frecuentes
-   */
-  throttle(func, limit) {
-    let inThrottle;
-    return function(...args) {
-      if (!inThrottle) {
-        func.apply(this, args);
-        inThrottle = true;
-        setTimeout(() => inThrottle = false, limit);
+      btn.addEventListener('click', () => {
+        const isOn = btn.getAttribute('aria-pressed') === 'true';
+        const next = !isOn;
+        applyState(next);
+        onToggle && onToggle(next);
+      });
+
+      if (anchor && anchor.parentNode) {
+        try { anchor.insertAdjacentElement('afterend', btn); console.debug('[WA CRM] Botón firma anclado junto a', anchor); } catch (_) {}
+      } else if (compose) {
+        try { compose.appendChild(btn); console.debug('[WA CRM] Botón firma anclado en compose box'); } catch (_) {}
+      } else {
+        // Fallback fijo
+        btn.style.position = 'fixed';
+        btn.style.bottom = '96px';
+        btn.style.right = '112px';
+        btn.style.zIndex = '2147483647';
+        try { document.body.appendChild(btn); console.warn('[WA CRM] Botón firma en fallback fijo'); } catch (_) {}
       }
-    };
+      return btn;
+    } catch (e) {
+      console.error('[WA CRM] Error creando botón firma:', e);
+      return null;
+    }
   }
 };
 
-// Exportar para uso global
+// Exportar globalmente
 if (typeof window !== 'undefined') {
   window.DOMUtils = DOMUtils;
-} 
+}
+
+console.log("✅ DOMUtils cargado. Business:", DOMUtils.isBusinessVersion());
