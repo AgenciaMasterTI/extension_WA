@@ -9,12 +9,13 @@
     "scripting"
   ],
   "host_permissions": [
+    "https://*.supabase.co/*",
     "https://web.whatsapp.com/*"
   ],
   "content_scripts": [
     {
       "matches": ["https://web.whatsapp.com/*"],
-      "js": ["content.js", "sidebar.js", "test-extension.js"],
+      "js": ["vendor/supabase.js", "config/supabase.js", "services/supabaseClient.js", "services/authService.js", "content.js", "sidebar.js", "test-extension.js"],
       "css": ["sidebar.css"],
       "run_at": "document_end"
     }
@@ -40,7 +41,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["sidebar.html", "sidebar.js", "services/*", "utils/*", "assets/*"],
+      "resources": ["sidebar.html", "sidebar.js", "config/*", "services/*", "utils/*", "assets/*"],
       "matches": ["https://web.whatsapp.com/*"]
     }
   ],
