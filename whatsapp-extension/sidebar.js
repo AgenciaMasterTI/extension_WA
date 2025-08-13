@@ -48,24 +48,38 @@ class WhatsAppCRM {
     }
 
     showLoginOverlay() {
+        this.renderAuthOverlay({ mode: 'login' });
+    }
+
+    showSignupOverlay() {
+        this.renderAuthOverlay({ mode: 'signup' });
+    }
+
+    renderAuthOverlay({ mode = 'login' } = {}) {
         if (document.getElementById('crmLoginOverlay')) return;
         const overlay = document.createElement('div');
         overlay.id = 'crmLoginOverlay';
         overlay.style.cssText = `
             position: fixed; inset: 0; z-index: 999999999;
             display: flex; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
         `;
+        const isSignup = mode === 'signup';
         overlay.innerHTML = `
-            <div style="width: 360px; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,.5);">
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-                    <h3 style="margin:0; font-size:18px;">Iniciar sesión</h3>
+            <div style="width: 380px; background: #0b0f14; color: #e6edf3; border: 1px solid #30363d; border-radius: 16px; padding: 22px; box-shadow: 0 16px 48px rgba(0,0,0,.6);">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                    <h3 style="margin:0; font-size:18px; display:flex; gap:8px; align-items:center;">${isSignup ? 'Crear cuenta' : 'Iniciar sesión'}</h3>
                     <button id="crmLoginClose" style="background:none; border:none; color:#8b949e; font-size:18px; cursor:pointer">✕</button>
                 </div>
-                <div style="display:grid; gap:10px;">
-                    <input id="crmLoginEmail" type="email" placeholder="Email" style="padding:10px; border-radius:8px; border:1px solid #30363d; background:#0b0f14; color:#c9d1d9;">
-                    <input id="crmLoginPassword" type="password" placeholder="Contraseña" style="padding:10px; border-radius:8px; border:1px solid #30363d; background:#0b0f14; color:#c9d1d9;">
-                    <button id="crmLoginBtn" class="btn-primary" style="padding:10px; border-radius:8px; cursor:pointer;">Entrar</button>
+                <div style="display:grid; gap:12px;">
+                    ${isSignup ? '<input id="crmLoginName" type="text" placeholder="Nombre" style="padding:12px; border-radius:10px; border:1px solid #30363d; background:#06090f; color:#e6edf3;">' : ''}
+                    <input id="crmLoginEmail" type="email" placeholder="Email" style="padding:12px; border-radius:10px; border:1px solid #30363d; background:#06090f; color:#e6edf3;">
+                    <input id="crmLoginPassword" type="password" placeholder="Contraseña" style="padding:12px; border-radius:10px; border:1px solid #30363d; background:#06090f; color:#e6edf3;">
+                    <button id="crmLoginBtn" class="btn-primary" style="padding:12px; border-radius:10px; cursor:pointer;">${isSignup ? 'Crear cuenta' : 'Entrar'}</button>
+                    <div style="display:flex; justify-content:space-between; font-size:12px; color:#8b949e;">
+                        <button id="crmToggleAuthMode" style="background:none; border:none; color:#58a6ff; cursor:pointer;">${isSignup ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Crea una'}</button>
+                        <button id="crmForgotPassword" style="background:none; border:none; color:#8b949e; cursor:pointer;">Olvidé mi contraseña</button>
+                    </div>
                     <div id="crmLoginError" style="display:none; color:#f85149; font-size:12px;"></div>
                 </div>
             </div>
@@ -74,20 +88,48 @@ class WhatsAppCRM {
         const close = () => overlay.remove();
         overlay.querySelector('#crmLoginClose').addEventListener('click', close);
         overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-        overlay.querySelector('#crmLoginBtn').addEventListener('click', async () => {
+        const submit = async () => {
             const email = overlay.querySelector('#crmLoginEmail').value.trim();
             const password = overlay.querySelector('#crmLoginPassword').value;
+            const name = overlay.querySelector('#crmLoginName')?.value?.trim();
             const errorEl = overlay.querySelector('#crmLoginError');
             errorEl.style.display = 'none';
             try {
-                const res = await this.authService.login(email, password);
+                let res;
+                if (isSignup) {
+                    res = await this.authService.register({ email, password, name });
+                } else {
+                    res = await this.authService.login(email, password);
+                }
                 if (!res.success) throw new Error(res.error || 'Error de autenticación');
                 overlay.remove();
-                this.showNotification('Sesión iniciada', 'success');
+                this.showNotification(isSignup ? 'Cuenta creada' : 'Sesión iniciada', 'success');
                 this.updateDashboard();
             } catch (err) {
-                errorEl.textContent = err.message || 'Error iniciando sesión';
+                errorEl.textContent = err.message || (isSignup ? 'Error creando cuenta' : 'Error iniciando sesión');
                 errorEl.style.display = 'block';
+            }
+        };
+        overlay.querySelector('#crmLoginBtn').addEventListener('click', submit);
+        overlay.querySelector('#crmToggleAuthMode').addEventListener('click', () => {
+            overlay.remove();
+            this.renderAuthOverlay({ mode: isSignup ? 'login' : 'signup' });
+        });
+        overlay.querySelector('#crmForgotPassword').addEventListener('click', async () => {
+            overlay.querySelector('#crmLoginError').style.display = 'none';
+            const email = overlay.querySelector('#crmLoginEmail').value.trim();
+            if (!email) {
+                overlay.querySelector('#crmLoginError').textContent = 'Ingresa tu email para continuar';
+                overlay.querySelector('#crmLoginError').style.display = 'block';
+                return;
+            }
+            try {
+                // Supabase: reset password email
+                await window.supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: chrome.runtime.getURL('popup/popup.html') });
+                this.showNotification('Revisa tu correo para recuperar tu contraseña', 'info');
+            } catch (e) {
+                overlay.querySelector('#crmLoginError').textContent = 'No se pudo enviar el correo de recuperación';
+                overlay.querySelector('#crmLoginError').style.display = 'block';
             }
         });
     }
@@ -526,6 +568,8 @@ class WhatsAppCRM {
         const logoutBtn = document.getElementById('logoutBtn');
         const authStatus = document.getElementById('authStatusText');
         if (openLoginBtn) openLoginBtn.addEventListener('click', () => this.showLoginOverlay());
+        const openSignupBtn = document.getElementById('openSignupOverlayBtn');
+        if (openSignupBtn) openSignupBtn.addEventListener('click', () => this.showSignupOverlay());
         if (logoutBtn) logoutBtn.addEventListener('click', async () => {
             if (!this.authService) this.authService = new window.AuthService();
             await this.authService.init();
