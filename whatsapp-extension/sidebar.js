@@ -95,7 +95,17 @@ class WhatsAppCRM {
             if (!this.authService) this.authService = new window.AuthService();
             this.authService.init().then((isAuth) => {
                 if (!isAuth) this.showLoginOverlay();
+                try { this.syncContactsWithSupabase?.(); } catch(_) {}
             });
+            // Sincronizar cuando cambie el estado de autenticación
+            try {
+                this.authService.onAuthStateChange?.((event, session) => {
+                    try { this.loadGroupName(); } catch(_) {}
+                    if (event === 'SIGNED_IN') {
+                        try { this.syncContactsWithSupabase?.(); } catch(_) {}
+                    }
+                });
+            } catch (_) {}
         } catch (e) { console.error('Auth UI error:', e); }
     }
 
@@ -300,9 +310,16 @@ class WhatsAppCRM {
             // Iniciar sincronización automática
             this.startPeriodicSync();
             // Iniciar observador de etiquetas de WhatsApp Business para sincronización en vivo
-            try { this.startBusinessLabelsObserver(); } catch (_) {}
+            try { 
+                // Esperar a que DOMUtils esté disponible antes de iniciar el observador
+                this.waitForDOMUtils().then(() => {
+                    this.startBusinessLabelsObserver();
+                });
+            } catch (_) {}
             this.setupAuthUI();
             this.loadGroupName();
+            // Disparar sincronización con Supabase en background (no bloqueante)
+            setTimeout(() => { try { this.syncContactsWithSupabase?.(); } catch(_) {} }, 0);
             const teamNav = document.querySelector('.nav-item[data-section="team"]');
             if (teamNav) teamNav.addEventListener('click', () => this.loadTeamList());
             const btnRefreshTeam = document.getElementById('refreshTeam');
@@ -343,6 +360,21 @@ class WhatsAppCRM {
         
         console.log('✅ Todos los elementos críticos encontrados');
         return true;
+    }
+
+    waitForDOMUtils() {
+        return new Promise((resolve) => {
+            const checkDOMUtils = () => {
+                if (window.DOMUtils && typeof window.DOMUtils.openLabelsAndList === 'function') {
+                    console.log('✅ DOMUtils disponible para sidebar');
+                    resolve();
+                } else {
+                    console.log('⏳ Esperando DOMUtils...');
+                    setTimeout(checkDOMUtils, 500);
+                }
+            };
+            checkDOMUtils();
+        });
     }
 
     createSampleDataIfEmpty() {
@@ -3377,7 +3409,11 @@ class WhatsAppCRM {
 
 	async syncTagsFromWhatsApp() {
 		try {
+			// Esperar a que DOMUtils esté disponible
+			await this.waitForDOMUtils();
+			
 			if (!window.DOMUtils || typeof window.DOMUtils.getActiveLabels !== 'function') {
+				console.warn('DOMUtils.getActiveLabels no disponible');
 				return;
 			}
 			const waLabels = window.DOMUtils.getActiveLabels();
@@ -3424,9 +3460,15 @@ class WhatsAppCRM {
 		}
 	}
 
-	startBusinessLabelsObserver() {
+	async startBusinessLabelsObserver() {
 		try {
-			if (!window.DOMUtils || typeof window.DOMUtils.observeBusinessLabels !== 'function') return;
+			// Esperar a que DOMUtils esté disponible
+			await this.waitForDOMUtils();
+			
+			if (!window.DOMUtils || typeof window.DOMUtils.observeBusinessLabels !== 'function') {
+				console.warn('DOMUtils.observeBusinessLabels no disponible');
+				return;
+			}
 			window.DOMUtils.observeBusinessLabels((labels) => {
 				try {
 					if (!Array.isArray(labels) || labels.length === 0) return;
@@ -4905,6 +4947,8 @@ class WhatsAppCRM {
 
     saveContacts() {
         this.saveData('contacts', this.contacts);
+        // Intento de persistencia remota no bloqueante
+        try { this.saveContactsToSupabase?.(); } catch (_) {}
     }
 
     saveTags() {
@@ -5241,6 +5285,64 @@ class WhatsAppCRM {
                 close();
             }, { once: true });
         } catch (e) { console.error('openContactNotesOverlay error', e); }
+    }
+
+    async saveContactsToSupabase() {
+        try {
+            if (!window.ContactsService) return;
+            this.contactsService = this.contactsService || new window.ContactsService();
+            await this.contactsService.init();
+            if (!(await this.contactsService.isAuthenticated())) return;
+            await this.contactsService.syncLocalToSupabase(this.contacts || []);
+        } catch (e) { console.warn('saveContactsToSupabase error:', e); }
+    }
+
+    mergeContacts(remoteContacts = [], localContacts = []) {
+        try {
+            const byKey = (c) => {
+                const phone = this.normalizePhone(c?.phone);
+                return phone ? `phone:${phone}` : (c?.id ? `id:${c.id}` : (c?.name ? `name:${c.name}` : `rand:${Math.random()}`));
+            };
+            const map = new Map();
+            (localContacts || []).forEach(c => map.set(byKey(c), { ...c }));
+            (remoteContacts || []).forEach(rc => {
+                const key = byKey(rc);
+                if (!map.has(key)) { map.set(key, { ...rc }); return; }
+                const lc = map.get(key);
+                const lu = new Date(lc.updatedAt || lc.lastChat || lc.createdAt || 0).getTime();
+                const ru = new Date(rc.updatedAt || rc.lastChat || rc.createdAt || 0).getTime();
+                const newer = ru >= lu ? rc : lc;
+                const older = ru >= lu ? lc : rc;
+                map.set(key, {
+                    ...older,
+                    ...newer,
+                    id: lc.id || rc.id,
+                    _supabaseId: rc._supabaseId || older._supabaseId
+                });
+            });
+            // Orden por última actividad visible
+            return Array.from(map.values()).sort((a,b) => new Date(b.lastChat || b.updatedAt || 0) - new Date(a.lastChat || a.updatedAt || 0));
+        } catch (_) { return localContacts; }
+    }
+
+    async syncContactsWithSupabase() {
+        try {
+            if (!window.ContactsService) return;
+            this.contactsService = this.contactsService || new window.ContactsService();
+            await this.contactsService.init();
+            if (!(await this.contactsService.isAuthenticated())) return;
+            const remote = await this.contactsService.fetchContacts();
+            const merged = this.mergeContacts(remote, this.contacts || []);
+            this.contacts = merged;
+            this.saveData('contacts', this.contacts);
+            try { this.contactsService.syncLocalToSupabase(this.contacts); } catch (_) {}
+            try { this.loadContactsList?.(); } catch (_) {}
+            try { this.loadKanban?.(); } catch (_) {}
+            try { this.updateDashboard?.(); } catch (_) {}
+            console.log(`☁️ Sincronización de contactos con Supabase completada: ${remote.length} remotos, ${this.contacts.length} totales`);
+        } catch (e) {
+            console.warn('syncContactsWithSupabase error:', e);
+        }
     }
 }
 

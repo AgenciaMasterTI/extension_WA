@@ -36,6 +36,8 @@ class WhatsAppCRMContent {
     // Esperar a que WhatsApp Web esté completamente cargado
     await this.waitForWhatsAppLoad();
 
+    // Esperar a que DOMUtils esté disponible
+    await this.waitForDOMUtils();
     
     // Inyectar botón flotante de nickname
     this.injectNicknameToggle();
@@ -49,6 +51,20 @@ class WhatsAppCRMContent {
     this.initChatObserver();
     
     logger.log('Extension iniciada correctamente');
+  }
+
+  waitForDOMUtils() {
+    return new Promise((resolve) => {
+      const checkDOMUtils = () => {
+        if (window.DOMUtils && typeof window.DOMUtils.openLabelsAndList === 'function') {
+          logger.log('DOMUtils disponible');
+          resolve();
+        } else {
+          setTimeout(checkDOMUtils, 500);
+        }
+      };
+      checkDOMUtils();
+    });
   }
 
   waitForWhatsAppLoad() {

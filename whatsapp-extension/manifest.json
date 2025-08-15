@@ -17,7 +17,7 @@
   "content_scripts": [
     {
       "matches": ["https://web.whatsapp.com/*"],
-      "js": ["vendor/supabase.js", "config/supabase.js", "services/supabaseClient.js", "services/authService.js", "utils/domUtils.js", "services/deviceService.js", "content.js", "sidebar.js"],
+      "js": ["vendor/supabase.js", "config/supabase.js", "services/supabaseClient.js", "services/authService.js", "utils/domUtils.js", "services/deviceService.js", "services/contactsService.js", "content.js", "sidebar.js"],
       "css": ["sidebar.css"],
       "run_at": "document_end"
     }
