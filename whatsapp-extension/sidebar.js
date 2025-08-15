@@ -3665,105 +3665,7 @@ class WhatsAppCRM {
                 modal.classList.remove('active');
                 modal.style.display = 'none';
                 this.currentEditingTag = null;
-            }
-        } catch (error) {
-            console.error('Error closing tag modal:', error);
-        }
-    }
-
-    async syncWhatsAppTags() {
-        try {
-            // Mostrar indicador de carga y deshabilitar el botón
-            const syncBtn = document.getElementById('syncTagsBtn');
-            if (syncBtn) {
-                syncBtn.innerHTML = '🔄 Sincronizando...';
-                syncBtn.disabled = true;
-            }
-
-            // Verificar que DOMUtils esté disponible
-            if (!window.DOMUtils) {
-                throw new Error('DOMUtils no está disponible');
-            }
-
-            // Obtener etiquetas de WhatsApp Business usando DOMUtils
-            const result = await window.DOMUtils.openLabelsAndList();
-            if (!result?.labels) {
-                throw new Error('No se pudieron obtener las etiquetas de WhatsApp');
-            }
-
-            // Procesar las etiquetas obtenidas
-            const whatsappTags = result.labels;
-            console.log(`✨ Se encontraron ${whatsappTags.length} etiquetas en WhatsApp`);
-
-            // Sincronizar con el CRM y la base de datos
-            if (this.tagsService) {
-                await this.tagsService.syncWhatsAppTags(whatsappTags);
-                this.tags = await this.tagsService.loadTags();
-                this.renderTags();
-                this.showNotification('✅ Etiquetas sincronizadas correctamente', 'success');
-            } else {
-                throw new Error('Servicio de etiquetas no disponible');
-            }
-
-        } catch (error) {
-            console.error('Error sincronizando etiquetas:', error);
-            this.showNotification('❌ ' + (error.message || 'Error al sincronizar etiquetas'), 'error');
-        } finally {
-            // Restaurar el botón
-            const syncBtn = document.getElementById('syncTagsBtn');
-            if (syncBtn) {
-                syncBtn.innerHTML = '🔄 Sincronizar';
-                syncBtn.disabled = false;
-            }
-        }
-    }    async syncWhatsAppTags() {
-        try {
-            // Mostrar indicador de carga y deshabilitar el botón
-            const syncBtn = document.getElementById('syncTagsBtn');
-            if (syncBtn) {
-                syncBtn.innerHTML = '🔄 Sincronizando...';
-                syncBtn.disabled = true;
-            }
-
-            // Verificar que DOMUtils esté disponible
-            if (!window.DOMUtils) {
-                throw new Error('DOMUtils no está disponible');
-            }
-
-            // Obtener etiquetas de WhatsApp Business usando DOMUtils
-            const result = await window.DOMUtils.openLabelsAndList();
-            if (!result?.labels) {
-                throw new Error('No se pudieron obtener las etiquetas de WhatsApp');
-            }
-
-            // Procesar las etiquetas obtenidas
-            const whatsappTags = result.labels;
-            console.log(`✨ Se encontraron ${whatsappTags.length} etiquetas en WhatsApp`);
-
-            // Sincronizar con el CRM y la base de datos
-            if (this.tagsService) {
-                await this.tagsService.syncWhatsAppTags(whatsappTags);
-                this.tags = await this.tagsService.loadTags();
-                this.renderTags();
-                this.showNotification('✅ Etiquetas sincronizadas correctamente', 'success');
-            } else {
-                throw new Error('Servicio de etiquetas no disponible');
-            }
-
-        } catch (error) {
-            console.error('Error sincronizando etiquetas:', error);
-            this.showNotification('❌ ' + (error.message || 'Error al sincronizar etiquetas'), 'error');
-        } finally {
-            // Restaurar el botón
-            const syncBtn = document.getElementById('syncTagsBtn');
-            if (syncBtn) {
-                syncBtn.innerHTML = '🔄 Sincronizar';
-                syncBtn.disabled = false;
-            }
-        }
-    }
-                
-                this.currentEditingTag = null;
+                console.log('❌ Modal de etiqueta cerrado');
             }
         } catch (error) {
             console.error('Error closing tag modal:', error);
@@ -3786,55 +3688,6 @@ class WhatsAppCRM {
                 throw new Error('DOMUtils no está disponible');
             }
 
-            const result = await window.DOMUtils.openLabelsAndList();
-            
-            if (!result || !result.labels) {
-                throw new Error('No se pudieron obtener las etiquetas de WhatsApp');
-            }
-
-            console.log(`✨ Se encontraron ${result.labels.length} etiquetas en WhatsApp Business`);
-
-            // Sincronizar etiquetas usando el TagsService
-            await this.tagsService.syncWhatsAppTags();
-
-            // Recargar y mostrar las etiquetas actualizadas
-            this.tags = await this.tagsService.loadTags();
-            this.renderTags();
-
-            // Mostrar notificación de éxito
-            this.showNotification('✅ Etiquetas sincronizadas correctamente', 'success');
-            console.log('✅ Sincronización completada exitosamente');
-
-        } catch (error) {
-            console.error('❌ Error sincronizando etiquetas:', error);
-            this.showNotification('❌ Error al sincronizar etiquetas', 'error');
-        } finally {
-            // Restaurar el botón
-            const syncBtn = document.getElementById('syncTagsBtn');
-            if (syncBtn) {
-                syncBtn.innerHTML = '🔄 Sincronizar';
-                syncBtn.disabled = false;
-            }
-        }
-    }
-            }
-        } catch (error) {
-            console.error('Error closing tag modal:', error);
-        }
-    }
-
-    async syncWhatsAppTags() {
-        try {
-            // Mostrar indicador de carga
-            const syncBtn = document.getElementById('syncTagsBtn');
-            if (syncBtn) {
-                syncBtn.innerHTML = '🔄 Sincronizando...';
-                syncBtn.disabled = true;
-            }
-
-            console.log('📥 Obteniendo etiquetas de WhatsApp Business...');
-            
-            // Usar DOMUtils para obtener las etiquetas de WhatsApp
             const result = await window.DOMUtils.openLabelsAndList();
             
             if (!result || !result.labels?.length) {
@@ -3864,14 +3717,6 @@ class WhatsAppCRM {
                 syncBtn.innerHTML = '🔄 Sincronizar';
                 syncBtn.disabled = false;
             }
-        }
-    }
-            }
-            
-            this.currentEditingTag = null;
-            console.log('❌ Modal de etiqueta cerrado');
-        } catch (error) {
-            console.error('Error closing tag modal:', error);
         }
     }
 
