@@ -26,6 +26,8 @@ class WhatsAppCRMContent {
     this.isInjected = false;
     this.currentChat = null;
     this.sidebar = null;
+    this.lastSyncTime = 0;
+    this.syncInterval = 5 * 60 * 1000; // 5 minutos
     
     this.init();
   }
@@ -181,6 +183,32 @@ class WhatsAppCRMContent {
       // Comenzar verificación
       checkSidebar();
     });
+  }
+
+  /**
+   * Sincronizar etiquetas de WhatsApp con el CRM y Supabase
+   */
+  async syncWhatsAppTags() {
+    const now = Date.now();
+    if (now - this.lastSyncTime < this.syncInterval) {
+      return; // Evitar sincronizaciones muy frecuentes
+    }
+    
+    try {
+      // Obtener etiquetas actuales de WhatsApp
+      const labels = await window.DOMUtils.getLabels();
+      if (!Array.isArray(labels)) return;
+      
+      // Si window.whatsappCRM existe, sincronizar a través de él
+      if (window.whatsappCRM?.tagsService) {
+        await window.whatsappCRM.tagsService.syncWhatsAppTags(labels);
+      }
+      
+      this.lastSyncTime = now;
+      logger.log(`Etiquetas sincronizadas: ${labels.length}`);
+    } catch (error) {
+      logger.error('Error sincronizando etiquetas:', error);
+    }
   }
 
   initSidebarFallback() {

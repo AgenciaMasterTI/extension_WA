@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WhatsApp CRM Sidebar</title>
+    <link rel="stylesheet" href="sidebar.css">
+    
 </head>
 <body>
     <div class="wa-crm-sidebar-container">
@@ -173,9 +175,20 @@
             <div class="content-section" id="tags">
                 <div class="section-header">
                     <h3>Gestión de Etiquetas</h3>
-                    <button class="btn-primary" id="addTagBtn">➕ Nueva Etiqueta</button>
+                    <div class="header-actions">
+                        <button class="btn-secondary" id="syncTagsBtn" title="Sincronizar etiquetas de WhatsApp">🔄 Sincronizar</button>
+                        <button class="btn-primary" id="addTagBtn">➕ Nueva Etiqueta</button>
+                    </div>
                 </div>
                 <div class="section-body">
+                    <div class="tags-filter">
+                        <select id="tagsCategoryFilter">
+                            <option value="all">Todas las etiquetas</option>
+                            <option value="whatsapp">WhatsApp Business</option>
+                            <option value="crm">CRM</option>
+                            <option value="custom">Personalizadas</option>
+                        </select>
+                    </div>
                     <div class="current-chat-info" id="currentChatInfo">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div class="contact-avatar" style="width: 32px; height: 32px; font-size: 14px;">👤</div>
@@ -461,5 +474,21 @@
             </div>
         </div>
     </div>
+    <!-- Vendor Scripts -->
+    <script src="vendor/supabase.js"></script>
+    
+    <!-- Services -->
+    <script src="services/supabaseClient.js"></script>
+    <script src="services/authService.js"></script>
+    <script src="services/tagsService.js"></script>
+    <script src="services/templatesService.js"></script>
+    <script src="services/contactsService.js"></script>
+    <script src="services/deviceService.js"></script>
+    
+    <!-- Utils -->
+    <script src="utils/domUtils.js"></script>
+    
+    <!-- Main Scripts -->
+    <script src="sidebar.js"></script>
 </body>
-</html> 
+</html>

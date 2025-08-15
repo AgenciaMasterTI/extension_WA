@@ -5,18 +5,36 @@
 
 class TagsService {
   constructor() {
+    if (typeof chrome === 'undefined' || !chrome.runtime) {
+      throw new Error('Chrome runtime not available');
+    }
     this.tags = [];
     this.chatTags = new Map(); // Map de chat -> etiquetas asignadas
+    
+    // Inicializar servicio de Supabase para etiquetas
+    if (window.SupabaseTagsService) {
+      this.supabaseTags = new window.SupabaseTagsService();
+    }
   }
 
   /**
-   * Cargar todas las etiquetas desde storage
+   * Cargar todas las etiquetas desde storage y Supabase
    */
   async loadTags() {
     try {
+      // Cargar etiquetas locales
       const data = await this.getFromStorage(['tags', 'chatTags']);
       this.tags = data.tags || [];
       this.chatTags = new Map(Object.entries(data.chatTags || {}));
+
+      // Cargar etiquetas de Supabase si está disponible
+      if (this.supabaseTags) {
+        const supabaseTags = await this.supabaseTags.getAllTags();
+        // Fusionar etiquetas, priorizando las de Supabase
+        this.tags = this.mergeTags(this.tags, supabaseTags);
+        await this.saveTags(); // Guardar etiquetas fusionadas en storage local
+      }
+
       return this.tags;
     } catch (error) {
       console.error('[TagsService] Error cargando etiquetas:', error);
@@ -308,10 +326,15 @@ class TagsService {
       }));
 
       this.tags.push(...importedTags);
+
+      // Si Supabase está disponible, sincronizar las etiquetas importadas
+      if (this.supabaseTags) {
+        await Promise.all(importedTags.map(tag => 
+          this.supabaseTags.createTag(tag)
+        ));
+      }
+
       await this.saveTags();
-      
-      console.log('[TagsService] Etiquetas importadas:', importedTags.length);
-      return importedTags;
     } catch (error) {
       console.error('[TagsService] Error importando etiquetas:', error);
       throw error;
@@ -319,8 +342,134 @@ class TagsService {
   }
 
   /**
-   * Exportar etiquetas a JSON
+   * Sincronizar etiquetas con WhatsApp Web y Supabase
    */
+  async syncWhatsAppTags() {
+    try {
+      if (window.DOMUtils && typeof window.DOMUtils.getLabels === 'function') {
+        const waLabels = await window.DOMUtils.getLabels();
+        if (Array.isArray(waLabels) && waLabels.length > 0) {
+          // Sincronizar con Supabase primero
+          if (this.supabaseTags) {
+            await this.syncWhatsAppTagsToSupabase(waLabels);
+          }
+
+          // Sincronizar localmente
+          const existingTagNames = new Set(this.tags.map(t => t.name));
+          const newTags = waLabels
+            .filter(label => !existingTagNames.has(label.name))
+            .map(label => ({
+              id: this.generateId(),
+              name: label.name,
+              color: label.color || '#3b82f6',
+              description: 'Importado desde WhatsApp Business',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              usageCount: 0,
+              whatsappId: label.id
+            }));
+
+          this.tags.push(...newTags);
+          await this.saveTags();
+        }
+      }
+    } catch (error) {
+      console.error('[TagsService] Error sincronizando etiquetas de WhatsApp:', error);
+    }
+  }
+
+  /**
+   * Fusionar etiquetas locales con las de Supabase
+   */
+  mergeTags(localTags, supabaseTags) {
+    const mergedTags = new Map();
+    
+    // Primero añadir etiquetas de Supabase
+    supabaseTags.forEach(tag => {
+      mergedTags.set(tag.id, {
+        ...tag,
+        synced: true
+      });
+    });
+    
+    // Añadir etiquetas locales que no existan en Supabase
+    localTags.forEach(tag => {
+      if (!mergedTags.has(tag.id)) {
+        mergedTags.set(tag.id, {
+          ...tag,
+          synced: false
+        });
+      }
+    });
+    
+    return Array.from(mergedTags.values());
+  }
+
+  /**
+   * Sincronizar etiquetas de WhatsApp con Supabase
+   */
+  async syncWhatsAppTagsToSupabase(whatsappTags) {
+    if (!this.supabaseTags) return;
+    
+    try {
+      const existingTags = await this.supabaseTags.getAllTags();
+      const existingTagNames = new Set(existingTags.map(t => t.name));
+      
+      for (const waTag of whatsappTags) {
+        const tagData = {
+          name: waTag.name,
+          color: waTag.color || '#3B82F6',
+          description: 'Importado desde WhatsApp Business',
+          category: 'whatsapp',
+        };
+        
+        // Si la etiqueta no existe en Supabase, crearla
+        if (!existingTagNames.has(waTag.name)) {
+          await this.supabaseTags.createTag(tagData);
+        }
+      }
+    } catch (error) {
+      console.error('[TagsService] Error sincronizando con Supabase:', error);
+    }
+  }
+  async loadTags() {
+          try {
+            // Primero cargar etiquetas del storage
+            const data = await this.getFromStorage(['tags', 'chatTags']);
+            this.tags = data.tags || [];
+            this.chatTags = new Map(Object.entries(data.chatTags || {}));
+
+            // Intentar sincronizar con etiquetas reales de WhatsApp Web
+            if (window.DOMUtils && typeof window.DOMUtils.getLabels === 'function') {
+              const waLabels = window.DOMUtils.getLabels();
+              if (Array.isArray(waLabels) && waLabels.length > 0) {
+                // Sincronizar etiquetas del DOM con las locales
+                waLabels.forEach(label => {
+                  // Si la etiqueta no existe localmente, agregarla
+                  if (!this.tags.find(t => t.name === label.name)) {
+                    this.tags.push({
+                      id: this.generateId(),
+                      name: label.name,
+                      color: label.color || '#3b82f6',
+                      description: '',
+                      createdAt: new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                      usageCount: 0
+                    });
+                  }
+                });
+                // Guardar etiquetas sincronizadas
+                await this.saveTags();
+              }
+            }
+            return this.tags;
+          } catch (error) {
+            console.error('[TagsService] Error cargando etiquetas:', error);
+            return [];
+          }
+        }
+  
+  
   exportTags() {
     return {
       tags: this.tags,
@@ -365,4 +514,6 @@ class TagsService {
 }
 
 // Exportar para uso global
-window.TagsService = TagsService; 
+if (!window.TagsService) {
+  window.TagsService = TagsService;
+}
