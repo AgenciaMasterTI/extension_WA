@@ -1,5 +1,6 @@
 -- =====================================================
--- 1. TABLAS DE USUARIOS Y PERFILES
+-- 1. TABLAS DE USUARIOS Y PERFILES si
+
 -- =====================================================
 
 -- Tabla de planes de suscripción
